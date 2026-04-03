@@ -1,0 +1,52 @@
+<div class="modal-overlay" (click)="onClose()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Buy History</h2>
+      <button class="close-btn" (click)="onClose()">×</button>
+    </div>
+
+    <div *ngIf="loading" class="loading">
+      <p>Loading history...</p>
+    </div>
+
+    <div *ngIf="error" class="error-message">
+      {{ error }}
+    </div>
+
+    <div *ngIf="!loading && !error" class="history-content">
+      <div *ngIf="transactions.length === 0" class="no-data">
+        <p>No transactions found.</p>
+      </div>
+
+      <table *ngIf="transactions.length > 0" class="history-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Quantity</th>
+            <th>Purchase Price</th>
+            <th>Total Invested</th>
+            <th>Current Price</th>
+            <th>Variation</th>
+            <th>Variation %</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let transaction of transactions" [ngClass]="{'positive': transaction.variationEur >= 0, 'negative': transaction.variationEur < 0}">
+            <td>{{ formatDate(transaction.purchaseDate) }}</td>
+            <td class="quantity">{{ formatQuantity(transaction.quantity) }}</td>
+            <td class="price">{{ formatCurrency(transaction.purchasePrice) }}</td>
+            <td class="price">{{ formatCurrency(transaction.quantity * transaction.purchasePrice) }}</td>
+            <td class="price">{{ formatCurrency(transaction.currentPrice) }}</td>
+            <td class="price">{{ formatCurrency(transaction.variationEur) }}</td>
+            <td class="price">{{ formatPercent(transaction.variationPercent) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="onClose()">Close</button>
+    </div>
+  </div>
+</div>
+

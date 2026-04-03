@@ -1,0 +1,359 @@
+<div class="dashboard-container">
+  <div *ngIf="loading" class="loading">
+    <p>Loading dashboard...</p>
+  </div>
+
+  <div *ngIf="error" class="error">
+    <p>{{ error }}</p>
+    <button (click)="loadDashboard()">Retry</button>
+  </div>
+
+  <div *ngIf="dashboard && !loading" class="dashboard-content">
+    <!-- Header with metrics -->
+    <div class="dashboard-header">
+      <h1>ETF Portfolio Dashboard</h1>
+
+      <div class="metrics-grid">
+        <!-- Total Holdings -->
+        <div class="metric-card total">
+          <div class="metric-label">Total Holdings</div>
+          <div class="metric-value">{{ formatCurrency(dashboard.header.totalHoldingsAmount) }}</div>
+        </div>
+
+        <!-- Total Variation -->
+        <div class="metric-card" [ngClass]="getMetricsClass(dashboard.header.totalVariation.gainLossEur)">
+          <div class="metric-label">Total Variation</div>
+          <div class="metric-value">{{ formatCurrency(dashboard.header.totalVariation.gainLossEur) }}</div>
+          <div class="metric-percent">{{ formatPercent(dashboard.header.totalVariation.gainLossPercent) }}</div>
+        </div>
+
+        <!-- Daily Metrics -->
+        <div class="metric-card" [ngClass]="getMetricsClass(dashboard.header.dailyMetrics.gainLossEur)">
+          <div class="metric-label">
+            Daily Change
+            <span *ngIf="dashboard.header.dailyMetrics.pricesUnavailable" class="exclamation-mark" title="No prices available for today (e.g., market closed)">!</span>
+          </div>
+          <div class="metric-value">{{ formatCurrency(dashboard.header.dailyMetrics.gainLossEur) }}</div>
+          <div class="metric-percent">{{ formatPercent(dashboard.header.dailyMetrics.gainLossPercent) }}</div>
+          <div *ngIf="dashboard.header.dailyMetrics.pricesUnavailable" class="price-unavailable-message">
+            No prices available for today (market closed)
+          </div>
+        </div>
+
+        <!-- Weekly Metrics -->
+        <div class="metric-card" [ngClass]="getMetricsClass(dashboard.header.weeklyMetrics.gainLossEur)">
+          <div class="metric-label">
+            Weekly Change
+            <span *ngIf="dashboard.header.weeklyMetrics.pricesUnavailable" class="exclamation-mark" title="No prices available">!</span>
+          </div>
+          <div class="metric-value">{{ formatCurrency(dashboard.header.weeklyMetrics.gainLossEur) }}</div>
+          <div class="metric-percent">{{ formatPercent(dashboard.header.weeklyMetrics.gainLossPercent) }}</div>
+          <div *ngIf="dashboard.header.weeklyMetrics.pricesUnavailable" class="price-unavailable-message">
+            Prices unavailable for comparison
+          </div>
+        </div>
+
+        <!-- Monthly Metrics -->
+        <div class="metric-card" [ngClass]="getMetricsClass(dashboard.header.monthlyMetrics.gainLossEur)">
+          <div class="metric-label">
+            Monthly Change
+            <span *ngIf="dashboard.header.monthlyMetrics.pricesUnavailable" class="exclamation-mark" title="No prices available">!</span>
+          </div>
+          <div class="metric-value">{{ formatCurrency(dashboard.header.monthlyMetrics.gainLossEur) }}</div>
+          <div class="metric-percent">{{ formatPercent(dashboard.header.monthlyMetrics.gainLossPercent) }}</div>
+          <div *ngIf="dashboard.header.monthlyMetrics.pricesUnavailable" class="price-unavailable-message">
+            Prices unavailable for comparison
+          </div>
+        </div>
+
+        <!-- YTD Metrics -->
+        <div class="metric-card" [ngClass]="getMetricsClass(dashboard.header.ytdMetrics.gainLossEur)">
+          <div class="metric-label">
+            YTD Change
+            <span *ngIf="dashboard.header.ytdMetrics.pricesUnavailable" class="exclamation-mark" title="No prices available">!</span>
+          </div>
+          <div class="metric-value">{{ formatCurrency(dashboard.header.ytdMetrics.gainLossEur) }}</div>
+          <div class="metric-percent">{{ formatPercent(dashboard.header.ytdMetrics.gainLossPercent) }}</div>
+          <div *ngIf="dashboard.header.ytdMetrics.pricesUnavailable" class="price-unavailable-message">
+            Prices unavailable for comparison
+          </div>
+        </div>
+      </div>
+
+      <div class="action-buttons">
+        <button class="btn btn-primary" (click)="onAddTransactionClick()">+ Add New Buy</button>
+      </div>
+    </div>
+
+    <!-- Yearly Projections -->
+    <div class="projection-section">
+      <h2>Yearly Projections</h2>
+
+      <div class="projection-params">
+        <div class="param-group">
+          <label for="yearlyReturn">Yearly Return %</label>
+          <input id="yearlyReturn" type="number" step="0.1" min="0" max="100"
+                 [(ngModel)]="projectionSettings.yearlyReturnPercent" />
+        </div>
+
+        <div class="param-group">
+          <label for="monthlyBuy">Monthly Buy (€)</label>
+          <input id="monthlyBuy" type="number" step="10" min="0"
+                 [(ngModel)]="projectionSettings.monthlyBuyAmount" />
+        </div>
+
+        <div class="param-group">
+          <label for="annualIncrease">Annual Buy Increase %</label>
+          <input id="annualIncrease" type="number" step="0.1" min="0" max="100"
+                 [(ngModel)]="projectionSettings.annualBuyIncreasePercent" />
+        </div>
+
+        <div class="param-group">
+          <label for="projYears">Projection Years</label>
+          <input id="projYears" type="number" step="1" min="1" max="50"
+                 [(ngModel)]="projectionSettings.projectionYears" />
+        </div>
+
+        <div class="param-group">
+          <label for="inflation">Inflation %</label>
+          <input id="inflation" type="number" step="0.1" min="0" max="100"
+                 [(ngModel)]="projectionSettings.inflationPercent" />
+        </div>
+
+        <div class="param-group">
+          <label for="cgt">CGT %</label>
+          <input id="cgt" type="number" step="0.1" min="0" max="100"
+                 [(ngModel)]="projectionSettings.cgtPercent" />
+        </div>
+
+        <div class="param-group">
+          <label for="exitTax">Exit Tax %</label>
+          <input id="exitTax" type="number" step="0.1" min="0" max="100"
+                 [(ngModel)]="projectionSettings.exitTaxPercent" />
+        </div>
+
+        <div class="param-group checkbox-group">
+          <label class="checkbox-label" for="excludePreExisting">
+            <input id="excludePreExisting" type="checkbox"
+                   [(ngModel)]="projectionSettings.excludePreExistingFromTax" />
+            Exclude buys before 01/01/2026 from tax
+          </label>
+        </div>
+
+        <button class="btn btn-primary" (click)="saveProjectionSettings()" [disabled]="projectionSaving">
+          {{ projectionSaving ? 'Saving…' : 'Apply & Save' }}
+        </button>
+      </div>
+
+      <!-- Tab navigation -->
+      <div class="projection-tab-nav">
+        <button class="tab-btn" [class.active]="activeProjectionTab === 'chart'" (click)="setProjectionTab('chart')">
+          📈 Graph
+        </button>
+        <button class="tab-btn" [class.active]="activeProjectionTab === 'table'" (click)="setProjectionTab('table')">
+          📋 Data Table
+        </button>
+      </div>
+
+      <!-- Tab: Graph -->
+      <div class="tab-panel" *ngIf="activeProjectionTab === 'chart'">
+        <div *ngIf="projectionLoading" class="projection-loading">
+          <p>Calculating projection…</p>
+        </div>
+        <div class="projection-chart-wrapper" *ngIf="projection && !projectionLoading">
+          <canvas #projectionChart></canvas>
+        </div>
+      </div>
+
+      <!-- Tab: Data Table -->
+      <div class="tab-panel" *ngIf="activeProjectionTab === 'table'">
+        <div *ngIf="projectionLoading" class="projection-loading">
+          <p>Calculating projection…</p>
+        </div>
+        <div class="projection-table-wrapper" *ngIf="projection && !projectionLoading">
+          <table class="projection-table">
+            <thead>
+              <tr>
+                <th>Year</th>
+                <th>Initial Balance</th>
+                <th>Total Buys</th>
+                <th>Year Profit</th>
+                <th>EoY Balance</th>
+                <th>EoY Inflation-Corrected</th>
+                <th>Tax Due</th>
+                <th>After Tax Balance</th>
+                <th>After Tax Balance Inflation-Corrected</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let point of projection.dataPoints; let i = index">
+                <td class="year-col">{{ point.year }}</td>
+                <td class="value-col">{{ formatCurrency(point.initialBalance) }}</td>
+                <td class="value-col buys-col">{{ formatCurrency(point.totalBuys) }}</td>
+                <td class="value-col profit-col" [ngClass]="point.yearProfit >= 0 ? 'positive' : 'negative'">
+                  {{ formatCurrency(point.yearProfit) }}
+                </td>
+                <td class="value-col eoy-col">{{ formatCurrency(point.totalAmount) }}</td>
+                <td class="value-col inflation-col">{{ formatCurrency(point.inflationCorrectedAmount) }}</td>
+                <td class="value-col tax-col" [ngClass]="(point.taxPaid + point.exitTaxPaid) > 0 ? 'tax-due' : ''">
+                  {{ (point.taxPaid + point.exitTaxPaid) > 0 ? formatCurrency(point.taxPaid + point.exitTaxPaid) : '—' }}
+                  <span *ngIf="point.exitTaxPaid > 0" class="exit-tax-badge" title="Includes exit tax of {{ formatCurrency(point.exitTaxPaid) }}">ET</span>
+                </td>
+                <td class="value-col after-tax-col">{{ formatCurrency(point.afterTaxTotalAmount) }}</td>
+                <td class="value-col after-tax-inflation-col">{{ formatCurrency(point.afterTaxInflationCorrectedAmount) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Allocation Pie Chart -->
+    <div class="allocation-section">
+      <h2>Portfolio Allocation</h2>
+      <div class="allocation-content">
+        <div class="pie-wrapper">
+          <canvas #allocationChart></canvas>
+        </div>
+        <div class="allocation-legend">
+          <div class="legend-item" *ngFor="let slice of allocationSlices">
+            <span class="legend-color" [style.background]="slice.color"></span>
+            <div class="legend-details">
+              <span class="legend-ticker">{{ slice.ticker }}</span>
+              <span class="legend-name">{{ slice.etfName }}</span>
+              <div class="legend-metrics">
+                <span class="legend-amount">{{ formatCurrency(slice.value) }}</span>
+                <span class="legend-percent">{{ slice.percent.toFixed(1) }}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Holdings Section -->
+    <div class="holdings-section">
+      <h2>Your Holdings</h2>
+
+      <!-- Tab navigation -->
+      <div class="holdings-tab-nav">
+        <button class="tab-btn" [class.active]="activeHoldingsTab === 'table'" (click)="setHoldingsTab('table')">
+          📋 Holdings Table
+        </button>
+        <button class="tab-btn" [class.active]="activeHoldingsTab === 'evolution'" (click)="setHoldingsTab('evolution')">
+          📈 Portfolio Evolution
+        </button>
+      </div>
+
+      <!-- Tab: Holdings Table -->
+      <div class="tab-panel" *ngIf="activeHoldingsTab === 'table'">
+        <div class="table-wrapper">
+          <table class="holdings-table">
+            <thead>
+              <tr>
+                <th>Ticker</th>
+                <th>ETF Name</th>
+                <th>Quantity</th>
+                <th>Avg Cost</th>
+                <th>Current Price</th>
+                <th>Price Source</th>
+                <th>Total Value</th>
+                <th colspan="4">Gain/Loss</th>
+                <th>Actions</th>
+              </tr>
+              <tr class="periods-header">
+                <th colspan="7"></th>
+                <th>Daily</th>
+                <th>Weekly</th>
+                <th>Monthly</th>
+                <th>YTD</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let holding of dashboard.holdings" class="holding-row" [ngClass]="{'price-unavailable': holding.priceUnavailable}">
+                <td class="ticker"><strong>{{ holding.ticker }}</strong></td>
+                <td>{{ holding.etfName }}</td>
+                <td class="quantity">{{ formatQuantity(holding.quantity) }}</td>
+                <td class="price">{{ formatCurrency(holding.averageCost) }}</td>
+                <td class="price">{{ formatCurrency(holding.currentPrice) }}</td>
+                <td class="price-source" [title]="getPriceSourceDescription(holding.priceSource)">
+                  <span class="badge" [ngClass]="'source-' + (holding.priceSource || 'unavailable')">
+                    {{ getPriceSourceLabel(holding.priceSource) }}
+                  </span>
+                </td>
+                <td class="total-value"><strong>{{ formatCurrency(holding.totalValue) }}</strong></td>
+
+                <!-- Daily -->
+                <td [ngClass]="getMetricsClass(holding.dailyMetrics.gainLossEur)">
+                  <div class="gain-loss">
+                    <div>{{ formatCurrency(holding.dailyMetrics.gainLossEur) }}</div>
+                    <div class="percent">{{ formatPercent(holding.dailyMetrics.gainLossPercent) }}</div>
+                  </div>
+                </td>
+
+                <!-- Weekly -->
+                <td [ngClass]="getMetricsClass(holding.weeklyMetrics.gainLossEur)">
+                  <div class="gain-loss">
+                    <div>{{ formatCurrency(holding.weeklyMetrics.gainLossEur) }}</div>
+                    <div class="percent">{{ formatPercent(holding.weeklyMetrics.gainLossPercent) }}</div>
+                  </div>
+                </td>
+
+                <!-- Monthly -->
+                <td [ngClass]="getMetricsClass(holding.monthlyMetrics.gainLossEur)">
+                  <div class="gain-loss">
+                    <div>{{ formatCurrency(holding.monthlyMetrics.gainLossEur) }}</div>
+                    <div class="percent">{{ formatPercent(holding.monthlyMetrics.gainLossPercent) }}</div>
+                  </div>
+                </td>
+
+                <!-- YTD -->
+                <td [ngClass]="getMetricsClass(holding.ytdMetrics.gainLossEur)">
+                  <div class="gain-loss">
+                    <div>{{ formatCurrency(holding.ytdMetrics.gainLossEur) }}</div>
+                    <div class="percent">{{ formatPercent(holding.ytdMetrics.gainLossPercent) }}</div>
+                  </div>
+                </td>
+
+                <td class="actions">
+                  <button class="btn-link" (click)="onBuyHistoryClick(holding.id)">History</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab: Portfolio Evolution Chart -->
+      <div class="tab-panel" *ngIf="activeHoldingsTab === 'evolution'">
+        <div *ngIf="evolutionLoading" class="evolution-loading">
+          <p>Loading portfolio evolution…</p>
+        </div>
+        <div class="evolution-chart-wrapper" *ngIf="portfolioEvolution && !evolutionLoading">
+          <canvas #evolutionChart></canvas>
+        </div>
+        <div class="evolution-legend" *ngIf="portfolioEvolution && !evolutionLoading">
+          <span class="legend-dot buy-dot"></span>
+          <span class="legend-label">Buy recorded on this day</span>
+          <span class="legend-dot value-dot"></span>
+          <span class="legend-label">Portfolio value</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modals -->
+  <app-add-transaction-modal
+    *ngIf="showAddTransactionModal"
+    (transactionAdded)="onTransactionAdded()"
+    (cancelled)="onTransactionCancelled()">
+  </app-add-transaction-modal>
+
+  <app-buy-history-modal
+    *ngIf="showBuyHistoryModal && selectedHoldingId"
+    [holdingId]="selectedHoldingId"
+    (closed)="onHistoryModalClosed()">
+  </app-buy-history-modal>
+</div>
+
