@@ -39,13 +39,22 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowAngular");
+
+// Serve static files (Angular app)
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.MapControllers();
+
+// Fallback to index.html for SPA routing
+app.MapFallbackToFile("index.html");
 
 // Ensure database is created and seeded
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.EnsureCreated();
+    // Use Migrate() instead of EnsureCreated() to apply EF Core migrations
+    db.Database.Migrate();
     
     // Seed default user if it doesn't exist
     if (!db.Users.Any())
