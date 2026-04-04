@@ -24,14 +24,11 @@ RUN dotnet publish "ETFTracker.Api/ETFTracker.Api.csproj" \
 FROM node:20-alpine AS frontend-build
 WORKDIR /app
 
-# Copy package files
-COPY ["ETFTracker.Web/package.json", "ETFTracker.Web/package-lock.json", "./"]
-
-# Install dependencies
-RUN npm ci --omit=dev
-
-# Copy source code
+# Copy source code first
 COPY ["ETFTracker.Web/", "."]
+
+# Install dependencies from the copied directory
+RUN npm ci --omit=dev
 
 # Build for production
 RUN npm run build
