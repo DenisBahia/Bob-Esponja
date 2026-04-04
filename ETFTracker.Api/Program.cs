@@ -60,6 +60,9 @@ builder.Services
         o.ClientId     = builder.Configuration["OAuth:GitHub:ClientId"]     ?? "";
         o.ClientSecret = builder.Configuration["OAuth:GitHub:ClientSecret"] ?? "";
         o.CallbackPath = "/signin-github";
+        // For production, set OAuth:GitHub:RedirectUri in configuration
+        if (builder.Configuration["OAuth:GitHub:RedirectUri"] is string githubRedirectUri)
+            o.AuthorizationEndpoint = o.AuthorizationEndpoint.Replace("http", githubRedirectUri.StartsWith("https") ? "https" : "http");
         o.Scope.Add("user:email");
         o.CorrelationCookie.SameSite     = SameSiteMode.Lax;
         o.CorrelationCookie.SecurePolicy = CookieSecurePolicy.None;
@@ -70,6 +73,14 @@ builder.Services
         o.ClientId     = builder.Configuration["OAuth:Google:ClientId"]     ?? "";
         o.ClientSecret = builder.Configuration["OAuth:Google:ClientSecret"] ?? "";
         o.CallbackPath = "/signin-google";
+        // For production, the absolute redirect URI should be: https://yourdomain.com/signin-google
+        // Configure via OAuth:Google:RedirectUri environment variable or appsettings
+        if (builder.Configuration["OAuth:Google:RedirectUri"] is string googleRedirectUri)
+            o.Events.OnRedirectToAuthorizationEndpoint = ctx =>
+            {
+                ctx.RedirectUri = googleRedirectUri;
+                return System.Threading.Tasks.Task.CompletedTask;
+            };
         o.Scope.Add("email");
         o.Scope.Add("profile");
         o.CorrelationCookie.SameSite     = SameSiteMode.Lax;

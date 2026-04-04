@@ -75,9 +75,12 @@ ENV DOTNET_EnableDiagnosticTools=false
 # - Jwt__Audience (JWT audience, defaults to "ETFTracker")
 # - OAuth__GitHub__ClientId (GitHub OAuth client ID)
 # - OAuth__GitHub__ClientSecret (GitHub OAuth client secret)
+# - OAuth__GitHub__RedirectUri (GitHub redirect URI - optional, auto-detected if not set)
 # - OAuth__Google__ClientId (Google OAuth client ID)
 # - OAuth__Google__ClientSecret (Google OAuth client secret)
+# - OAuth__Google__RedirectUri (Google redirect URI - set this to https://yourdomain.com/signin-google)
 # - ExternalApis__EodhApi__ApiKey (EODH API key for price data)
+# - Frontend__BaseUrl (Frontend base URL for post-auth redirects)
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
