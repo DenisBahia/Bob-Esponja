@@ -27,8 +27,8 @@ WORKDIR /app
 # Copy source code first
 COPY ["ETFTracker.Web/", "."]
 
-# Install dependencies from the copied directory
-RUN npm ci --omit=dev
+# Install ALL dependencies (including devDependencies like @angular/cli needed for build)
+RUN npm ci
 
 # Build for production
 RUN npm run build
