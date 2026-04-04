@@ -36,7 +36,7 @@ public class AuthController : ControllerBase
     [HttpGet("github")]
     public IActionResult LoginWithGitHub()
     {
-        var redirectUri = Url.Action(nameof(GitHubComplete), "Auth", null, Request.Scheme)!;
+        var redirectUri = BuildCallbackUri(nameof(GitHubComplete));
         return Challenge(new AuthenticationProperties { RedirectUri = redirectUri }, "GitHub");
     }
 
@@ -49,7 +49,7 @@ public class AuthController : ControllerBase
     [HttpGet("google")]
     public IActionResult LoginWithGoogle()
     {
-        var redirectUri = Url.Action(nameof(GoogleComplete), "Auth", null, Request.Scheme)!;
+        var redirectUri = BuildCallbackUri(nameof(GoogleComplete));
         return Challenge(new AuthenticationProperties { RedirectUri = redirectUri }, "Google");
     }
 
@@ -71,6 +71,18 @@ public class AuthController : ControllerBase
     });
 
     // ── Shared handler ─────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Builds an absolute callback URI for the given action, always using https
+    /// when the forwarded-proto header says so (Render reverse-proxy).
+    /// </summary>
+    private string BuildCallbackUri(string actionName)
+    {
+        // Request.Scheme is already corrected to "https" by the ForwardedHeaders
+        // middleware when running behind Render. We double-guard here just in case.
+        var scheme = Request.Headers["X-Forwarded-Proto"].FirstOrDefault() ?? Request.Scheme;
+        return Url.Action(actionName, "Auth", null, scheme)!;
+    }
 
     private async Task<IActionResult> HandleOAuthComplete(string provider, CancellationToken ct)
     {

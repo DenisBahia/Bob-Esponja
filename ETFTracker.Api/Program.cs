@@ -63,32 +63,32 @@ builder.Services
         o.ClientId     = builder.Configuration["OAuth:GitHub:ClientId"]     ?? "";
         o.ClientSecret = builder.Configuration["OAuth:GitHub:ClientSecret"] ?? "";
         o.CallbackPath = "/signin-github";
-        // For production, set OAuth:GitHub:RedirectUri in configuration
-        if (builder.Configuration["OAuth:GitHub:RedirectUri"] is string githubRedirectUri)
-            o.AuthorizationEndpoint = o.AuthorizationEndpoint.Replace("http", githubRedirectUri.StartsWith("https") ? "https" : "http");
         o.Scope.Add("user:email");
         o.CorrelationCookie.SameSite     = SameSiteMode.Lax;
         o.CorrelationCookie.SecurePolicy = isProduction ? CookieSecurePolicy.Always : CookieSecurePolicy.None;
-        o.CorrelationCookie.Path         = "/";   // cookie available to all paths
+        o.CorrelationCookie.Path         = "/";
     })
     .AddGoogle("Google", o =>
     {
         o.ClientId     = builder.Configuration["OAuth:Google:ClientId"]     ?? "";
         o.ClientSecret = builder.Configuration["OAuth:Google:ClientSecret"] ?? "";
         o.CallbackPath = "/signin-google";
-        // For production, the absolute redirect URI should be: https://etf-tracker-app.onrender.com/signin-google
-        // Configure via OAuth:Google:RedirectUri environment variable or appsettings
-        if (builder.Configuration["OAuth:Google:RedirectUri"] is string googleRedirectUri)
-            o.Events.OnRedirectToAuthorizationEndpoint = ctx =>
-            {
-                ctx.RedirectUri = googleRedirectUri;
-                return System.Threading.Tasks.Task.CompletedTask;
-            };
         o.Scope.Add("email");
         o.Scope.Add("profile");
         o.CorrelationCookie.SameSite     = SameSiteMode.Lax;
         o.CorrelationCookie.SecurePolicy = isProduction ? CookieSecurePolicy.Always : CookieSecurePolicy.None;
-        o.CorrelationCookie.Path         = "/";   // cookie available to all paths
+        o.CorrelationCookie.Path         = "/";
+        // In production, force the redirect_uri sent to Google to use https://
+        // This is a safety net in case forwarded-headers middleware hasn't run yet.
+        if (isProduction)
+        {
+            o.Events.OnRedirectToAuthorizationEndpoint = ctx =>
+            {
+                var uri = new UriBuilder(ctx.RedirectUri) { Scheme = "https", Port = -1 };
+                ctx.Response.Redirect(uri.ToString());
+                return System.Threading.Tasks.Task.CompletedTask;
+            };
+        }
     })
     .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, o =>
     {
@@ -109,11 +109,15 @@ builder.Services.AddAuthorization();
 var app = builder.Build();
 
 // Trust the reverse-proxy headers from Render (X-Forwarded-For, X-Forwarded-Proto)
-// This ensures OAuth redirect URIs use https:// in production
-app.UseForwardedHeaders(new ForwardedHeadersOptions
+// This ensures OAuth redirect URIs use https:// in production.
+// KnownNetworks/KnownProxies are cleared so Render's non-loopback proxy is trusted.
+var forwardedOptions = new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-});
+};
+forwardedOptions.KnownIPNetworks.Clear();
+forwardedOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedOptions);
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
