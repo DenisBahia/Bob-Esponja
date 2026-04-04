@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface PeriodMetrics {
   gainLossEur: number;
@@ -100,7 +101,7 @@ export interface PortfolioEvolutionDto {
   providedIn: 'root'
 })
 export class ApiService {
-  private apiUrl = 'http://localhost:5098/api';
+  private apiUrl = `${environment.apiBase}/api`;
 
   constructor(private http: HttpClient) {
     console.log('ApiService instantiated');

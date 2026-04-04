@@ -1,9 +1,10 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { jwtDecode } from 'jwt-decode';
+import { environment } from '../../environments/environment';
 
 const TOKEN_KEY = 'etf_auth_token';
-const API_BASE  = 'http://localhost:5098/api/auth';
+const API_BASE  = `${environment.apiBase}/api/auth`;
 
 export interface CurrentUser {
   userId: string;

@@ -1,6 +1,7 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using ETFTracker.Api.Data;
@@ -39,6 +40,8 @@ builder.Services.AddCors(options =>
 var jwtKey = builder.Configuration["Jwt:Key"]
     ?? throw new InvalidOperationException("Jwt:Key is not configured.");
 
+var isProduction = builder.Environment.IsProduction();
+
 builder.Services
     .AddAuthentication(options =>
     {
@@ -52,7 +55,7 @@ builder.Services
     {
         o.Cookie.SameSite    = SameSiteMode.Lax;
         o.Cookie.HttpOnly    = true;
-        o.Cookie.SecurePolicy = CookieSecurePolicy.None; // allow HTTP in dev
+        o.Cookie.SecurePolicy = isProduction ? CookieSecurePolicy.Always : CookieSecurePolicy.None;
         o.ExpireTimeSpan     = TimeSpan.FromMinutes(15);
     })
     .AddGitHub("GitHub", o =>
@@ -65,7 +68,7 @@ builder.Services
             o.AuthorizationEndpoint = o.AuthorizationEndpoint.Replace("http", githubRedirectUri.StartsWith("https") ? "https" : "http");
         o.Scope.Add("user:email");
         o.CorrelationCookie.SameSite     = SameSiteMode.Lax;
-        o.CorrelationCookie.SecurePolicy = CookieSecurePolicy.None;
+        o.CorrelationCookie.SecurePolicy = isProduction ? CookieSecurePolicy.Always : CookieSecurePolicy.None;
         o.CorrelationCookie.Path         = "/";   // cookie available to all paths
     })
     .AddGoogle("Google", o =>
@@ -73,7 +76,7 @@ builder.Services
         o.ClientId     = builder.Configuration["OAuth:Google:ClientId"]     ?? "";
         o.ClientSecret = builder.Configuration["OAuth:Google:ClientSecret"] ?? "";
         o.CallbackPath = "/signin-google";
-        // For production, the absolute redirect URI should be: https://yourdomain.com/signin-google
+        // For production, the absolute redirect URI should be: https://etf-tracker-app.onrender.com/signin-google
         // Configure via OAuth:Google:RedirectUri environment variable or appsettings
         if (builder.Configuration["OAuth:Google:RedirectUri"] is string googleRedirectUri)
             o.Events.OnRedirectToAuthorizationEndpoint = ctx =>
@@ -84,7 +87,7 @@ builder.Services
         o.Scope.Add("email");
         o.Scope.Add("profile");
         o.CorrelationCookie.SameSite     = SameSiteMode.Lax;
-        o.CorrelationCookie.SecurePolicy = CookieSecurePolicy.None;
+        o.CorrelationCookie.SecurePolicy = isProduction ? CookieSecurePolicy.Always : CookieSecurePolicy.None;
         o.CorrelationCookie.Path         = "/";   // cookie available to all paths
     })
     .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, o =>
@@ -104,6 +107,13 @@ builder.Services
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+
+// Trust the reverse-proxy headers from Render (X-Forwarded-For, X-Forwarded-Proto)
+// This ensures OAuth redirect URIs use https:// in production
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
