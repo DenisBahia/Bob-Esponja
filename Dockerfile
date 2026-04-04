@@ -62,10 +62,22 @@ USER appuser
 # Expose port
 EXPOSE 10000
 
-# Set environment variables
+# Set environment variables for production
 ENV ASPNETCORE_ENVIRONMENT=Production
 ENV ASPNETCORE_URLS=http://+:10000
 ENV DOTNET_EnableDiagnosticTools=false
+
+# Configure secrets management for production
+# In production, sensitive values must be provided via environment variables:
+# - ConnectionStrings__DefaultConnection (database connection string)
+# - Jwt__Key (JWT signing key)
+# - Jwt__Issuer (JWT issuer, defaults to "ETFTracker")
+# - Jwt__Audience (JWT audience, defaults to "ETFTracker")
+# - OAuth__GitHub__ClientId (GitHub OAuth client ID)
+# - OAuth__GitHub__ClientSecret (GitHub OAuth client secret)
+# - OAuth__Google__ClientId (Google OAuth client ID)
+# - OAuth__Google__ClientSecret (Google OAuth client secret)
+# - ExternalApis__EodhApi__ApiKey (EODH API key for price data)
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
