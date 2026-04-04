@@ -13,10 +13,18 @@ import {
 Chart.register(ArcElement, Tooltip, Legend, PieController, LineController, LineElement, PointElement, LinearScale, CategoryScale, Filler);
 
 const PIE_COLORS = [
-  '#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe',
-  '#00f2fe', '#43e97b', '#38f9d7', '#fa709a', '#fee140',
-  '#a18cd1', '#fbc2eb', '#a1c4fd', '#c2e9fb', '#d4fc79',
+  '#4f8ef7', '#7c5cfc', '#06d6d0', '#14d990', '#f89b29',
+  '#f05252', '#fa709a', '#a78bfa', '#34d399', '#fbbf24',
+  '#60a5fa', '#c084fc', '#2dd4bf', '#86efac', '#fcd34d',
 ];
+
+// Shared dark-theme Chart.js defaults
+const DARK_SCALE_DEFAULTS = {
+  grid:  { color: 'rgba(31, 46, 74, 0.8)' },
+  ticks: { color: '#8da0bf' },
+  title: { color: '#8da0bf' },
+  border: { color: 'rgba(31,46,74,0.5)' },
+};
 
 @Component({
   selector: 'app-dashboard',
@@ -127,7 +135,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
           data: slices.map(s => s.value),
           backgroundColor: slices.map(s => s.color),
           borderWidth: 2,
-          borderColor: '#fff',
+          borderColor: '#111d35',
         }]
       },
       options: {
@@ -136,6 +144,11 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
         plugins: {
           legend: { display: false },
           tooltip: {
+            backgroundColor: '#172040',
+            borderColor: '#1f2e4a',
+            borderWidth: 1,
+            titleColor: '#e4eaf5',
+            bodyColor: '#8da0bf',
             callbacks: {
               label: (ctx) => {
                 const slice = slices[ctx.dataIndex];
@@ -164,48 +177,48 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
           {
             label: 'Projected Portfolio Value',
             data: points.map(p => p.totalAmount),
-            borderColor: '#667eea',
-            backgroundColor: 'rgba(102, 126, 234, 0.12)',
+            borderColor: '#4f8ef7',
+            backgroundColor: 'rgba(79, 142, 247, 0.10)',
             fill: true,
             tension: 0.35,
             pointRadius: 5,
             pointHoverRadius: 7,
-            pointBackgroundColor: '#667eea',
+            pointBackgroundColor: '#4f8ef7',
           },
           {
             label: 'Amount corrected by inflation',
             data: points.map(p => p.inflationCorrectedAmount),
-            borderColor: '#f5576c',
-            backgroundColor: 'rgba(245, 87, 108, 0.08)',
+            borderColor: '#f05252',
+            backgroundColor: 'rgba(240, 82, 82, 0.07)',
             fill: true,
             tension: 0.35,
             pointRadius: 5,
             pointHoverRadius: 7,
-            pointBackgroundColor: '#f5576c',
+            pointBackgroundColor: '#f05252',
             borderDash: [6, 3],
           },
           {
             label: 'Projected after taxes',
             data: points.map(p => p.afterTaxTotalAmount),
-            borderColor: '#5a6c7d',
-            backgroundColor: 'rgba(90, 108, 125, 0.07)',
+            borderColor: '#4d6080',
+            backgroundColor: 'rgba(77, 96, 128, 0.06)',
             fill: false,
             tension: 0.35,
             pointRadius: 5,
             pointHoverRadius: 7,
-            pointBackgroundColor: '#5a6c7d',
+            pointBackgroundColor: '#4d6080',
             borderDash: [4, 4],
           },
           {
             label: 'After Tax Balance Inflation-Corrected',
             data: points.map(p => p.afterTaxInflationCorrectedAmount),
-            borderColor: '#ff9800',
-            backgroundColor: 'rgba(255, 152, 0, 0.08)',
+            borderColor: '#f89b29',
+            backgroundColor: 'rgba(248, 155, 41, 0.07)',
             fill: false,
             tension: 0.35,
             pointRadius: 5,
             pointHoverRadius: 7,
-            pointBackgroundColor: '#ff9800',
+            pointBackgroundColor: '#f89b29',
             borderDash: [8, 3],
           }
         ]
@@ -215,11 +228,14 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
         maintainAspectRatio: false,
         scales: {
           x: {
-            title: { display: true, text: 'Year', font: { weight: 'bold' } }
+            ...DARK_SCALE_DEFAULTS,
+            title: { display: true, text: 'Year', font: { weight: 'bold' }, color: '#8da0bf' }
           },
           y: {
-            title: { display: true, text: 'Total Value (€)', font: { weight: 'bold' } },
+            ...DARK_SCALE_DEFAULTS,
+            title: { display: true, text: 'Total Value (€)', font: { weight: 'bold' }, color: '#8da0bf' },
             ticks: {
+              color: '#8da0bf',
               callback: (value) => `€${Number(value).toLocaleString('de-IE', { maximumFractionDigits: 0 })}`
             }
           }
@@ -228,9 +244,14 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
           legend: {
             display: true,
             position: 'top',
-            labels: { usePointStyle: true, padding: 20 }
+            labels: { usePointStyle: true, padding: 20, color: '#8da0bf' }
           },
           tooltip: {
+            backgroundColor: '#172040',
+            borderColor: '#1f2e4a',
+            borderWidth: 1,
+            titleColor: '#e4eaf5',
+            bodyColor: '#8da0bf',
             callbacks: {
               label: (tooltipCtx) => ` ${tooltipCtx.dataset.label}: ${this.formatCurrency(tooltipCtx.parsed.y as number)}`
             }
@@ -299,8 +320,8 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
 
     // Build per-point arrays for dynamic point styling
     const pointRadii = points.map(p => (p.hasBuy ? 8 : 3));
-    const pointColors = points.map(p => (p.hasBuy ? '#f5576c' : '#667eea'));
-    const pointBorderColors = points.map(p => (p.hasBuy ? '#c0392b' : '#667eea'));
+    const pointColors = points.map(p => (p.hasBuy ? '#f05252' : '#4f8ef7'));
+    const pointBorderColors = points.map(p => (p.hasBuy ? '#c0392b' : '#4f8ef7'));
     const pointBorderWidths = points.map(p => (p.hasBuy ? 2 : 1));
     const pointHoverRadii = points.map(p => (p.hasBuy ? 10 : 5));
 
@@ -312,8 +333,8 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
           {
             label: 'Portfolio Value',
             data: points.map(p => p.totalValue),
-            borderColor: '#667eea',
-            backgroundColor: 'rgba(102, 126, 234, 0.10)',
+            borderColor: '#4f8ef7',
+            backgroundColor: 'rgba(79, 142, 247, 0.08)',
             fill: true,
             tension: 0.25,
             pointRadius: pointRadii,
@@ -330,15 +351,19 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
         interaction: { mode: 'index', intersect: false },
         scales: {
           x: {
-            title: { display: true, text: 'Date', font: { weight: 'bold' } },
+            ...DARK_SCALE_DEFAULTS,
+            title: { display: true, text: 'Date', font: { weight: 'bold' }, color: '#8da0bf' },
             ticks: {
+              color: '#8da0bf',
               maxTicksLimit: 20,
               maxRotation: 45,
             }
           },
           y: {
-            title: { display: true, text: 'Total Value (€)', font: { weight: 'bold' } },
+            ...DARK_SCALE_DEFAULTS,
+            title: { display: true, text: 'Total Value (€)', font: { weight: 'bold' }, color: '#8da0bf' },
             ticks: {
+              color: '#8da0bf',
               callback: (value) => `€${Number(value).toLocaleString('de-IE', { maximumFractionDigits: 0 })}`
             }
           }
@@ -346,6 +371,11 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
         plugins: {
           legend: { display: false },
           tooltip: {
+            backgroundColor: '#172040',
+            borderColor: '#1f2e4a',
+            borderWidth: 1,
+            titleColor: '#e4eaf5',
+            bodyColor: '#8da0bf',
             callbacks: {
               title: (items) => {
                 const idx = items[0].dataIndex;

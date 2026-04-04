@@ -26,8 +26,8 @@ RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 COPY --from=backend-build /app/publish .
 
 # Copy Angular build output to wwwroot
-# Angular builds to dist/etftracker.web/ - copy the contents directly to wwwroot
-COPY --from=frontend-build /app/dist/etftracker.web ./wwwroot
+# Angular (application builder) outputs browser files to dist/etftracker.web/browser/
+COPY --from=frontend-build /app/dist/etftracker.web/browser ./wwwroot
 
 # Expose port (Render uses dynamic port assignment, but API runs on this)
 EXPOSE 10000
