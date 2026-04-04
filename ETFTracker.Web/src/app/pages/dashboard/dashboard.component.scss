@@ -1,3 +1,187 @@
+// ── TOP NAVIGATION ──────────────────────────────────────────────────────────
+.top-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2.5rem;
+  background: linear-gradient(135deg, #0d1526 0%, #111d35 100%);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  margin: -2rem -2.5rem 2rem -2.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+
+  .nav-left {
+    flex: 0 0 auto;
+
+    .app-brand {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+  }
+
+  .nav-right {
+    flex: 0 0 auto;
+
+    .user-menu {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      padding: 0.5rem 1rem 0.5rem 1.25rem;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(79, 142, 247, 0.1);
+      border-radius: 12px;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(79, 142, 247, 0.25);
+        box-shadow: 0 0 0 3px rgba(79, 142, 247, 0.08);
+      }
+
+      .user-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        min-width: 0;
+
+        .avatar-wrapper {
+          flex-shrink: 0;
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: var(--bg-elevated);
+          border: 2px solid var(--border-light);
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+
+          .avatar {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+          }
+
+          .avatar-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1rem;
+            background: linear-gradient(135deg, var(--accent-purple) 0%, var(--accent) 100%);
+            color: #fff;
+          }
+
+          &:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(79, 142, 247, 0.2);
+            transform: scale(1.05);
+          }
+        }
+
+        .user-details {
+          display: flex;
+          flex-direction: column;
+          gap: 0.15rem;
+          min-width: 0;
+
+          .user-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+
+          .user-email {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+        }
+      }
+
+      .btn-logout {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+
+        .logout-icon {
+          font-size: 1rem;
+        }
+
+        &:hover {
+          background: var(--accent-hover);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(79, 142, 247, 0.3);
+        }
+
+        &:active {
+          transform: translateY(0);
+        }
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: 0.8rem 1rem;
+    margin: -2rem -1rem 1.5rem -1rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+
+    .nav-left .app-brand {
+      font-size: 1.1rem;
+    }
+
+    .nav-right .user-menu {
+      gap: 0.75rem;
+      padding: 0.4rem 0.8rem;
+
+      .user-info .avatar-wrapper {
+        width: 36px;
+        height: 36px;
+      }
+
+      .user-details {
+        display: none;
+      }
+
+      .btn-logout {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.78rem;
+
+        .logout-text {
+          display: none;
+        }
+      }
+    }
+  }
+}
+
 // ── Shared helpers ──────────────────────────────────────────────────────────
 %card {
   background: var(--bg-card);

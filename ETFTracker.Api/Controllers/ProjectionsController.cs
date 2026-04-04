@@ -1,22 +1,27 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using ETFTracker.Api.Dtos;
 using ETFTracker.Api.Services;
 
 namespace ETFTracker.Api.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class ProjectionsController : ControllerBase
 {
     private readonly IProjectionService _projectionService;
     private readonly ILogger<ProjectionsController> _logger;
-    private const int DefaultUserId = 1;
 
     public ProjectionsController(IProjectionService projectionService, ILogger<ProjectionsController> logger)
     {
         _projectionService = projectionService;
         _logger = logger;
     }
+
+    private int GetUserId() =>
+        int.Parse(User.FindFirst("userId")?.Value
+            ?? throw new UnauthorizedAccessException("userId claim missing"));
 
     /// <summary>
     /// Returns current projection settings + calculated data points.
@@ -26,7 +31,7 @@ public class ProjectionsController : ControllerBase
     {
         try
         {
-            var result = await _projectionService.GetProjectionAsync(DefaultUserId, ct);
+            var result = await _projectionService.GetProjectionAsync(GetUserId(), ct);
             return Ok(result);
         }
         catch (Exception ex)
@@ -49,7 +54,7 @@ public class ProjectionsController : ControllerBase
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var saved = await _projectionService.SaveSettingsAsync(DefaultUserId, dto, ct);
+            var saved = await _projectionService.SaveSettingsAsync(GetUserId(), dto, ct);
             return Ok(saved);
         }
         catch (Exception ex)
@@ -59,4 +64,3 @@ public class ProjectionsController : ControllerBase
         }
     }
 }
-

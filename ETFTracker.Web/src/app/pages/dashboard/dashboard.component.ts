@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, AfterViewChecked, ChangeDetectionStrategy
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, DashboardDto, HoldingDto, ProjectionResultDto, ProjectionSettingsDto, PortfolioEvolutionDto } from '../../services/api.service';
+import { AuthService, CurrentUser } from '../../services/auth.service';
 import { AddTransactionModalComponent } from '../../components/add-transaction-modal/add-transaction-modal.component';
 import { BuyHistoryModalComponent } from '../../components/buy-history-modal/buy-history-modal.component';
 import {
@@ -89,7 +90,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     }));
   }
 
-  constructor(private apiService: ApiService, private cdr: ChangeDetectorRef) {}
+  constructor(private apiService: ApiService, private cdr: ChangeDetectorRef, public auth: AuthService) {}
 
   ngOnInit(): void {
     console.log('Dashboard component initialized');

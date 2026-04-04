@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using ETFTracker.Api.Dtos;
 using ETFTracker.Api.Services;
 
 namespace ETFTracker.Api.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class HoldingsController : ControllerBase
@@ -11,7 +13,6 @@ public class HoldingsController : ControllerBase
     private readonly IHoldingsService _holdingsService;
     private readonly IPriceService _priceService;
     private readonly ILogger<HoldingsController> _logger;
-    private const int DefaultUserId = 1; // Temporary: will use authenticated user later
 
     public HoldingsController(IHoldingsService holdingsService, IPriceService priceService, ILogger<HoldingsController> logger)
     {
@@ -19,6 +20,10 @@ public class HoldingsController : ControllerBase
         _priceService = priceService;
         _logger = logger;
     }
+
+    private int GetUserId() =>
+        int.Parse(User.FindFirst("userId")?.Value
+            ?? throw new UnauthorizedAccessException("userId claim missing"));
 
     [HttpGet("etf-description/{ticker}")]
     public async Task<ActionResult<object>> GetEtfDescription(string ticker, CancellationToken cancellationToken = default)
@@ -43,7 +48,7 @@ public class HoldingsController : ControllerBase
     {
         try
         {
-            var evolution = await _holdingsService.GetPortfolioEvolutionAsync(DefaultUserId, cancellationToken);
+            var evolution = await _holdingsService.GetPortfolioEvolutionAsync(GetUserId(), cancellationToken);
             return Ok(evolution);
         }
         catch (Exception ex)
@@ -58,8 +63,8 @@ public class HoldingsController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("Getting dashboard for user {UserId}", DefaultUserId);
-            var dashboard = await _holdingsService.GetDashboardAsync(DefaultUserId, cancellationToken);
+            _logger.LogInformation("Getting dashboard for user {UserId}", GetUserId());
+            var dashboard = await _holdingsService.GetDashboardAsync(GetUserId(), cancellationToken);
             _logger.LogInformation("Dashboard retrieved successfully");
             return Ok(dashboard);
         }
@@ -75,7 +80,7 @@ public class HoldingsController : ControllerBase
     {
         try
         {
-            var holdings = await _holdingsService.GetHoldingsAsync(DefaultUserId, cancellationToken);
+            var holdings = await _holdingsService.GetHoldingsAsync(GetUserId(), cancellationToken);
             return Ok(holdings);
         }
         catch (Exception ex)
@@ -108,7 +113,7 @@ public class HoldingsController : ControllerBase
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            await _holdingsService.AddTransactionAsync(DefaultUserId, dto, cancellationToken);
+            await _holdingsService.AddTransactionAsync(GetUserId(), dto, cancellationToken);
             return Ok(new { message = "Transaction added successfully" });
         }
         catch (Exception ex)

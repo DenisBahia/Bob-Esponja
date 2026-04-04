@@ -1,4 +1,32 @@
 <div class="dashboard-container">
+
+  <!-- ── Top nav / user menu ── -->
+  <nav class="top-nav" *ngIf="auth.user() as user">
+    <div class="nav-left">
+      <span class="app-brand">📊 ETF Tracker</span>
+    </div>
+    <div class="nav-right">
+      <div class="user-menu">
+        <div class="user-info">
+          <div class="avatar-wrapper">
+            <img *ngIf="user.avatarUrl" [src]="user.avatarUrl" [alt]="user.name" class="avatar" />
+            <div *ngIf="!user.avatarUrl" class="avatar-placeholder">
+              {{ (user.name || user.email || '?')[0].toUpperCase() }}
+            </div>
+          </div>
+          <div class="user-details">
+            <span class="user-name">{{ user.name || user.githubUsername || user.email }}</span>
+            <span class="user-email" *ngIf="user.email && (user.name || user.githubUsername)">{{ user.email }}</span>
+          </div>
+        </div>
+        <button class="btn-logout" (click)="auth.logout()" title="Sign out">
+          <span class="logout-icon">🚪</span>
+          <span class="logout-text">Sign out</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
   <div *ngIf="loading" class="loading">
     <p>Loading dashboard...</p>
   </div>

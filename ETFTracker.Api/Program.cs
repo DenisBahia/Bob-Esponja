@@ -1,4 +1,8 @@
+using System.Text;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using ETFTracker.Api.Data;
 using ETFTracker.Api.Services;
 
@@ -17,6 +21,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<IPriceService, PriceService>();
 builder.Services.AddScoped<IHoldingsService, HoldingsService>();
 builder.Services.AddScoped<IProjectionService, ProjectionService>();
+builder.Services.AddScoped<JwtService>();
 builder.Services.AddHttpClient<PriceService>();
 
 // Add CORS
@@ -30,6 +35,63 @@ builder.Services.AddCors(options =>
     });
 });
 
+// ── Authentication ────────────────────────────────────────────────────────────
+var jwtKey = builder.Configuration["Jwt:Key"]
+    ?? throw new InvalidOperationException("Jwt:Key is not configured.");
+
+builder.Services
+    .AddAuthentication(options =>
+    {
+        // API endpoints use JWT by default
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme    = JwtBearerDefaults.AuthenticationScheme;
+        // OAuth callbacks sign-in through the cookie scheme
+        options.DefaultSignInScheme       = CookieAuthenticationDefaults.AuthenticationScheme;
+    })
+    .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, o =>
+    {
+        o.Cookie.SameSite    = SameSiteMode.Lax;
+        o.Cookie.HttpOnly    = true;
+        o.Cookie.SecurePolicy = CookieSecurePolicy.None; // allow HTTP in dev
+        o.ExpireTimeSpan     = TimeSpan.FromMinutes(15);
+    })
+    .AddGitHub("GitHub", o =>
+    {
+        o.ClientId     = builder.Configuration["OAuth:GitHub:ClientId"]     ?? "";
+        o.ClientSecret = builder.Configuration["OAuth:GitHub:ClientSecret"] ?? "";
+        o.CallbackPath = "/signin-github";
+        o.Scope.Add("user:email");
+        o.CorrelationCookie.SameSite     = SameSiteMode.Lax;
+        o.CorrelationCookie.SecurePolicy = CookieSecurePolicy.None;
+        o.CorrelationCookie.Path         = "/";   // cookie available to all paths
+    })
+    .AddGoogle("Google", o =>
+    {
+        o.ClientId     = builder.Configuration["OAuth:Google:ClientId"]     ?? "";
+        o.ClientSecret = builder.Configuration["OAuth:Google:ClientSecret"] ?? "";
+        o.CallbackPath = "/signin-google";
+        o.Scope.Add("email");
+        o.Scope.Add("profile");
+        o.CorrelationCookie.SameSite     = SameSiteMode.Lax;
+        o.CorrelationCookie.SecurePolicy = CookieSecurePolicy.None;
+        o.CorrelationCookie.Path         = "/";   // cookie available to all paths
+    })
+    .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, o =>
+    {
+        o.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer           = true,
+            ValidateAudience         = true,
+            ValidateLifetime         = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer              = builder.Configuration["Jwt:Issuer"]   ?? "ETFTracker",
+            ValidAudience            = builder.Configuration["Jwt:Audience"] ?? "ETFTracker",
+            IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+        };
+    });
+
+builder.Services.AddAuthorization();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
@@ -39,6 +101,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowAngular");
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 // Serve static files (Angular app)
 app.UseDefaultFiles();
@@ -55,7 +120,7 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     // Use Migrate() instead of EnsureCreated() to apply EF Core migrations
     db.Database.Migrate();
-    
+
     // Seed default user if it doesn't exist
     if (!db.Users.Any())
     {

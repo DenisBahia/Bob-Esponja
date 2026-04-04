@@ -3,6 +3,7 @@ using System;
 using ETFTracker.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ETFTracker.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260404105223_AddOAuthFieldsToUser")]
+    partial class AddOAuthFieldsToUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -248,7 +251,8 @@ namespace ETFTracker.Api.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("AvatarUrl")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("avatar_url");
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
@@ -265,13 +269,16 @@ namespace ETFTracker.Api.Migrations
                         .HasColumnName("first_name");
 
                     b.Property<string>("GitHubId")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("github_id");
 
                     b.Property<string>("GitHubUsername")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("github_username");
 
                     b.Property<string>("GoogleId")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("google_id");
 
                     b.Property<string>("LastName")
                         .HasColumnType("text")
@@ -286,7 +293,16 @@ namespace ETFTracker.Api.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("email IS NOT NULL");
+
+                    b.HasIndex("GitHubId")
+                        .IsUnique()
+                        .HasFilter("github_id IS NOT NULL");
+
+                    b.HasIndex("GoogleId")
+                        .IsUnique()
+                        .HasFilter("google_id IS NOT NULL");
 
                     b.ToTable("users", (string)null);
                 });

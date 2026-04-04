@@ -100,7 +100,7 @@ export interface PortfolioEvolutionDto {
   providedIn: 'root'
 })
 export class ApiService {
-  private apiUrl = 'http://127.0.0.1:5098/api';
+  private apiUrl = 'http://localhost:5098/api';
 
   constructor(private http: HttpClient) {
     console.log('ApiService instantiated');
