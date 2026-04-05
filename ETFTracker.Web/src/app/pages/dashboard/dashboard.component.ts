@@ -74,6 +74,8 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   projectionVersions: ProjectionVersionSummaryDto[] = [];
   versionsLoading = false;
   versionSaving = false;
+  versionDeleting: Set<number> = new Set();
+  confirmDeleteId: number | null = null;
   selectedVersionIds: Set<number> = new Set();
   versionCompareData: Map<number, ProjectionDataPointDto[]> = new Map();
   versionsCompareChartRendered = false;
@@ -366,6 +368,45 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
         this.cdr.markForCheck();
       }
     });
+  }
+
+  deleteVersion(versionId: number): void {
+    if (this.confirmDeleteId !== versionId) {
+      this.confirmDeleteId = versionId;
+      this.cdr.markForCheck();
+      return;
+    }
+    this.confirmDeleteId = null;
+    this.versionDeleting = new Set(this.versionDeleting).add(versionId);
+    this.cdr.markForCheck();
+    this.apiService.deleteProjectionVersion(versionId).subscribe({
+      next: () => {
+        this.projectionVersions = this.projectionVersions.filter(v => v.id !== versionId);
+        const nextDeleting = new Set(this.versionDeleting);
+        nextDeleting.delete(versionId);
+        this.versionDeleting = nextDeleting;
+        if (this.selectedVersionIds.has(versionId)) {
+          const nextSelected = new Set(this.selectedVersionIds);
+          nextSelected.delete(versionId);
+          this.selectedVersionIds = nextSelected;
+          this.versionCompareData.delete(versionId);
+          this.rebuildVersionsCompareChart();
+        }
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('Error deleting projection version:', err);
+        const nextDeleting = new Set(this.versionDeleting);
+        nextDeleting.delete(versionId);
+        this.versionDeleting = nextDeleting;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  cancelDelete(): void {
+    this.confirmDeleteId = null;
+    this.cdr.markForCheck();
   }
 
   toggleVersionSelection(versionId: number): void {

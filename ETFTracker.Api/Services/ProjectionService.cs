@@ -12,6 +12,7 @@ public interface IProjectionService
     Task<ProjectionVersionSummaryDto> SaveVersionAsync(int userId, ProjectionSettingsDto dto, CancellationToken ct = default);
     Task<List<ProjectionVersionSummaryDto>> GetVersionsAsync(int userId, CancellationToken ct = default);
     Task<ProjectionVersionDetailDto?> GetVersionDetailAsync(int userId, int versionId, CancellationToken ct = default);
+    Task<bool> DeleteVersionAsync(int userId, int versionId, CancellationToken ct = default);
 }
 
 public class ProjectionService : IProjectionService
@@ -419,5 +420,17 @@ public class ProjectionService : IProjectionService
             },
             DataPoints = dataPoints,
         };
+    }
+
+    public async Task<bool> DeleteVersionAsync(int userId, int versionId, CancellationToken ct = default)
+    {
+        var entity = await _context.ProjectionVersions
+            .FirstOrDefaultAsync(pv => pv.Id == versionId && pv.UserId == userId, ct);
+
+        if (entity == null) return false;
+
+        _context.ProjectionVersions.Remove(entity);
+        await _context.SaveChangesAsync(ct);
+        return true;
     }
 }

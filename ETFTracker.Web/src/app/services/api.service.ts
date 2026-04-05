@@ -165,6 +165,10 @@ export class ApiService {
     return this.http.get<ProjectionVersionDetailDto>(`${this.apiUrl}/projections/versions/${id}`);
   }
 
+  deleteProjectionVersion(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/projections/versions/${id}`);
+  }
+
   getPortfolioEvolution(): Observable<PortfolioEvolutionDto> {
     return this.http.get<PortfolioEvolutionDto>(`${this.apiUrl}/holdings/portfolio-evolution`);
   }

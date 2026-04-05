@@ -1,3 +1,4 @@
+using Scalar.AspNetCore;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -12,6 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+
 
 // Add DbContext
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -123,6 +125,11 @@ app.UseForwardedHeaders(forwardedOptions);
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapScalarApiReference(options =>
+    {
+        options.Title = "ETF Tracker API v1";
+        options.Theme = ScalarTheme.Mars;
+    });
 }
 
 app.UseCors("AllowAngular");

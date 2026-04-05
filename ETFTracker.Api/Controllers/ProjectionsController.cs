@@ -122,4 +122,23 @@ public class ProjectionsController : ControllerBase
             return StatusCode(500, new { message = "Error loading projection version" });
         }
     }
+
+    /// <summary>
+    /// Deletes a saved projection version belonging to the authenticated user.
+    /// </summary>
+    [HttpDelete("versions/{id:int}")]
+    public async Task<IActionResult> DeleteVersion(int id, CancellationToken ct = default)
+    {
+        try
+        {
+            var deleted = await _projectionService.DeleteVersionAsync(GetUserId(), id, ct);
+            if (!deleted) return NotFound();
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting projection version {Id}", id);
+            return StatusCode(500, new { message = "Error deleting projection version" });
+        }
+    }
 }

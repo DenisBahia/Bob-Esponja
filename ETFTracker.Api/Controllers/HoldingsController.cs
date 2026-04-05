@@ -5,6 +5,10 @@ using ETFTracker.Api.Services;
 
 namespace ETFTracker.Api.Controllers;
 
+/// <summary>
+/// Handles ETF holdings management, portfolio data, and transaction history.
+/// Requires JWT authentication.
+/// </summary>
 [Authorize]
 [ApiController]
 [Route("api/[controller]")]
@@ -25,6 +29,12 @@ public class HoldingsController : ControllerBase
         int.Parse(User.FindFirst("userId")?.Value
             ?? throw new UnauthorizedAccessException("userId claim missing"));
 
+    /// <summary>
+    /// Gets the description for a given ETF ticker.
+    /// </summary>
+    /// <param name="ticker">The ETF ticker symbol (e.g., "VGRO", "XGRO")</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>ETF description or "ETF not found" message</returns>
     [HttpGet("etf-description/{ticker}")]
     public async Task<ActionResult<object>> GetEtfDescription(string ticker, CancellationToken cancellationToken = default)
     {
@@ -43,6 +53,11 @@ public class HoldingsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Gets the portfolio evolution data showing how the portfolio has grown over time.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Portfolio evolution data with historical values</returns>
     [HttpGet("portfolio-evolution")]
     public async Task<ActionResult<PortfolioEvolutionDto>> GetPortfolioEvolution(CancellationToken cancellationToken = default)
     {
@@ -58,6 +73,11 @@ public class HoldingsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Gets the complete dashboard data including all holdings and portfolio summary.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Dashboard object with portfolio overview and holdings list</returns>
     [HttpGet("dashboard")]
     public async Task<ActionResult<DashboardDto>> GetDashboard(CancellationToken cancellationToken = default)
     {
@@ -75,6 +95,11 @@ public class HoldingsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Gets all holdings for the authenticated user.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of holdings with current values and performance data</returns>
     [HttpGet]
     public async Task<ActionResult<List<HoldingDto>>> GetHoldings(CancellationToken cancellationToken = default)
     {
@@ -90,6 +115,12 @@ public class HoldingsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Gets the transaction history for a specific holding.
+    /// </summary>
+    /// <param name="holdingId">The ID of the holding</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of transactions (buys/sells) for the holding</returns>
     [HttpGet("{holdingId}/history")]
     public async Task<ActionResult<List<TransactionDto>>> GetHoldingHistory(int holdingId, CancellationToken cancellationToken = default)
     {
@@ -105,6 +136,12 @@ public class HoldingsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Adds a new transaction (buy or sell) for a holding.
+    /// </summary>
+    /// <param name="dto">Transaction details including ticker, quantity, price, and date</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Success message if transaction was added</returns>
     [HttpPost("transaction")]
     public async Task<ActionResult> AddTransaction([FromBody] CreateTransactionDto dto, CancellationToken cancellationToken = default)
     {

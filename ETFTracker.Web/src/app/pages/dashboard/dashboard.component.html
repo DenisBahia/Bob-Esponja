@@ -275,6 +275,7 @@
                   <th>Return %</th>
                   <th>Monthly Buy</th>
                   <th>Years</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -290,6 +291,22 @@
                   <td class="version-stat-col">{{ v.settings.yearlyReturnPercent }}%</td>
                   <td class="version-stat-col">{{ formatCurrency(v.settings.monthlyBuyAmount) }}</td>
                   <td class="version-stat-col">{{ v.settings.projectionYears }}y</td>
+                  <td class="version-delete-col">
+                    <ng-container *ngIf="confirmDeleteId === v.id; else deleteTrigger">
+                      <span class="delete-confirm-inline">
+                        <button class="btn-confirm-yes" (click)="deleteVersion(v.id)" [disabled]="versionDeleting.has(v.id)">✓</button>
+                        <button class="btn-confirm-no" (click)="cancelDelete()">✕</button>
+                      </span>
+                    </ng-container>
+                    <ng-template #deleteTrigger>
+                      <button class="btn-delete-version"
+                              (click)="deleteVersion(v.id)"
+                              [disabled]="versionDeleting.has(v.id)"
+                              title="Delete this version">
+                        {{ versionDeleting.has(v.id) ? '…' : '🗑️' }}
+                      </button>
+                    </ng-template>
+                  </td>
                 </tr>
               </tbody>
             </table>

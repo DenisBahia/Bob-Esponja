@@ -10,6 +10,9 @@ using ETFTracker.Api.Services;
 
 namespace ETFTracker.Api.Controllers;
 
+/// <summary>
+/// Handles authentication and user management including OAuth (GitHub, Google) and JWT tokens.
+/// </summary>
 [ApiController]
 [Route("api/auth")]
 public class AuthController : ControllerBase
@@ -33,6 +36,10 @@ public class AuthController : ControllerBase
 
     // ── GitHub ─────────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Initiates GitHub OAuth login flow.
+    /// </summary>
+    /// <returns>Redirects to GitHub for authentication</returns>
     [HttpGet("github")]
     public IActionResult LoginWithGitHub()
     {
@@ -40,12 +47,21 @@ public class AuthController : ControllerBase
         return Challenge(new AuthenticationProperties { RedirectUri = redirectUri }, "GitHub");
     }
 
+    /// <summary>
+    /// GitHub OAuth callback handler. Completes the OAuth flow and returns a JWT token.
+    /// </summary>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>Redirects to frontend with JWT token in query parameter</returns>
     [HttpGet("github/complete")]
     public async Task<IActionResult> GitHubComplete(CancellationToken ct = default)
         => await HandleOAuthComplete("GitHub", ct);
 
     // ── Google ─────────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Initiates Google OAuth login flow.
+    /// </summary>
+    /// <returns>Redirects to Google for authentication</returns>
     [HttpGet("google")]
     public IActionResult LoginWithGoogle()
     {
@@ -53,12 +69,21 @@ public class AuthController : ControllerBase
         return Challenge(new AuthenticationProperties { RedirectUri = redirectUri }, "Google");
     }
 
+    /// <summary>
+    /// Google OAuth callback handler. Completes the OAuth flow and returns a JWT token.
+    /// </summary>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>Redirects to frontend with JWT token in query parameter</returns>
     [HttpGet("google/complete")]
     public async Task<IActionResult> GoogleComplete(CancellationToken ct = default)
         => await HandleOAuthComplete("Google", ct);
 
     // ── Me ─────────────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Gets the current authenticated user's information.
+    /// </summary>
+    /// <returns>User object containing id, email, name, and avatar information</returns>
     [Authorize]
     [HttpGet("me")]
     public IActionResult GetCurrentUser() => Ok(new
