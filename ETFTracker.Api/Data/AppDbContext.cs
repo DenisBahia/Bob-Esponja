@@ -154,6 +154,8 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<ProjectionSettings>()
             .Property(ps => ps.ExcludePreExistingFromTax).HasColumnName("exclude_pre_existing_from_tax").HasDefaultValue(false);
         modelBuilder.Entity<ProjectionSettings>()
+            .Property(ps => ps.StartAmount).HasColumnName("start_amount").HasColumnType("decimal(15,2)").IsRequired(false);
+        modelBuilder.Entity<ProjectionSettings>()
             .Property(ps => ps.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
         modelBuilder.Entity<ProjectionSettings>()
             .Property(ps => ps.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP");

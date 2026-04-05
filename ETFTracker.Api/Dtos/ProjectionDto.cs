@@ -11,6 +11,11 @@ public class ProjectionSettingsDto
     public decimal ExitTaxPercent { get; set; }
     /// <summary>When true, buys made before 1 Jan 2026 are excluded from CGT and exit tax calculations.</summary>
     public bool ExcludePreExistingFromTax { get; set; }
+    /// <summary>
+    /// Optional override for the starting portfolio value used in the projection.
+    /// When null or 0, the actual current portfolio value (from live prices) is used.
+    /// </summary>
+    public decimal? StartAmount { get; set; }
 }
 
 public class ProjectionDataPointDto

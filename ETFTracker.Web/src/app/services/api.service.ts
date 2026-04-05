@@ -67,6 +67,8 @@ export interface ProjectionSettingsDto {
   cgtPercent: number;
   exitTaxPercent: number;
   excludePreExistingFromTax: boolean;
+  /** Optional override for the starting portfolio value (0 / undefined = use live portfolio value). */
+  startAmount?: number | null;
 }
 
 export interface ProjectionDataPointDto {

@@ -59,6 +59,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     cgtPercent: 38,
     exitTaxPercent: 38,
     excludePreExistingFromTax: false,
+    startAmount: null,
   };
   projectionLoading = false;
   projectionSaving = false;
@@ -666,6 +667,13 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
       'Cache': 'Cached price from last update'
     };
     return descriptions[source] || 'Unknown source';
+  }
+
+  copyPortfolioTotal(): void {
+    if (this.dashboard) {
+      this.projectionSettings.startAmount = Math.round(this.dashboard.header.totalHoldingsAmount);
+      this.cdr.markForCheck();
+    }
   }
 
 }

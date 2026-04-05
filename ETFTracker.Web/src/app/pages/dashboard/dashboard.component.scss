@@ -478,6 +478,54 @@
               }
             }
           }
+
+          &.start-amount-group {
+            .start-amount-input-row {
+              display: flex;
+              align-items: center;
+              gap: 0.4rem;
+
+              input[type='number'] {
+                width: 130px;
+              }
+
+              .btn-copy-portfolio {
+                flex-shrink: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 32px;
+                height: 32px;
+                padding: 0;
+                background: var(--bg-elevated);
+                border: 1px solid var(--border-light);
+                border-radius: 7px;
+                font-size: 0.9rem;
+                cursor: pointer;
+                transition: all 0.18s;
+                color: var(--text-secondary);
+
+                &:hover {
+                  background: rgba(79, 142, 247, 0.12);
+                  border-color: var(--accent);
+                  color: var(--accent);
+                  transform: scale(1.1);
+                }
+
+                &:active {
+                  transform: scale(0.96);
+                }
+              }
+            }
+
+            .start-amount-hint {
+              font-size: 0.65rem;
+              color: var(--text-muted);
+              font-style: italic;
+              margin-top: 0.15rem;
+              display: block;
+            }
+          }
         }
 
         .btn {

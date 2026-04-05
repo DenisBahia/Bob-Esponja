@@ -12,6 +12,8 @@ public class ProjectionSettings
     public decimal CgtPercent { get; set; }
     public decimal ExitTaxPercent { get; set; }
     public bool ExcludePreExistingFromTax { get; set; }
+    /// <summary>Optional override for the starting portfolio value (null = use live portfolio value).</summary>
+    public decimal? StartAmount { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 

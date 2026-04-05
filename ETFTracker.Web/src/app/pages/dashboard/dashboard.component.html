@@ -114,6 +114,23 @@
       <h2>Yearly Projections</h2>
 
       <div class="projection-params">
+        <div class="param-group start-amount-group">
+          <label for="startAmount">Start Amount (€)</label>
+          <div class="start-amount-input-row">
+            <input id="startAmount" type="number" step="1" min="0"
+                   [placeholder]="dashboard ? (dashboard.header.totalHoldingsAmount | number:'1.0-0') : '0'"
+                   [(ngModel)]="projectionSettings.startAmount" />
+            <button class="btn-copy-portfolio"
+                    (click)="copyPortfolioTotal()"
+                    title="Use current total portfolio value ({{ dashboard ? formatCurrency(dashboard.header.totalHoldingsAmount) : '—' }})">
+              📋
+            </button>
+          </div>
+          <span class="start-amount-hint" *ngIf="!projectionSettings.startAmount">
+            Default: live portfolio value
+          </span>
+        </div>
+
         <div class="param-group">
           <label for="yearlyReturn">Yearly Return %</label>
           <input id="yearlyReturn" type="number" step="0.1" min="0" max="100"

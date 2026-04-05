@@ -58,6 +58,7 @@ public class ProjectionService : IProjectionService
                 CgtPercent = dbSettings.CgtPercent,
                 ExitTaxPercent = dbSettings.ExitTaxPercent,
                 ExcludePreExistingFromTax = dbSettings.ExcludePreExistingFromTax,
+                StartAmount = dbSettings.StartAmount,
             }
             : new ProjectionSettingsDto
             {
@@ -69,6 +70,7 @@ public class ProjectionService : IProjectionService
                 CgtPercent = DefaultSettings.CgtPercent,
                 ExitTaxPercent = DefaultSettings.ExitTaxPercent,
                 ExcludePreExistingFromTax = DefaultSettings.ExcludePreExistingFromTax,
+                StartAmount = null,
             };
 
         var dataPoints = await ComputeDataPointsAsync(userId, settings, ct);
@@ -100,6 +102,10 @@ public class ProjectionService : IProjectionService
             priceByTicker[holding.Ticker] = price ?? 0m;
             currentTotal += holding.Quantity * (price ?? 0m);
         }
+
+        // Allow the user to override the starting portfolio value
+        if (settings.StartAmount.HasValue && settings.StartAmount.Value > 0m)
+            currentTotal = settings.StartAmount.Value;
 
         // Determine months remaining in the current year
         var today = DateTime.UtcNow;
@@ -292,6 +298,7 @@ public class ProjectionService : IProjectionService
                 CgtPercent = dto.CgtPercent,
                 ExitTaxPercent = dto.ExitTaxPercent,
                 ExcludePreExistingFromTax = dto.ExcludePreExistingFromTax,
+                StartAmount = (dto.StartAmount.HasValue && dto.StartAmount.Value > 0m) ? dto.StartAmount : null,
                 CreatedAt = utcNow,
                 UpdatedAt = utcNow,
             };
@@ -307,6 +314,7 @@ public class ProjectionService : IProjectionService
             existing.CgtPercent = dto.CgtPercent;
             existing.ExitTaxPercent = dto.ExitTaxPercent;
             existing.ExcludePreExistingFromTax = dto.ExcludePreExistingFromTax;
+            existing.StartAmount = (dto.StartAmount.HasValue && dto.StartAmount.Value > 0m) ? dto.StartAmount : null;
             existing.UpdatedAt = utcNow;
         }
 
