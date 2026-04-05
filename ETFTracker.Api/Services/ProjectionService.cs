@@ -9,6 +9,9 @@ public interface IProjectionService
 {
     Task<ProjectionResultDto> GetProjectionAsync(int userId, CancellationToken ct = default);
     Task<ProjectionSettingsDto> SaveSettingsAsync(int userId, ProjectionSettingsDto dto, CancellationToken ct = default);
+    Task<ProjectionVersionSummaryDto> SaveVersionAsync(int userId, ProjectionSettingsDto dto, CancellationToken ct = default);
+    Task<List<ProjectionVersionSummaryDto>> GetVersionsAsync(int userId, CancellationToken ct = default);
+    Task<ProjectionVersionDetailDto?> GetVersionDetailAsync(int userId, int versionId, CancellationToken ct = default);
 }
 
 public class ProjectionService : IProjectionService
@@ -68,6 +71,22 @@ public class ProjectionService : IProjectionService
                 ExcludePreExistingFromTax = DefaultSettings.ExcludePreExistingFromTax,
             };
 
+        var dataPoints = await ComputeDataPointsAsync(userId, settings, ct);
+
+        return new ProjectionResultDto
+        {
+            Settings = settings,
+            DataPoints = dataPoints,
+        };
+    }
+
+    /// <summary>
+    /// Core calculation: builds projection data points for the given settings and current portfolio.
+    /// Extracted so it can be reused by both GetProjectionAsync and SaveVersionAsync.
+    /// </summary>
+    private async Task<List<ProjectionDataPointDto>> ComputeDataPointsAsync(
+        int userId, ProjectionSettingsDto settings, CancellationToken ct)
+    {
         // Calculate current total portfolio value & cache prices by ticker
         var holdings = await _context.Holdings
             .Where(h => h.UserId == userId)
@@ -96,7 +115,7 @@ public class ProjectionService : IProjectionService
             ? 12 - currentMonth
             : 12 - currentMonth + 1;
 
-        // ── Gross projection arrays (unchanged logic) ────────────────────────
+        // ── Gross projection arrays ───────────────────────────────────────────
         var endOfYear = new decimal[settings.ProjectionYears + 1];
         var initialBalance = new decimal[settings.ProjectionYears + 1];
         var totalBuys = new decimal[settings.ProjectionYears + 1];
@@ -124,29 +143,20 @@ public class ProjectionService : IProjectionService
             yearProfit[i] = endOfYear[i] - endOfYear[i - 1] - contributions;
         }
 
-        // ── Tax engine (trade/buy-level model) ────────────────────────────
-        // Each individual buy (real past transaction + projected future buys)
-        // is a separate tax lot. CGT fires every 8 years from the lot's buy year;
-        // exit tax fires on the final projection year for all lots.
+        // ── Tax engine ────────────────────────────────────────────────────────
         int projectionEndYear = currentYear + settings.ProjectionYears;
         var growthRate = settings.YearlyReturnPercent / 100m;
 
-        // Load all real transactions for the user
         var allTransactions = await _context.Transactions
             .Include(t => t.Holding)
             .Where(t => t.Holding!.UserId == userId)
             .ToListAsync(ct);
 
-        // Build buy lots: (BuyYear, CostBasis, IsReal, CurrentValue)
         var buyLots = new List<(int BuyYear, decimal CostBasis, bool IsReal, decimal CurrentValue)>();
-
-        // Cutoff date for the "exclude pre-existing" option
         var taxCutoffDate = new DateOnly(2026, 1, 1);
 
-        // 1. Real past transactions
         foreach (var txn in allTransactions)
         {
-            // When the flag is on, skip buys made before 1 Jan 2026 from tax lots
             if (settings.ExcludePreExistingFromTax && txn.PurchaseDate < taxCutoffDate)
                 continue;
 
@@ -160,8 +170,6 @@ public class ProjectionService : IProjectionService
             ));
         }
 
-        // 2. Projected future buys
-        // Year 0 (current year, remaining months)
         if (monthsRemaining > 0 && settings.MonthlyBuyAmount > 0)
         {
             buyLots.Add((
@@ -171,7 +179,7 @@ public class ProjectionService : IProjectionService
                 CurrentValue: 0m
             ));
         }
-        // Future years
+
         for (int i = 1; i <= settings.ProjectionYears; i++)
         {
             var annualIncreaseFactor = (decimal)Math.Pow(
@@ -188,7 +196,6 @@ public class ProjectionService : IProjectionService
             }
         }
 
-        // Per-lot CGT and exit tax calculation
         var cgtByYear = new Dictionary<int, decimal>();
         decimal exitTaxTotal = 0m;
 
@@ -196,7 +203,6 @@ public class ProjectionService : IProjectionService
         {
             decimal cumulativeCgtPaid = 0m;
 
-            // Projected value at a given year for this lot
             decimal ProjectedValue(int year)
             {
                 if (lot.IsReal)
@@ -205,7 +211,6 @@ public class ProjectionService : IProjectionService
                     return lot.CostBasis * (decimal)Math.Pow((double)(1 + growthRate), year - lot.BuyYear);
             }
 
-            // CGT events: every 8 years from buy year, strictly before projectionEndYear
             for (int cgtYear = lot.BuyYear + 8; cgtYear < projectionEndYear; cgtYear += 8)
             {
                 var profit = ProjectedValue(cgtYear) - lot.CostBasis;
@@ -215,8 +220,6 @@ public class ProjectionService : IProjectionService
                     if (cgtAmount > 0)
                     {
                         cumulativeCgtPaid += cgtAmount;
-
-                        // Only record in visible projection if the CGT year is within the window
                         if (cgtYear >= currentYear)
                         {
                             cgtByYear.TryGetValue(cgtYear, out var existing);
@@ -226,7 +229,6 @@ public class ProjectionService : IProjectionService
                 }
             }
 
-            // Exit tax on the final projection year (sell / end of chart)
             if (projectionEndYear >= lot.BuyYear)
             {
                 var profit = ProjectedValue(projectionEndYear) - lot.CostBasis;
@@ -238,7 +240,7 @@ public class ProjectionService : IProjectionService
             }
         }
 
-        // ── Build data points ────────────────────────────────────────────────
+        // ── Build data points ─────────────────────────────────────────────────
         var dataPoints = new List<ProjectionDataPointDto>();
         var cumulativeTax = 0m;
 
@@ -266,11 +268,7 @@ public class ProjectionService : IProjectionService
             });
         }
 
-        return new ProjectionResultDto
-        {
-            Settings = settings,
-            DataPoints = dataPoints,
-        };
+        return dataPoints;
     }
 
 
@@ -315,5 +313,103 @@ public class ProjectionService : IProjectionService
         await _context.SaveChangesAsync(ct);
         return dto;
     }
-}
 
+    public async Task<ProjectionVersionSummaryDto> SaveVersionAsync(
+        int userId, ProjectionSettingsDto dto, CancellationToken ct = default)
+    {
+        // Determine next version number for this user
+        var maxVersion = await _context.ProjectionVersions
+            .Where(pv => pv.UserId == userId)
+            .MaxAsync(pv => (int?)pv.VersionNumber, ct) ?? 0;
+        var nextVersion = maxVersion + 1;
+
+        // Compute data points using current portfolio state
+        var dataPoints = await ComputeDataPointsAsync(userId, dto, ct);
+
+        // Serialise data points to JSON
+        var json = System.Text.Json.JsonSerializer.Serialize(dataPoints);
+
+        var entity = new ProjectionVersion
+        {
+            UserId = userId,
+            VersionNumber = nextVersion,
+            SavedAt = DateTime.UtcNow,
+            YearlyReturnPercent = dto.YearlyReturnPercent,
+            MonthlyBuyAmount = dto.MonthlyBuyAmount,
+            AnnualBuyIncreasePercent = dto.AnnualBuyIncreasePercent,
+            ProjectionYears = dto.ProjectionYears,
+            InflationPercent = dto.InflationPercent,
+            CgtPercent = dto.CgtPercent,
+            ExitTaxPercent = dto.ExitTaxPercent,
+            ExcludePreExistingFromTax = dto.ExcludePreExistingFromTax,
+            DataPointsJson = json,
+        };
+        _context.ProjectionVersions.Add(entity);
+        await _context.SaveChangesAsync(ct);
+
+        return new ProjectionVersionSummaryDto
+        {
+            Id = entity.Id,
+            VersionNumber = entity.VersionNumber,
+            SavedAt = entity.SavedAt,
+            Settings = dto,
+        };
+    }
+
+    public async Task<List<ProjectionVersionSummaryDto>> GetVersionsAsync(
+        int userId, CancellationToken ct = default)
+    {
+        return await _context.ProjectionVersions
+            .Where(pv => pv.UserId == userId)
+            .OrderBy(pv => pv.VersionNumber)
+            .Select(pv => new ProjectionVersionSummaryDto
+            {
+                Id = pv.Id,
+                VersionNumber = pv.VersionNumber,
+                SavedAt = pv.SavedAt,
+                Settings = new ProjectionSettingsDto
+                {
+                    YearlyReturnPercent = pv.YearlyReturnPercent,
+                    MonthlyBuyAmount = pv.MonthlyBuyAmount,
+                    AnnualBuyIncreasePercent = pv.AnnualBuyIncreasePercent,
+                    ProjectionYears = pv.ProjectionYears,
+                    InflationPercent = pv.InflationPercent,
+                    CgtPercent = pv.CgtPercent,
+                    ExitTaxPercent = pv.ExitTaxPercent,
+                    ExcludePreExistingFromTax = pv.ExcludePreExistingFromTax,
+                }
+            })
+            .ToListAsync(ct);
+    }
+
+    public async Task<ProjectionVersionDetailDto?> GetVersionDetailAsync(
+        int userId, int versionId, CancellationToken ct = default)
+    {
+        var entity = await _context.ProjectionVersions
+            .FirstOrDefaultAsync(pv => pv.Id == versionId && pv.UserId == userId, ct);
+
+        if (entity == null) return null;
+
+        var dataPoints = System.Text.Json.JsonSerializer.Deserialize<List<ProjectionDataPointDto>>(entity.DataPointsJson)
+                         ?? new List<ProjectionDataPointDto>();
+
+        return new ProjectionVersionDetailDto
+        {
+            Id = entity.Id,
+            VersionNumber = entity.VersionNumber,
+            SavedAt = entity.SavedAt,
+            Settings = new ProjectionSettingsDto
+            {
+                YearlyReturnPercent = entity.YearlyReturnPercent,
+                MonthlyBuyAmount = entity.MonthlyBuyAmount,
+                AnnualBuyIncreasePercent = entity.AnnualBuyIncreasePercent,
+                ProjectionYears = entity.ProjectionYears,
+                InflationPercent = entity.InflationPercent,
+                CgtPercent = entity.CgtPercent,
+                ExitTaxPercent = entity.ExitTaxPercent,
+                ExcludePreExistingFromTax = entity.ExcludePreExistingFromTax,
+            },
+            DataPoints = dataPoints,
+        };
+    }
+}

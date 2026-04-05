@@ -167,6 +167,9 @@
         <button class="btn btn-primary" (click)="saveProjectionSettings()" [disabled]="projectionSaving">
           {{ projectionSaving ? 'Saving…' : 'Apply & Save' }}
         </button>
+        <button class="btn btn-secondary" (click)="saveNewVersion()" [disabled]="versionSaving">
+          {{ versionSaving ? 'Saving…' : 'Save new version' }}
+        </button>
       </div>
 
       <!-- Tab navigation -->
@@ -176,6 +179,9 @@
         </button>
         <button class="tab-btn" [class.active]="activeProjectionTab === 'table'" (click)="setProjectionTab('table')">
           📋 Data Table
+        </button>
+        <button class="tab-btn" [class.active]="activeProjectionTab === 'versions'" (click)="setProjectionTab('versions')">
+          🗂️ Versions
         </button>
       </div>
 
@@ -228,6 +234,58 @@
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- Tab: Versions -->
+      <div class="tab-panel versions-panel" *ngIf="activeProjectionTab === 'versions'">
+        <div *ngIf="versionsLoading" class="projection-loading">
+          <p>Loading versions…</p>
+        </div>
+        <div class="versions-layout" *ngIf="!versionsLoading">
+
+          <!-- Left: compact table -->
+          <div class="versions-table-container">
+            <p *ngIf="projectionVersions.length === 0" class="no-versions-msg">
+              No versions saved yet. Click "Save new version" to create one.
+            </p>
+            <table class="versions-table" *ngIf="projectionVersions.length > 0">
+              <thead>
+                <tr>
+                  <th title="Select to compare">Compare</th>
+                  <th>Version</th>
+                  <th>Saved At</th>
+                  <th>Return %</th>
+                  <th>Monthly Buy</th>
+                  <th>Years</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let v of projectionVersions"
+                    [class.version-selected]="selectedVersionIds.has(v.id)">
+                  <td class="version-check-col">
+                    <input type="checkbox"
+                           [checked]="selectedVersionIds.has(v.id)"
+                           (change)="toggleVersionSelection(v.id)" />
+                  </td>
+                  <td class="version-num-col"><strong>Version {{ v.versionNumber }}</strong></td>
+                  <td class="version-date-col">{{ v.savedAt | date:'dd/MM/yyyy HH:mm' }}</td>
+                  <td class="version-stat-col">{{ v.settings.yearlyReturnPercent }}%</td>
+                  <td class="version-stat-col">{{ formatCurrency(v.settings.monthlyBuyAmount) }}</td>
+                  <td class="version-stat-col">{{ v.settings.projectionYears }}y</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Right: comparison chart -->
+          <div class="versions-chart-container">
+            <p *ngIf="selectedVersionIds.size === 0" class="no-selection-msg">
+              ☑️ Select versions from the table to compare projected portfolio values.
+            </p>
+            <canvas #versionsCompareChart *ngIf="selectedVersionIds.size > 0"></canvas>
+          </div>
+
         </div>
       </div>
     </div>

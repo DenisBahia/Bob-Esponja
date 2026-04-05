@@ -87,6 +87,21 @@ export interface ProjectionResultDto {
   dataPoints: ProjectionDataPointDto[];
 }
 
+export interface ProjectionVersionSummaryDto {
+  id: number;
+  versionNumber: number;
+  savedAt: string;           // ISO datetime string
+  settings: ProjectionSettingsDto;
+}
+
+export interface ProjectionVersionDetailDto {
+  id: number;
+  versionNumber: number;
+  savedAt: string;
+  settings: ProjectionSettingsDto;
+  dataPoints: ProjectionDataPointDto[];
+}
+
 export interface PortfolioEvolutionDataPointDto {
   date: string;       // "yyyy-MM-dd"
   totalValue: number;
@@ -134,6 +149,18 @@ export class ApiService {
 
   saveProjectionSettings(settings: ProjectionSettingsDto): Observable<ProjectionSettingsDto> {
     return this.http.put<ProjectionSettingsDto>(`${this.apiUrl}/projections/settings`, settings);
+  }
+
+  saveProjectionVersion(settings: ProjectionSettingsDto): Observable<ProjectionVersionSummaryDto> {
+    return this.http.post<ProjectionVersionSummaryDto>(`${this.apiUrl}/projections/versions`, settings);
+  }
+
+  getProjectionVersions(): Observable<ProjectionVersionSummaryDto[]> {
+    return this.http.get<ProjectionVersionSummaryDto[]>(`${this.apiUrl}/projections/versions`);
+  }
+
+  getProjectionVersionDetail(id: number): Observable<ProjectionVersionDetailDto> {
+    return this.http.get<ProjectionVersionDetailDto>(`${this.apiUrl}/projections/versions/${id}`);
   }
 
   getPortfolioEvolution(): Observable<PortfolioEvolutionDto> {

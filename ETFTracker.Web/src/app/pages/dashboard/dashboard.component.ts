@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, AfterViewChecked, ChangeDetectionStrategy, ChangeDetectorRef, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, DashboardDto, HoldingDto, ProjectionResultDto, ProjectionSettingsDto, PortfolioEvolutionDto } from '../../services/api.service';
+import { ApiService, DashboardDto, HoldingDto, ProjectionResultDto, ProjectionSettingsDto, PortfolioEvolutionDto, ProjectionVersionSummaryDto, ProjectionVersionDetailDto, ProjectionDataPointDto } from '../../services/api.service';
 import { AuthService, CurrentUser } from '../../services/auth.service';
 import { AddTransactionModalComponent } from '../../components/add-transaction-modal/add-transaction-modal.component';
 import { BuyHistoryModalComponent } from '../../components/buy-history-modal/buy-history-modal.component';
@@ -62,12 +62,23 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   };
   projectionLoading = false;
   projectionSaving = false;
-  activeProjectionTab: 'chart' | 'table' = 'chart';
+  activeProjectionTab: 'chart' | 'table' | 'versions' = 'chart';
   currentYear = new Date().getFullYear();
 
   @ViewChild('projectionChart') projectionChartRef!: ElementRef<HTMLCanvasElement>;
   private lineChart: Chart | null = null;
   private projectionChartRendered = false;
+
+  // Projection versions
+  projectionVersions: ProjectionVersionSummaryDto[] = [];
+  versionsLoading = false;
+  versionSaving = false;
+  selectedVersionIds: Set<number> = new Set();
+  versionCompareData: Map<number, ProjectionDataPointDto[]> = new Map();
+  versionsCompareChartRendered = false;
+
+  @ViewChild('versionsCompareChart') versionsCompareChartRef!: ElementRef<HTMLCanvasElement>;
+  private versionsCompareChart: Chart | null = null;
 
   // Holdings tabs
   activeHoldingsTab: 'table' | 'evolution' = 'table';
@@ -112,12 +123,22 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
       this.evolutionChartRendered = true;
       this.renderEvolutionChart();
     }
+    if (
+      this.activeProjectionTab === 'versions' &&
+      !this.versionsCompareChartRendered &&
+      this.selectedVersionIds.size > 0 &&
+      this.versionsCompareChartRef?.nativeElement
+    ) {
+      this.versionsCompareChartRendered = true;
+      this.renderVersionsCompareChart();
+    }
   }
 
   ngOnDestroy(): void {
     this.pieChart?.destroy();
     this.lineChart?.destroy();
     this.evolutionChart?.destroy();
+    this.versionsCompareChart?.destroy();
   }
 
   private renderPieChart(): void {
@@ -301,14 +322,153 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     });
   }
 
-  setProjectionTab(tab: 'chart' | 'table'): void {
+  setProjectionTab(tab: 'chart' | 'table' | 'versions'): void {
     this.activeProjectionTab = tab;
     if (tab === 'chart') {
       this.projectionChartRendered = false;
       this.lineChart?.destroy();
       this.lineChart = null;
     }
+    if (tab === 'versions' && this.projectionVersions.length === 0 && !this.versionsLoading) {
+      this.loadProjectionVersions();
+    }
     this.cdr.markForCheck();
+  }
+
+  saveNewVersion(): void {
+    this.versionSaving = true;
+    this.apiService.saveProjectionVersion(this.projectionSettings).subscribe({
+      next: (v) => {
+        this.versionSaving = false;
+        this.projectionVersions = [...this.projectionVersions, v];
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('Error saving projection version:', err);
+        this.versionSaving = false;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  loadProjectionVersions(): void {
+    this.versionsLoading = true;
+    this.apiService.getProjectionVersions().subscribe({
+      next: (data) => {
+        this.projectionVersions = data;
+        this.versionsLoading = false;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('Error loading projection versions:', err);
+        this.versionsLoading = false;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  toggleVersionSelection(versionId: number): void {
+    const next = new Set(this.selectedVersionIds);
+    if (next.has(versionId)) {
+      next.delete(versionId);
+      this.selectedVersionIds = next;
+      this.rebuildVersionsCompareChart();
+    } else {
+      next.add(versionId);
+      this.selectedVersionIds = next;
+      if (!this.versionCompareData.has(versionId)) {
+        this.apiService.getProjectionVersionDetail(versionId).subscribe({
+          next: (detail) => {
+            this.versionCompareData.set(versionId, detail.dataPoints);
+            this.rebuildVersionsCompareChart();
+          },
+          error: (err) => console.error('Error loading version detail:', err)
+        });
+      } else {
+        this.rebuildVersionsCompareChart();
+      }
+    }
+  }
+
+  private rebuildVersionsCompareChart(): void {
+    this.versionsCompareChartRendered = false;
+    this.versionsCompareChart?.destroy();
+    this.versionsCompareChart = null;
+    this.cdr.markForCheck();
+  }
+
+  private renderVersionsCompareChart(): void {
+    this.versionsCompareChart?.destroy();
+    if (this.selectedVersionIds.size === 0) return;
+
+    const ctx = this.versionsCompareChartRef?.nativeElement?.getContext('2d');
+    if (!ctx) return;
+
+    const selectedIds = Array.from(this.selectedVersionIds);
+    const datasets = selectedIds
+      .filter(id => this.versionCompareData.has(id))
+      .map((id, i) => {
+        const version = this.projectionVersions.find(v => v.id === id);
+        const dataPoints = this.versionCompareData.get(id) ?? [];
+        const color = PIE_COLORS[i % PIE_COLORS.length];
+        return {
+          label: `Version ${version?.versionNumber ?? id}`,
+          data: dataPoints.map(p => p.totalAmount),
+          borderColor: color,
+          backgroundColor: color + '22',
+          fill: false,
+          tension: 0.35,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: color,
+        };
+      });
+
+    if (datasets.length === 0) return;
+
+    const firstId = selectedIds.find(id => this.versionCompareData.has(id))!;
+    const labels = (this.versionCompareData.get(firstId) ?? []).map(p => p.year.toString());
+
+    this.versionsCompareChart = new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            ...DARK_SCALE_DEFAULTS,
+            title: { display: true, text: 'Year', font: { weight: 'bold' }, color: '#8da0bf' }
+          },
+          y: {
+            ...DARK_SCALE_DEFAULTS,
+            title: { display: true, text: 'Projected Portfolio Value (€)', font: { weight: 'bold' }, color: '#8da0bf' },
+            ticks: {
+              color: '#8da0bf',
+              callback: (value) => `€${Number(value).toLocaleString('de-IE', { maximumFractionDigits: 0 })}`
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: { usePointStyle: true, padding: 20, color: '#8da0bf' }
+          },
+          tooltip: {
+            backgroundColor: '#172040',
+            borderColor: '#1f2e4a',
+            borderWidth: 1,
+            titleColor: '#e4eaf5',
+            bodyColor: '#8da0bf',
+            callbacks: {
+              label: (tooltipCtx) =>
+                ` ${tooltipCtx.dataset.label}: ${this.formatCurrency(tooltipCtx.parsed.y as number)}`
+            }
+          }
+        }
+      }
+    });
   }
 
   private renderEvolutionChart(): void {

@@ -497,6 +497,15 @@
             &:hover:not(:disabled) { background: var(--accent-hover); }
             &:disabled { opacity: 0.45; cursor: not-allowed; }
           }
+
+          &.btn-secondary {
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+
+            &:hover:not(:disabled) { background: rgba(79, 142, 247, 0.10); }
+            &:disabled { opacity: 0.45; cursor: not-allowed; }
+          }
         }
       }
 
@@ -550,6 +559,7 @@
       }
 
       .projection-table {
+        // ...existing projection-table styles...
         width: 100%;
         border-collapse: collapse;
         font-size: 0.77rem;
@@ -637,6 +647,114 @@
           &.after-tax-inflation-col {
             font-weight: 700;
             color: var(--text-secondary);
+          }
+        }
+      }
+
+      // ── Versions tab ──────────────────────────────────────────────────────
+      .versions-panel {
+        .versions-layout {
+          display: flex;
+          gap: 1.5rem;
+          align-items: flex-start;
+
+          .versions-table-container {
+            flex: 0 0 420px;
+            overflow-x: auto;
+
+            .no-versions-msg {
+              color: var(--text-muted);
+              font-style: italic;
+              padding: 1rem 0;
+              font-size: 0.88rem;
+            }
+
+            .versions-table {
+              width: 100%;
+              border-collapse: collapse;
+              font-size: 0.78rem;
+
+              thead {
+                background: var(--bg-elevated);
+                border-bottom: 1px solid var(--border);
+
+                th {
+                  padding: 0.5rem 0.75rem;
+                  text-align: left;
+                  font-weight: 600;
+                  color: var(--text-muted);
+                  white-space: nowrap;
+                  text-transform: uppercase;
+                  font-size: 0.66rem;
+                  letter-spacing: 0.06em;
+                }
+              }
+
+              tbody tr {
+                border-bottom: 1px solid var(--border);
+                transition: background 0.15s;
+
+                &:last-child { border-bottom: none; }
+                &:hover { background: var(--bg-elevated); cursor: pointer; }
+
+                &.version-selected td {
+                  background: rgba(79, 142, 247, 0.08);
+                }
+              }
+
+              td {
+                padding: 0.45rem 0.75rem;
+                color: var(--text-secondary);
+                white-space: nowrap;
+
+                &.version-check-col {
+                  text-align: center;
+                  width: 36px;
+
+                  input[type='checkbox'] {
+                    accent-color: var(--accent);
+                    width: 14px;
+                    height: 14px;
+                    cursor: pointer;
+                  }
+                }
+
+                &.version-num-col {
+                  color: var(--text-primary);
+                  font-size: 0.82rem;
+                }
+
+                &.version-date-col {
+                  font-size: 0.76rem;
+                  color: var(--text-muted);
+                }
+
+                &.version-stat-col {
+                  font-family: 'Monaco', 'Courier New', monospace;
+                  font-size: 0.76rem;
+                  text-align: right;
+                }
+              }
+            }
+          }
+
+          .versions-chart-container {
+            flex: 1;
+            min-height: 380px;
+            position: relative;
+
+            canvas {
+              width: 100% !important;
+              height: 380px !important;
+            }
+
+            .no-selection-msg {
+              color: var(--text-muted);
+              font-style: italic;
+              padding: 3rem 1rem;
+              text-align: center;
+              font-size: 0.88rem;
+            }
           }
         }
       }

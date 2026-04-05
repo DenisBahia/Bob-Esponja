@@ -63,4 +63,63 @@ public class ProjectionsController : ControllerBase
             return StatusCode(500, new { message = "Error saving projection settings" });
         }
     }
+
+    /// <summary>
+    /// Saves a new named version with the supplied settings + current computed data points.
+    /// </summary>
+    [HttpPost("versions")]
+    public async Task<ActionResult<ProjectionVersionSummaryDto>> SaveVersion(
+        [FromBody] ProjectionSettingsDto dto,
+        CancellationToken ct = default)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+        try
+        {
+            var result = await _projectionService.SaveVersionAsync(GetUserId(), dto, ct);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error saving projection version");
+            return StatusCode(500, new { message = "Error saving projection version" });
+        }
+    }
+
+    /// <summary>
+    /// Lists all saved versions for the authenticated user (no data points).
+    /// </summary>
+    [HttpGet("versions")]
+    public async Task<ActionResult<List<ProjectionVersionSummaryDto>>> GetVersions(CancellationToken ct = default)
+    {
+        try
+        {
+            var result = await _projectionService.GetVersionsAsync(GetUserId(), ct);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading projection versions");
+            return StatusCode(500, new { message = "Error loading projection versions" });
+        }
+    }
+
+    /// <summary>
+    /// Returns the full detail of a single version including its saved data points.
+    /// </summary>
+    [HttpGet("versions/{id:int}")]
+    public async Task<ActionResult<ProjectionVersionDetailDto>> GetVersionDetail(int id, CancellationToken ct = default)
+    {
+        try
+        {
+            var result = await _projectionService.GetVersionDetailAsync(GetUserId(), id, ct);
+            if (result == null) return NotFound();
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading projection version {Id}", id);
+            return StatusCode(500, new { message = "Error loading projection version" });
+        }
+    }
 }

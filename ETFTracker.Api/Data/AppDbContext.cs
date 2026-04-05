@@ -14,6 +14,7 @@ public class AppDbContext : DbContext
     public DbSet<Transaction> Transactions { get; set; }
     public DbSet<PriceSnapshot> PriceSnapshots { get; set; }
     public DbSet<ProjectionSettings> ProjectionSettings { get; set; }
+    public DbSet<ProjectionVersion> ProjectionVersions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -162,6 +163,29 @@ public class AppDbContext : DbContext
             .HasOne(ps => ps.User)
             .WithOne(u => u.ProjectionSettings)
             .HasForeignKey<ProjectionSettings>(ps => ps.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // ProjectionVersion
+        modelBuilder.Entity<ProjectionVersion>().ToTable("projection_versions");
+        modelBuilder.Entity<ProjectionVersion>().HasKey(pv => pv.Id);
+        modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.Id).HasColumnName("id");
+        modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.UserId).HasColumnName("user_id");
+        modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.VersionNumber).HasColumnName("version_number");
+        modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.SavedAt).HasColumnName("saved_at");
+        modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.YearlyReturnPercent).HasColumnName("yearly_return_percent").HasColumnType("decimal(5,2)");
+        modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.MonthlyBuyAmount).HasColumnName("monthly_buy_amount").HasColumnType("decimal(12,2)");
+        modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.AnnualBuyIncreasePercent).HasColumnName("annual_buy_increase_percent").HasColumnType("decimal(5,2)");
+        modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.ProjectionYears).HasColumnName("projection_years");
+        modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.InflationPercent).HasColumnName("inflation_percent").HasColumnType("decimal(5,2)");
+        modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.CgtPercent).HasColumnName("cgt_percent").HasColumnType("decimal(5,2)");
+        modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.ExitTaxPercent).HasColumnName("exit_tax_percent").HasColumnType("decimal(5,2)");
+        modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.ExcludePreExistingFromTax).HasColumnName("exclude_pre_existing_from_tax").HasDefaultValue(false);
+        modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.DataPointsJson).HasColumnName("data_points_json").HasColumnType("text");
+        modelBuilder.Entity<ProjectionVersion>().HasIndex(pv => new { pv.UserId, pv.VersionNumber }).IsUnique();
+        modelBuilder.Entity<ProjectionVersion>()
+            .HasOne(pv => pv.User)
+            .WithMany()
+            .HasForeignKey(pv => pv.UserId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }
