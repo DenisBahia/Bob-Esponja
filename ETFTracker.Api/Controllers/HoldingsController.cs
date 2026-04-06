@@ -16,18 +16,22 @@ public class HoldingsController : ControllerBase
 {
     private readonly IHoldingsService _holdingsService;
     private readonly IPriceService _priceService;
+    private readonly ISharingContextService _sharingContext;
     private readonly ILogger<HoldingsController> _logger;
 
-    public HoldingsController(IHoldingsService holdingsService, IPriceService priceService, ILogger<HoldingsController> logger)
+    public HoldingsController(
+        IHoldingsService holdingsService,
+        IPriceService priceService,
+        ISharingContextService sharingContext,
+        ILogger<HoldingsController> logger)
     {
         _holdingsService = holdingsService;
-        _priceService = priceService;
-        _logger = logger;
+        _priceService    = priceService;
+        _sharingContext  = sharingContext;
+        _logger          = logger;
     }
 
-    private int GetUserId() =>
-        int.Parse(User.FindFirst("userId")?.Value
-            ?? throw new UnauthorizedAccessException("userId claim missing"));
+    private int GetUserId() => _sharingContext.GetEffectiveUserId();
 
     /// <summary>
     /// Gets the description for a given ETF ticker.
@@ -66,6 +70,10 @@ public class HoldingsController : ControllerBase
             var evolution = await _holdingsService.GetPortfolioEvolutionAsync(GetUserId(), cancellationToken);
             return Ok(evolution);
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(403, new { message = ex.Message });
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting portfolio evolution");
@@ -88,6 +96,10 @@ public class HoldingsController : ControllerBase
             _logger.LogInformation("Dashboard retrieved successfully");
             return Ok(dashboard);
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(403, new { message = ex.Message });
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting dashboard");
@@ -107,6 +119,10 @@ public class HoldingsController : ControllerBase
         {
             var holdings = await _holdingsService.GetHoldingsAsync(GetUserId(), cancellationToken);
             return Ok(holdings);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(403, new { message = ex.Message });
         }
         catch (Exception ex)
         {
@@ -147,6 +163,9 @@ public class HoldingsController : ControllerBase
     {
         try
         {
+            if (_sharingContext.IsReadOnly())
+                return StatusCode(403, new { message = "This profile is shared as read-only. You cannot add transactions." });
+
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 

@@ -11,17 +11,20 @@ namespace ETFTracker.Api.Controllers;
 public class ProjectionsController : ControllerBase
 {
     private readonly IProjectionService _projectionService;
+    private readonly ISharingContextService _sharingContext;
     private readonly ILogger<ProjectionsController> _logger;
 
-    public ProjectionsController(IProjectionService projectionService, ILogger<ProjectionsController> logger)
+    public ProjectionsController(
+        IProjectionService projectionService,
+        ISharingContextService sharingContext,
+        ILogger<ProjectionsController> logger)
     {
         _projectionService = projectionService;
-        _logger = logger;
+        _sharingContext    = sharingContext;
+        _logger            = logger;
     }
 
-    private int GetUserId() =>
-        int.Parse(User.FindFirst("userId")?.Value
-            ?? throw new UnauthorizedAccessException("userId claim missing"));
+    private int GetUserId() => _sharingContext.GetEffectiveUserId();
 
     /// <summary>
     /// Returns current projection settings + calculated data points.
@@ -33,6 +36,10 @@ public class ProjectionsController : ControllerBase
         {
             var result = await _projectionService.GetProjectionAsync(GetUserId(), ct);
             return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(403, new { message = ex.Message });
         }
         catch (Exception ex)
         {
@@ -51,6 +58,9 @@ public class ProjectionsController : ControllerBase
     {
         try
         {
+            if (_sharingContext.IsReadOnly())
+                return StatusCode(403, new { message = "This profile is shared as read-only." });
+
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
@@ -72,6 +82,8 @@ public class ProjectionsController : ControllerBase
         [FromBody] ProjectionSettingsDto dto,
         CancellationToken ct = default)
     {
+        if (_sharingContext.IsReadOnly())
+            return StatusCode(403, new { message = "This profile is shared as read-only." });
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
         try
@@ -97,6 +109,10 @@ public class ProjectionsController : ControllerBase
             var result = await _projectionService.GetVersionsAsync(GetUserId(), ct);
             return Ok(result);
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(403, new { message = ex.Message });
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error loading projection versions");
@@ -116,6 +132,10 @@ public class ProjectionsController : ControllerBase
             if (result == null) return NotFound();
             return Ok(result);
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(403, new { message = ex.Message });
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error loading projection version {Id}", id);
@@ -131,6 +151,9 @@ public class ProjectionsController : ControllerBase
     {
         try
         {
+            if (_sharingContext.IsReadOnly())
+                return StatusCode(403, new { message = "This profile is shared as read-only." });
+
             var deleted = await _projectionService.DeleteVersionAsync(GetUserId(), id, ct);
             if (!deleted) return NotFound();
             return NoContent();

@@ -15,6 +15,7 @@ public class AppDbContext : DbContext
     public DbSet<PriceSnapshot> PriceSnapshots { get; set; }
     public DbSet<ProjectionSettings> ProjectionSettings { get; set; }
     public DbSet<ProjectionVersion> ProjectionVersions { get; set; }
+    public DbSet<ProfileShare> ProfileShares { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -49,6 +50,16 @@ public class AppDbContext : DbContext
             .WithOne(h => h.User)
             .HasForeignKey(h => h.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<User>()
+            .HasMany(u => u.SharedByMe)
+            .WithOne(s => s.Owner)
+            .HasForeignKey(s => s.OwnerId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<User>()
+            .HasMany(u => u.SharedWithMe)
+            .WithOne(s => s.GuestUser)
+            .HasForeignKey(s => s.GuestUserId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         // Holding
         modelBuilder.Entity<Holding>()
@@ -189,5 +200,20 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(pv => pv.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // ProfileShare
+        modelBuilder.Entity<ProfileShare>().ToTable("profile_shares");
+        modelBuilder.Entity<ProfileShare>().HasKey(s => s.Id);
+        modelBuilder.Entity<ProfileShare>().Property(s => s.Id).HasColumnName("id");
+        modelBuilder.Entity<ProfileShare>().Property(s => s.OwnerId).HasColumnName("owner_id");
+        modelBuilder.Entity<ProfileShare>().Property(s => s.GuestEmail).HasColumnName("guest_email").HasMaxLength(256);
+        modelBuilder.Entity<ProfileShare>().Property(s => s.GuestUserId).HasColumnName("guest_user_id");
+        modelBuilder.Entity<ProfileShare>().Property(s => s.IsReadOnly).HasColumnName("is_read_only").HasDefaultValue(true);
+        modelBuilder.Entity<ProfileShare>().Property(s => s.Status).HasColumnName("status").HasDefaultValue(ShareStatus.Pending);
+        modelBuilder.Entity<ProfileShare>().Property(s => s.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+        modelBuilder.Entity<ProfileShare>().Property(s => s.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+        modelBuilder.Entity<ProfileShare>()
+            .HasIndex(s => new { s.OwnerId, s.GuestEmail })
+            .IsUnique();
     }
 }

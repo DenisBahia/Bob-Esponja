@@ -114,6 +114,37 @@ export interface PortfolioEvolutionDto {
   dataPoints: PortfolioEvolutionDataPointDto[];
 }
 
+// ── Sharing ───────────────────────────────────────────────────────────────────
+
+export interface CreateShareDto {
+  guestEmail: string;
+  isReadOnly: boolean;
+}
+
+export interface UpdateShareDto {
+  isReadOnly?: boolean;
+  status?: string;
+}
+
+export interface ShareSummaryDto {
+  id: number;
+  guestEmail: string;
+  guestName: string | null;
+  isReadOnly: boolean;
+  status: string;   // "Pending" | "Active" | "Revoked"
+  isLinked: boolean;
+  createdAt: string;
+}
+
+export interface SharedWithMeDto {
+  id: number;
+  ownerUserId: number;
+  ownerEmail: string;
+  ownerName: string | null;
+  ownerAvatarUrl: string | null;
+  isReadOnly: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -171,5 +202,27 @@ export class ApiService {
 
   getPortfolioEvolution(): Observable<PortfolioEvolutionDto> {
     return this.http.get<PortfolioEvolutionDto>(`${this.apiUrl}/holdings/portfolio-evolution`);
+  }
+
+  // ── Sharing ──────────────────────────────────────────────────────────────────
+
+  createShare(dto: CreateShareDto): Observable<ShareSummaryDto> {
+    return this.http.post<ShareSummaryDto>(`${this.apiUrl}/sharing`, dto);
+  }
+
+  getMyShares(): Observable<ShareSummaryDto[]> {
+    return this.http.get<ShareSummaryDto[]>(`${this.apiUrl}/sharing/my-shares`);
+  }
+
+  updateShare(id: number, dto: UpdateShareDto): Observable<ShareSummaryDto> {
+    return this.http.put<ShareSummaryDto>(`${this.apiUrl}/sharing/${id}`, dto);
+  }
+
+  deleteShare(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/sharing/${id}`);
+  }
+
+  getSharedWithMe(): Observable<SharedWithMeDto[]> {
+    return this.http.get<SharedWithMeDto[]>(`${this.apiUrl}/sharing/shared-with-me`);
   }
 }

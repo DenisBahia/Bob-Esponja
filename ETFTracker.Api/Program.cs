@@ -25,6 +25,8 @@ builder.Services.AddScoped<IPriceService, PriceService>();
 builder.Services.AddScoped<IHoldingsService, HoldingsService>();
 builder.Services.AddScoped<IProjectionService, ProjectionService>();
 builder.Services.AddScoped<JwtService>();
+builder.Services.AddScoped<ISharingContextService, SharingContextService>();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient<PriceService>();
 
 // Add CORS

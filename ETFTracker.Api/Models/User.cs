@@ -19,4 +19,8 @@ public class User
     // Navigation
     public ICollection<Holding> Holdings { get; set; } = new List<Holding>();
     public ProjectionSettings? ProjectionSettings { get; set; }
+
+    // Sharing
+    public ICollection<ProfileShare> SharedByMe { get; set; } = new List<ProfileShare>();
+    public ICollection<ProfileShare> SharedWithMe { get; set; } = new List<ProfileShare>();
 }

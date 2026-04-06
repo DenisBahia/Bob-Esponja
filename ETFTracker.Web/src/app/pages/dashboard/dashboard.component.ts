@@ -5,6 +5,9 @@ import { ApiService, DashboardDto, HoldingDto, ProjectionResultDto, ProjectionSe
 import { AuthService, CurrentUser } from '../../services/auth.service';
 import { AddTransactionModalComponent } from '../../components/add-transaction-modal/add-transaction-modal.component';
 import { BuyHistoryModalComponent } from '../../components/buy-history-modal/buy-history-modal.component';
+import { ShareProfileModalComponent } from '../../components/share-profile-modal/share-profile-modal.component';
+import { SharingContextService } from '../../services/sharing-context.service';
+import { HttpErrorResponse } from '@angular/common/http';
 import {
   Chart, ArcElement, Tooltip, Legend, PieController,
   LineController, LineElement, PointElement, LinearScale, CategoryScale, Filler,
@@ -30,7 +33,7 @@ const DARK_SCALE_DEFAULTS = {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, AddTransactionModalComponent, BuyHistoryModalComponent],
+  imports: [CommonModule, FormsModule, AddTransactionModalComponent, BuyHistoryModalComponent, ShareProfileModalComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -43,6 +46,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   showAddTransactionModal = false;
   showBuyHistoryModal = false;
   selectedHoldingId: number | null = null;
+  showShareModal = false;
 
   @ViewChild('allocationChart') allocationChartRef!: ElementRef<HTMLCanvasElement>;
   private pieChart: Chart | null = null;
@@ -104,10 +108,56 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     }));
   }
 
-  constructor(private apiService: ApiService, private cdr: ChangeDetectorRef, public auth: AuthService) {}
+  constructor(private apiService: ApiService, private cdr: ChangeDetectorRef, public auth: AuthService, public sharingCtx: SharingContextService) {}
 
   ngOnInit(): void {
     console.log('Dashboard component initialized');
+    this.loadDashboard();
+    this.loadProjection();
+    this.loadPortfolioEvolution();
+  }
+
+  onShareModalClosed(): void {
+    this.showShareModal = false;
+    this.cdr.markForCheck();
+  }
+
+  onStartedViewingAs(): void {
+    // Immediately clear stale data so the user sees loading state right away
+    this.dashboard = null;
+    this.projection = null;
+    this.portfolioEvolution = null;
+    this.loading = true;
+    this.projectionLoading = true;
+    this.projectionVersions = [];
+    this.chartRendered = false;
+    this.projectionChartRendered = false;
+    this.evolutionChartRendered = false;
+    this.pieChart?.destroy(); this.pieChart = null;
+    this.lineChart?.destroy(); this.lineChart = null;
+    this.evolutionChart?.destroy(); this.evolutionChart = null;
+    this.cdr.detectChanges();
+    this.loadDashboard();
+    this.loadProjection();
+    this.loadPortfolioEvolution();
+  }
+
+  stopViewingAs(): void {
+    this.sharingCtx.stopViewing();
+    // Immediately clear stale data so the user sees loading state right away
+    this.dashboard = null;
+    this.projection = null;
+    this.portfolioEvolution = null;
+    this.loading = true;
+    this.projectionLoading = true;
+    this.projectionVersions = [];
+    this.chartRendered = false;
+    this.projectionChartRendered = false;
+    this.evolutionChartRendered = false;
+    this.pieChart?.destroy(); this.pieChart = null;
+    this.lineChart?.destroy(); this.lineChart = null;
+    this.evolutionChart?.destroy(); this.evolutionChart = null;
+    this.cdr.detectChanges();
     this.loadDashboard();
     this.loadProjection();
     this.loadPortfolioEvolution();
@@ -298,8 +348,11 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
         this.projectionLoading = false;
         this.cdr.markForCheck();
       },
-      error: (err) => {
+      error: (err: HttpErrorResponse) => {
         console.error('Error loading projection:', err);
+        if (err.status === 403 && this.sharingCtx.isViewingAsOther()) {
+          this.sharingCtx.stopViewing();
+        }
         this.projectionLoading = false;
         this.cdr.markForCheck();
       }
@@ -637,9 +690,16 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
         this.loading = false;
         this.cdr.markForCheck();
       },
-      error: (err: any) => {
+      error: (err: HttpErrorResponse) => {
         console.error('Error loading dashboard:', err);
-        this.error = 'Failed to load dashboard. Please ensure the API is running.';
+        if (err.status === 403 && this.sharingCtx.isViewingAsOther()) {
+          // Share was revoked or invalid – return to own portfolio
+          this.sharingCtx.stopViewing();
+          this.error = 'Access to this shared portfolio is no longer available.';
+          this.loadDashboard();
+        } else {
+          this.error = 'Failed to load dashboard. Please ensure the API is running.';
+        }
         this.loading = false;
         this.cdr.markForCheck();
       }

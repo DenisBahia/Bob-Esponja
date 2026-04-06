@@ -211,6 +211,25 @@ public class AuthController : ControllerBase
 
         await _db.SaveChangesAsync(ct);
 
+        // Link any pending shares where the guest email matches this user
+        if (!string.IsNullOrEmpty(user.Email))
+        {
+            var emailLower = user.Email.ToLowerInvariant();
+            var pendingShares = await _db.ProfileShares
+                .Where(s => s.GuestEmail == emailLower && s.GuestUserId == null && s.Status == ETFTracker.Api.Models.ShareStatus.Pending)
+                .ToListAsync(ct);
+
+            foreach (var share in pendingShares)
+            {
+                share.GuestUserId = user.Id;
+                share.Status      = ETFTracker.Api.Models.ShareStatus.Active;
+                share.UpdatedAt   = now;
+            }
+
+            if (pendingShares.Count > 0)
+                await _db.SaveChangesAsync(ct);
+        }
+
         // Sign out the temporary external cookie now that we have our own JWT
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
