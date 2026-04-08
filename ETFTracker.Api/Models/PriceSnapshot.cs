@@ -8,5 +8,5 @@ public class PriceSnapshot
     public DateTime SnapshotDate { get; set; }
     public string? Source { get; set; } // "Eodhd" or "Yahoo"
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }
-

@@ -133,6 +133,8 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<PriceSnapshot>()
             .Property(ps => ps.CreatedAt).HasColumnName("created_at");
         modelBuilder.Entity<PriceSnapshot>()
+            .Property(ps => ps.UpdatedAt).HasColumnName("updated_at");
+        modelBuilder.Entity<PriceSnapshot>()
             .HasIndex(ps => new { ps.Ticker, ps.SnapshotDate })
             .IsUnique();
         modelBuilder.Entity<PriceSnapshot>()

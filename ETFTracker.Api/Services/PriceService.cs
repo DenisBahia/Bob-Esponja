@@ -349,6 +349,7 @@ public class PriceService : IPriceService
             {
                 existingSnapshot.Price = price;
                 existingSnapshot.Source = source;
+                existingSnapshot.UpdatedAt = DateTime.UtcNow;
             }
             else
             {
@@ -358,7 +359,8 @@ public class PriceService : IPriceService
                     Price = price,
                     SnapshotDate = today,
                     Source = source,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
                 });
             }
 
