@@ -23,15 +23,15 @@ public class PriceService : IPriceService
     {
         try
         {
-            // Try Eodhd first
-            var eodhDescription = await GetEodhDescriptionAsync(ticker, cancellationToken);
-            if (!string.IsNullOrEmpty(eodhDescription))
-            {
-                return eodhDescription;
-            }
+            // EODHD DISABLED - Use Yahoo Finance only
+            // var eodhDescription = await GetEodhDescriptionAsync(ticker, cancellationToken);
+            // if (!string.IsNullOrEmpty(eodhDescription))
+            // {
+            //     return eodhDescription;
+            // }
 
-            // Fallback to Yahoo Finance
-            _logger.LogInformation($"Eodhd description failed for {ticker}, falling back to Yahoo Finance");
+            // Use Yahoo Finance
+            _logger.LogInformation($"Fetching description from Yahoo Finance for {ticker}");
             var yahooDescription = await GetYahooDescriptionAsync(ticker, cancellationToken);
             if (!string.IsNullOrEmpty(yahooDescription))
             {
@@ -48,6 +48,8 @@ public class PriceService : IPriceService
         }
     }
 
+    // EODHD DISABLED - Kept for reference only
+    /*
     private async Task<string?> GetEodhDescriptionAsync(string ticker, CancellationToken cancellationToken)
     {
         try
@@ -89,6 +91,7 @@ public class PriceService : IPriceService
             return null;
         }
     }
+    */
 
     private async Task<string?> GetYahooDescriptionAsync(string ticker, CancellationToken cancellationToken)
     {
@@ -164,16 +167,16 @@ public class PriceService : IPriceService
     {
         try
         {
-            // Try Eodhd first
-            var eodhPrice = await GetEodhPriceAsync(ticker, cancellationToken);
-            if (eodhPrice.HasValue)
-            {
-                await SavePriceSnapshotAsync(ticker, eodhPrice.Value, "Eodhd", cancellationToken);
-                return new PriceResult { Price = eodhPrice.Value, Source = "Eodhd" };
-            }
+            // EODHD DISABLED - Use Yahoo Finance only
+            // var eodhPrice = await GetEodhPriceAsync(ticker, cancellationToken);
+            // if (eodhPrice.HasValue)
+            // {
+            //     await SavePriceSnapshotAsync(ticker, eodhPrice.Value, "Eodhd", cancellationToken);
+            //     return new PriceResult { Price = eodhPrice.Value, Source = "Eodhd" };
+            // }
 
-            // Fallback to Yahoo Finance
-            _logger.LogInformation($"Eodhd failed for {ticker}, falling back to Yahoo Finance");
+            // Use Yahoo Finance
+            _logger.LogInformation($"Fetching price from Yahoo Finance for {ticker}");
             var yahooPrice = await GetYahooPriceAsync(ticker, cancellationToken);
             if (yahooPrice.HasValue)
             {
@@ -189,7 +192,7 @@ public class PriceService : IPriceService
 
             if (lastSnapshot != null)
             {
-                _logger.LogWarning($"Both APIs failed for {ticker}, using last snapshot: {lastSnapshot.Price}");
+                _logger.LogWarning($"Yahoo API failed for {ticker}, using last snapshot: {lastSnapshot.Price}");
                 return new PriceResult { Price = lastSnapshot.Price, Source = lastSnapshot.Source ?? "Cache" };
             }
 
@@ -203,6 +206,8 @@ public class PriceService : IPriceService
         }
     }
 
+    // EODHD DISABLED - Kept for reference only
+    /*
     private async Task<decimal?> GetEodhPriceAsync(string ticker, CancellationToken cancellationToken)
     {
         try
@@ -242,6 +247,7 @@ public class PriceService : IPriceService
             return null;
         }
     }
+    */
 
     private async Task<decimal?> GetYahooPriceAsync(string ticker, CancellationToken cancellationToken)
     {
@@ -250,7 +256,7 @@ public class PriceService : IPriceService
             // Replace XETRA with DE for Yahoo Finance API
             var yahooTicker = ticker.Replace(".XETRA", ".DE", StringComparison.OrdinalIgnoreCase);
             
-            // Yahoo Finance v8 chart API endpoint
+            // Yahoo Finance v8 chart API endpoint - request 2 days to get previous close
             var url = $"https://query1.finance.yahoo.com/v8/finance/chart/{yahooTicker}?interval=1d&range=2d";
             
             // Log the full URL for debugging
@@ -278,7 +284,29 @@ public class PriceService : IPriceService
             {
                 var resultItem = result[0];
                 
-                // Get the regularMarketPrice from meta object
+                // First, try to save yesterday's closing price if it exists (only once per day)
+                if (resultItem.TryGetProperty("indicators", out var indicators) &&
+                    indicators.TryGetProperty("quote", out var quoteArray) &&
+                    quoteArray.GetArrayLength() > 0)
+                {
+                    var quote = quoteArray[0];
+                    if (quote.TryGetProperty("close", out var closePrices) &&
+                        closePrices.GetArrayLength() >= 2)
+                    {
+                        var yesterdayCloseText = closePrices[0].GetRawText();
+                        if (!string.IsNullOrEmpty(yesterdayCloseText) && yesterdayCloseText != "null" &&
+                            decimal.TryParse(yesterdayCloseText, System.Globalization.CultureInfo.InvariantCulture, out var yesterdayClose) &&
+                            yesterdayClose > 0)
+                        {
+                            // Save yesterday's closing price (only if not already saved today)
+                            await SavePreviousDayPriceAsync(ticker, yesterdayClose, "Yahoo", cancellationToken);
+                            Console.WriteLine($"[Yahoo Finance] ✓ Saved previous day closing price for {ticker}: {yesterdayClose}");
+                            _logger.LogInformation($"Saved previous day closing price for {ticker}: {yesterdayClose}");
+                        }
+                    }
+                }
+                
+                // Get the regularMarketPrice from meta object (today's price)
                 if (resultItem.TryGetProperty("meta", out var meta))
                 {
                     if (meta.TryGetProperty("regularMarketPrice", out var priceElement))
@@ -340,6 +368,43 @@ public class PriceService : IPriceService
         {
             _logger.LogError(ex, $"Error saving price snapshot for {ticker}");
             throw;
+        }
+    }
+
+    private async Task SavePreviousDayPriceAsync(string ticker, decimal price, string source, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var yesterday = DateTime.UtcNow.AddDays(-1).Date;
+            
+            // Check if a snapshot for yesterday already exists
+            var existingSnapshot = await _context.PriceSnapshots
+                .FirstOrDefaultAsync(ps => ps.Ticker == ticker && ps.SnapshotDate == yesterday, cancellationToken);
+
+            // Only save if it doesn't exist yet (first login of the day)
+            if (existingSnapshot == null)
+            {
+                _context.PriceSnapshots.Add(new PriceSnapshot
+                {
+                    Ticker = ticker,
+                    Price = price,
+                    SnapshotDate = yesterday,
+                    Source = source,
+                    CreatedAt = DateTime.UtcNow
+                });
+
+                await _context.SaveChangesAsync(cancellationToken);
+                _logger.LogInformation($"Saved previous day closing price for {ticker} on {yesterday:yyyy-MM-dd}: {price}");
+            }
+            else
+            {
+                _logger.LogInformation($"Previous day closing price for {ticker} already exists, skipping duplicate save");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error saving previous day price snapshot for {ticker}");
+            // Don't throw - this is a secondary operation and shouldn't fail the main price fetch
         }
     }
 

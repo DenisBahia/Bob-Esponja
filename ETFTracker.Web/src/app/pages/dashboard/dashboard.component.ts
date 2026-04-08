@@ -91,10 +91,34 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   activeHoldingsTab: 'table' | 'evolution' = 'table';
   portfolioEvolution: PortfolioEvolutionDto | null = null;
   evolutionLoading = false;
+  evolutionPeriod: 'all' | 'year' | 'month' | 'week' = 'all';
 
   @ViewChild('evolutionChart') evolutionChartRef!: ElementRef<HTMLCanvasElement>;
   private evolutionChart: Chart | null = null;
   private evolutionChartRendered = false;
+
+  get filteredEvolutionPoints() {
+    const points = this.portfolioEvolution?.dataPoints;
+    if (!points?.length) return [];
+    if (this.evolutionPeriod === 'all') return points;
+
+    const now = new Date();
+    let cutoff: Date;
+
+    if (this.evolutionPeriod === 'year') {
+      cutoff = new Date(now.getFullYear(), 0, 1);
+    } else if (this.evolutionPeriod === 'month') {
+      cutoff = new Date(now.getFullYear(), now.getMonth(), 1);
+    } else {
+      // week: last 7 days (Mon–Sun of current week)
+      const day = now.getDay(); // 0=Sun
+      const diff = (day === 0 ? -6 : 1 - day);
+      cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diff);
+    }
+
+    const cutoffStr = cutoff.toISOString().slice(0, 10);
+    return points.filter(p => p.date >= cutoffStr);
+  }
 
   get allocationSlices(): { ticker: string; etfName: string; value: number; percent: number; color: string }[] {
     if (!this.dashboard?.holdings?.length) return [];
@@ -566,9 +590,17 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     });
   }
 
+  setEvolutionPeriod(period: 'all' | 'year' | 'month' | 'week'): void {
+    this.evolutionPeriod = period;
+    this.evolutionChartRendered = false;
+    this.evolutionChart?.destroy();
+    this.evolutionChart = null;
+    this.cdr.markForCheck();
+  }
+
   private renderEvolutionChart(): void {
     this.evolutionChart?.destroy();
-    const points = this.portfolioEvolution?.dataPoints;
+    const points = this.filteredEvolutionPoints;
     if (!points?.length) return;
 
     const ctx = this.evolutionChartRef.nativeElement.getContext('2d');

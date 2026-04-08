@@ -1166,6 +1166,45 @@
         .legend-label { margin-right: 0.5rem; }
       }
 
+      // Period filter buttons
+      .evolution-period-nav {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+
+        .period-btn {
+          padding: 0.35rem 0.9rem;
+          border-radius: 999px;
+          border: 1px solid var(--border);
+          background: transparent;
+          color: var(--text-secondary);
+          font-size: 0.82rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.18s;
+
+          &:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+          }
+
+          &.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+            font-weight: 600;
+          }
+        }
+      }
+
+      .evolution-no-data {
+        text-align: center;
+        padding: 2rem;
+        color: var(--text-muted);
+        font-size: 0.9rem;
+      }
+
       // Holdings table
       .table-wrapper {
         overflow-x: auto;

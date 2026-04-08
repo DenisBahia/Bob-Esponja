@@ -469,15 +469,27 @@
         <div *ngIf="evolutionLoading" class="evolution-loading">
           <p>Loading portfolio evolution…</p>
         </div>
-        <div class="evolution-chart-wrapper" *ngIf="portfolioEvolution && !evolutionLoading">
-          <canvas #evolutionChart></canvas>
-        </div>
-        <div class="evolution-legend" *ngIf="portfolioEvolution && !evolutionLoading">
-          <span class="legend-dot buy-dot"></span>
-          <span class="legend-label">Buy recorded on this day</span>
-          <span class="legend-dot value-dot"></span>
-          <span class="legend-label">Portfolio value</span>
-        </div>
+        <ng-container *ngIf="portfolioEvolution && !evolutionLoading">
+          <!-- Period filter -->
+          <div class="evolution-period-nav">
+            <button class="period-btn" [class.active]="evolutionPeriod === 'all'" (click)="setEvolutionPeriod('all')">Whole Period</button>
+            <button class="period-btn" [class.active]="evolutionPeriod === 'year'" (click)="setEvolutionPeriod('year')">Current Year</button>
+            <button class="period-btn" [class.active]="evolutionPeriod === 'month'" (click)="setEvolutionPeriod('month')">Current Month</button>
+            <button class="period-btn" [class.active]="evolutionPeriod === 'week'" (click)="setEvolutionPeriod('week')">Current Week</button>
+          </div>
+          <div class="evolution-chart-wrapper" *ngIf="filteredEvolutionPoints.length > 0">
+            <canvas #evolutionChart></canvas>
+          </div>
+          <div class="evolution-no-data" *ngIf="filteredEvolutionPoints.length === 0">
+            <p>No data available for the selected period.</p>
+          </div>
+          <div class="evolution-legend">
+            <span class="legend-dot buy-dot"></span>
+            <span class="legend-label">Buy recorded on this day</span>
+            <span class="legend-dot value-dot"></span>
+            <span class="legend-label">Portfolio value</span>
+          </div>
+        </ng-container>
       </div>
     </div>
   </div>
