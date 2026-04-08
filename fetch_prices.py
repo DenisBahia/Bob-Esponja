@@ -14,6 +14,11 @@ TICKERS = ["IXUA.DE", "FWIA.DE", "E500.DE"]
 START_DATE = datetime(2026, 1, 1, tzinfo=timezone.utc)
 SOURCE = "Yahoo"
 
+INSERT_TICKER_MAP = {
+    "FWIA.DE": "FWIA.XETRA",
+    "E500.DE": "E500.XETRA",
+}
+
 
 def fetch_yahoo(ticker: str) -> list[dict]:
     url = (
@@ -52,15 +57,24 @@ def print_table(all_rows: list[dict]):
     print(f"\nTotal rows: {len(all_rows)}\n")
 
 
+def map_ticker_for_insert(ticker: str) -> str:
+    return INSERT_TICKER_MAP.get(ticker, ticker)
+
+
 def generate_sql(all_rows: list[dict]) -> str:
     now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
-    lines = []
+    lines = [
+        "BEGIN;",
+        "DELETE FROM price_snapshots;",
+    ]
     for r in all_rows:
+        insert_ticker = map_ticker_for_insert(r["ticker"])
         lines.append(
             f"INSERT INTO price_snapshots (ticker, price, snapshot_date, source, created_at, updated_at) "
-            f"VALUES ('{r['ticker']}', {r['price']}, '{r['date']}', '{SOURCE}', '{now}', '{now}') "
+            f"VALUES ('{insert_ticker}', {r['price']}, '{r['date']}', '{SOURCE}', '{now}', '{now}') "
             f"ON CONFLICT (ticker, snapshot_date) DO NOTHING;"
         )
+    lines.append("COMMIT;")
     return "\n".join(lines)
 
 
@@ -114,6 +128,7 @@ def main():
     output_file = "insert_prices.sql"
     with open(output_file, "w") as f:
         f.write("-- Auto-generated price inserts\n")
+        f.write("-- Full refresh mode: deletes all rows from price_snapshots before insert\n")
         f.write(f"-- Generated: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC\n")
         f.write(f"-- Tickers: {', '.join(TICKERS)}\n")
         f.write(f"-- Rows: {len(all_rows)}\n\n")
@@ -130,5 +145,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
