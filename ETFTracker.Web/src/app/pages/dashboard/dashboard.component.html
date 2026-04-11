@@ -178,7 +178,7 @@
         </div>
 
         <div class="param-group">
-          <label for="cgt">CGT %</label>
+          <label for="cgt">Deemed Disposal %</label>
           <input id="cgt" type="number" step="0.1" min="0" max="100"
                  [(ngModel)]="projectionSettings.cgtPercent" />
         </div>
@@ -200,9 +200,18 @@
         <button class="btn btn-primary" (click)="saveProjectionSettings()" [disabled]="projectionSaving" *ngIf="!sharingCtx.isReadOnly()">
           {{ projectionSaving ? 'Saving…' : 'Apply & Save' }}
         </button>
-        <button class="btn btn-secondary" (click)="saveNewVersion()" [disabled]="versionSaving" *ngIf="!sharingCtx.isReadOnly()">
-          {{ versionSaving ? 'Saving…' : 'Save new version' }}
-        </button>
+        <div class="save-version-row" *ngIf="!sharingCtx.isReadOnly()">
+          <input class="version-name-input"
+                 type="text"
+                 placeholder="Version name…"
+                 maxlength="200"
+                 [(ngModel)]="newVersionName" />
+          <button class="btn btn-secondary"
+                  (click)="saveNewVersion()"
+                  [disabled]="versionSaving || !newVersionName.trim()">
+            {{ versionSaving ? 'Saving…' : 'Save version' }}
+          </button>
+        </div>
       </div>
 
       <!-- Tab navigation -->
@@ -286,7 +295,7 @@
               <thead>
                 <tr>
                   <th title="Select to compare">Compare</th>
-                  <th>Version</th>
+                  <th>Name</th>
                   <th>Saved At</th>
                   <th>Return %</th>
                   <th>Monthly Buy</th>
@@ -296,19 +305,30 @@
               </thead>
               <tbody>
                 <tr *ngFor="let v of projectionVersions"
-                    [class.version-selected]="selectedVersionIds.has(v.id)">
+                    [class.version-selected]="selectedVersionIds.has(v.id)"
+                    [class.version-default]="v.isDefault">
                   <td class="version-check-col">
                     <input type="checkbox"
                            [checked]="selectedVersionIds.has(v.id)"
                            (change)="toggleVersionSelection(v.id)" />
                   </td>
-                  <td class="version-num-col"><strong>Version {{ v.versionNumber }}</strong></td>
+                  <td class="version-num-col">
+                    <strong>{{ v.versionName }}</strong>
+                    <span *ngIf="v.isDefault" class="default-badge" title="Default version">⭐ Default</span>
+                  </td>
                   <td class="version-date-col">{{ v.savedAt | date:'dd/MM/yyyy HH:mm' }}</td>
                   <td class="version-stat-col">{{ v.settings.yearlyReturnPercent }}%</td>
                   <td class="version-stat-col">{{ formatCurrency(v.settings.monthlyBuyAmount) }}</td>
                   <td class="version-stat-col">{{ v.settings.projectionYears }}y</td>
                    <td class="version-delete-col">
                     <ng-container *ngIf="!sharingCtx.isReadOnly()">
+                      <button class="btn-set-default"
+                              *ngIf="!v.isDefault"
+                              (click)="setDefaultVersion(v.id)"
+                              [disabled]="versionSettingDefault.has(v.id)"
+                              title="Set as default">
+                        {{ versionSettingDefault.has(v.id) ? '…' : '⭐' }}
+                      </button>
                       <ng-container *ngIf="confirmDeleteId === v.id; else deleteTrigger">
                         <span class="delete-confirm-inline">
                           <button class="btn-confirm-yes" (click)="deleteVersion(v.id)" [disabled]="versionDeleting.has(v.id)">✓</button>

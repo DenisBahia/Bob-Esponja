@@ -91,17 +91,24 @@ export interface ProjectionResultDto {
 
 export interface ProjectionVersionSummaryDto {
   id: number;
-  versionNumber: number;
+  versionName: string;
+  isDefault: boolean;
   savedAt: string;           // ISO datetime string
   settings: ProjectionSettingsDto;
 }
 
 export interface ProjectionVersionDetailDto {
   id: number;
-  versionNumber: number;
+  versionName: string;
+  isDefault: boolean;
   savedAt: string;
   settings: ProjectionSettingsDto;
   dataPoints: ProjectionDataPointDto[];
+}
+
+export interface SaveVersionRequestDto {
+  versionName: string;
+  settings: ProjectionSettingsDto;
 }
 
 export interface PortfolioEvolutionDataPointDto {
@@ -184,8 +191,8 @@ export class ApiService {
     return this.http.put<ProjectionSettingsDto>(`${this.apiUrl}/projections/settings`, settings);
   }
 
-  saveProjectionVersion(settings: ProjectionSettingsDto): Observable<ProjectionVersionSummaryDto> {
-    return this.http.post<ProjectionVersionSummaryDto>(`${this.apiUrl}/projections/versions`, settings);
+  saveProjectionVersion(request: SaveVersionRequestDto): Observable<ProjectionVersionSummaryDto> {
+    return this.http.post<ProjectionVersionSummaryDto>(`${this.apiUrl}/projections/versions`, request);
   }
 
   getProjectionVersions(): Observable<ProjectionVersionSummaryDto[]> {
@@ -198,6 +205,10 @@ export class ApiService {
 
   deleteProjectionVersion(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/projections/versions/${id}`);
+  }
+
+  setDefaultProjectionVersion(id: number): Observable<ProjectionVersionSummaryDto> {
+    return this.http.patch<ProjectionVersionSummaryDto>(`${this.apiUrl}/projections/versions/${id}/default`, {});
   }
 
   getPortfolioEvolution(): Observable<PortfolioEvolutionDto> {

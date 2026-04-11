@@ -91,7 +91,7 @@ ETF Investment Tracker is a comprehensive portfolio management solution built fo
   - Monthly buy amounts and annual increases
   - Expected yearly returns
   - Inflation rate adjustments
-  - Capital Gains Tax (CGT) settings
+  - Deemed Disposal settings
   - Exit tax configuration
   - Deemed disposal exclusion options
   
@@ -581,7 +581,7 @@ GET    /api/dashboard/summary          # Portfolio summary
    - Set monthly investment amount
    - Annual increase percentage
    - Expected yearly return
-   - Tax settings (CGT, exit tax)
+   - Tax settings (Deemed Disposal, exit tax)
 
 2. **Generate Projections**
    - View 5-year, 10-year, 20-year scenarios

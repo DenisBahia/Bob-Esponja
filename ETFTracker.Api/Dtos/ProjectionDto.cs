@@ -9,7 +9,7 @@ public class ProjectionSettingsDto
     public decimal InflationPercent { get; set; }
     public decimal CgtPercent { get; set; }
     public decimal ExitTaxPercent { get; set; }
-    /// <summary>When true, buys made before 1 Jan 2026 are excluded from CGT and exit tax calculations.</summary>
+    /// <summary>When true, buys made before 1 Jan 2026 are excluded from deemed disposal and exit tax calculations.</summary>
     public bool ExcludePreExistingFromTax { get; set; }
     /// <summary>
     /// Optional override for the starting portfolio value used in the projection.
@@ -29,7 +29,7 @@ public class ProjectionDataPointDto
     public decimal YearProfit { get; set; }
     public decimal TotalAmount { get; set; }
     public decimal InflationCorrectedAmount { get; set; }
-    /// <summary>Deemed disposal CGT paid this year (triggered by 8-year holding rule).</summary>
+    /// <summary>Deemed disposal tax paid this year (triggered by 8-year holding rule).</summary>
     public decimal TaxPaid { get; set; }
     /// <summary>Exit tax paid in the final projected year only.</summary>
     public decimal ExitTaxPaid { get; set; }

@@ -4,7 +4,8 @@ public class ProjectionVersion
 {
     public int Id { get; set; }
     public int UserId { get; set; }
-    public int VersionNumber { get; set; }   // sequential per user: 1, 2, 3…
+    public string VersionName { get; set; } = string.Empty;
+    public bool IsDefault { get; set; }
     public DateTime SavedAt { get; set; }
 
     // Settings snapshot

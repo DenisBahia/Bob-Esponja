@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, AfterViewChecked, ChangeDetectionStrategy, ChangeDetectorRef, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, DashboardDto, HoldingDto, ProjectionResultDto, ProjectionSettingsDto, PortfolioEvolutionDto, ProjectionVersionSummaryDto, ProjectionVersionDetailDto, ProjectionDataPointDto } from '../../services/api.service';
+import { ApiService, DashboardDto, HoldingDto, ProjectionResultDto, ProjectionSettingsDto, PortfolioEvolutionDto, ProjectionVersionSummaryDto, ProjectionVersionDetailDto, ProjectionDataPointDto, SaveVersionRequestDto } from '../../services/api.service';
 import { AuthService, CurrentUser } from '../../services/auth.service';
 import { AddTransactionModalComponent } from '../../components/add-transaction-modal/add-transaction-modal.component';
 import { BuyHistoryModalComponent } from '../../components/buy-history-modal/buy-history-modal.component';
@@ -78,7 +78,9 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   projectionVersions: ProjectionVersionSummaryDto[] = [];
   versionsLoading = false;
   versionSaving = false;
+  newVersionName = '';
   versionDeleting: Set<number> = new Set();
+  versionSettingDefault: Set<number> = new Set();
   confirmDeleteId: number | null = null;
   selectedVersionIds: Set<number> = new Set();
   versionCompareData: Map<number, ProjectionDataPointDto[]> = new Map();
@@ -416,10 +418,16 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   saveNewVersion(): void {
+    if (!this.newVersionName.trim()) return;
     this.versionSaving = true;
-    this.apiService.saveProjectionVersion(this.projectionSettings).subscribe({
+    const request: SaveVersionRequestDto = {
+      versionName: this.newVersionName.trim(),
+      settings: this.projectionSettings,
+    };
+    this.apiService.saveProjectionVersion(request).subscribe({
       next: (v) => {
         this.versionSaving = false;
+        this.newVersionName = '';
         this.projectionVersions = [...this.projectionVersions, v];
         this.cdr.markForCheck();
       },
@@ -486,6 +494,31 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.cdr.markForCheck();
   }
 
+  setDefaultVersion(versionId: number): void {
+    this.versionSettingDefault = new Set(this.versionSettingDefault).add(versionId);
+    this.cdr.markForCheck();
+    this.apiService.setDefaultProjectionVersion(versionId).subscribe({
+      next: () => {
+        // Update local list: unset all defaults, then set the target
+        this.projectionVersions = this.projectionVersions.map(v => ({
+          ...v,
+          isDefault: v.id === versionId,
+        }));
+        const next = new Set(this.versionSettingDefault);
+        next.delete(versionId);
+        this.versionSettingDefault = next;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('Error setting default version:', err);
+        const next = new Set(this.versionSettingDefault);
+        next.delete(versionId);
+        this.versionSettingDefault = next;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
   toggleVersionSelection(versionId: number): void {
     const next = new Set(this.selectedVersionIds);
     if (next.has(versionId)) {
@@ -531,7 +564,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
         const dataPoints = this.versionCompareData.get(id) ?? [];
         const color = PIE_COLORS[i % PIE_COLORS.length];
         return {
-          label: `Version ${version?.versionNumber ?? id}`,
+          label: version?.versionName ?? `#${id}`,
           data: dataPoints.map(p => p.totalAmount),
           borderColor: color,
           backgroundColor: color + '22',

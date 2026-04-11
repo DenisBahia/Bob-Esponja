@@ -647,6 +647,34 @@
             &:disabled { opacity: 0.45; cursor: not-allowed; }
           }
         }
+
+        .save-version-row {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          align-self: flex-end;
+
+          .version-name-input {
+            height: 36px;
+            padding: 0.3rem 0.75rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-light);
+            border-radius: 7px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            min-width: 160px;
+            transition: border-color 0.18s;
+
+            &::placeholder { color: var(--text-muted); }
+
+            &:focus {
+              outline: none;
+              border-color: var(--accent);
+            }
+          }
+
+          .btn { align-self: unset; }
+        }
       }
 
       // Tab nav
@@ -840,6 +868,10 @@
                 &.version-selected td {
                   background: rgba(79, 142, 247, 0.08);
                 }
+
+                &.version-default td {
+                  background: rgba(248, 155, 41, 0.05);
+                }
               }
 
               td {
@@ -862,6 +894,23 @@
                 &.version-num-col {
                   color: var(--text-primary);
                   font-size: 0.82rem;
+                  display: flex;
+                  align-items: center;
+                  gap: 0.4rem;
+                  flex-wrap: wrap;
+
+                  .default-badge {
+                    display: inline-flex;
+                    align-items: center;
+                    font-size: 0.68rem;
+                    font-weight: 600;
+                    color: #f89b29;
+                    background: rgba(248, 155, 41, 0.12);
+                    border: 1px solid rgba(248, 155, 41, 0.3);
+                    border-radius: 999px;
+                    padding: 0.1rem 0.45rem;
+                    white-space: nowrap;
+                  }
                 }
 
                 &.version-date-col {
@@ -877,7 +926,31 @@
 
                 &.version-delete-col {
                   text-align: center;
-                  width: 36px;
+                  width: 72px;
+                  white-space: nowrap;
+                }
+              }
+
+              .btn-set-default {
+                background: none;
+                border: none;
+                cursor: pointer;
+                padding: 0.2rem 0.35rem;
+                border-radius: 4px;
+                font-size: 0.9rem;
+                line-height: 1;
+                transition: background 0.15s, opacity 0.15s;
+                opacity: 0.5;
+                margin-right: 0.15rem;
+
+                &:hover:not(:disabled) {
+                  background: rgba(248, 155, 41, 0.15);
+                  opacity: 1;
+                }
+
+                &:disabled {
+                  cursor: not-allowed;
+                  opacity: 0.3;
                 }
               }
 

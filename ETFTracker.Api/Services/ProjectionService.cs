@@ -9,10 +9,11 @@ public interface IProjectionService
 {
     Task<ProjectionResultDto> GetProjectionAsync(int userId, CancellationToken ct = default);
     Task<ProjectionSettingsDto> SaveSettingsAsync(int userId, ProjectionSettingsDto dto, CancellationToken ct = default);
-    Task<ProjectionVersionSummaryDto> SaveVersionAsync(int userId, ProjectionSettingsDto dto, CancellationToken ct = default);
+    Task<ProjectionVersionSummaryDto> SaveVersionAsync(int userId, SaveVersionRequestDto dto, CancellationToken ct = default);
     Task<List<ProjectionVersionSummaryDto>> GetVersionsAsync(int userId, CancellationToken ct = default);
     Task<ProjectionVersionDetailDto?> GetVersionDetailAsync(int userId, int versionId, CancellationToken ct = default);
     Task<bool> DeleteVersionAsync(int userId, int versionId, CancellationToken ct = default);
+    Task<ProjectionVersionSummaryDto?> SetDefaultVersionAsync(int userId, int versionId, CancellationToken ct = default);
 }
 
 public class ProjectionService : IProjectionService
@@ -324,16 +325,12 @@ public class ProjectionService : IProjectionService
     }
 
     public async Task<ProjectionVersionSummaryDto> SaveVersionAsync(
-        int userId, ProjectionSettingsDto dto, CancellationToken ct = default)
+        int userId, SaveVersionRequestDto dto, CancellationToken ct = default)
     {
-        // Determine next version number for this user
-        var maxVersion = await _context.ProjectionVersions
-            .Where(pv => pv.UserId == userId)
-            .MaxAsync(pv => (int?)pv.VersionNumber, ct) ?? 0;
-        var nextVersion = maxVersion + 1;
+        var settings = dto.Settings;
 
         // Compute data points using current portfolio state
-        var dataPoints = await ComputeDataPointsAsync(userId, dto, ct);
+        var dataPoints = await ComputeDataPointsAsync(userId, settings, ct);
 
         // Serialise data points to JSON
         var json = System.Text.Json.JsonSerializer.Serialize(dataPoints);
@@ -341,16 +338,17 @@ public class ProjectionService : IProjectionService
         var entity = new ProjectionVersion
         {
             UserId = userId,
-            VersionNumber = nextVersion,
+            VersionName = string.IsNullOrWhiteSpace(dto.VersionName) ? "Unnamed" : dto.VersionName.Trim(),
+            IsDefault = false,
             SavedAt = DateTime.UtcNow,
-            YearlyReturnPercent = dto.YearlyReturnPercent,
-            MonthlyBuyAmount = dto.MonthlyBuyAmount,
-            AnnualBuyIncreasePercent = dto.AnnualBuyIncreasePercent,
-            ProjectionYears = dto.ProjectionYears,
-            InflationPercent = dto.InflationPercent,
-            CgtPercent = dto.CgtPercent,
-            ExitTaxPercent = dto.ExitTaxPercent,
-            ExcludePreExistingFromTax = dto.ExcludePreExistingFromTax,
+            YearlyReturnPercent = settings.YearlyReturnPercent,
+            MonthlyBuyAmount = settings.MonthlyBuyAmount,
+            AnnualBuyIncreasePercent = settings.AnnualBuyIncreasePercent,
+            ProjectionYears = settings.ProjectionYears,
+            InflationPercent = settings.InflationPercent,
+            CgtPercent = settings.CgtPercent,
+            ExitTaxPercent = settings.ExitTaxPercent,
+            ExcludePreExistingFromTax = settings.ExcludePreExistingFromTax,
             DataPointsJson = json,
         };
         _context.ProjectionVersions.Add(entity);
@@ -359,9 +357,10 @@ public class ProjectionService : IProjectionService
         return new ProjectionVersionSummaryDto
         {
             Id = entity.Id,
-            VersionNumber = entity.VersionNumber,
+            VersionName = entity.VersionName,
+            IsDefault = entity.IsDefault,
             SavedAt = entity.SavedAt,
-            Settings = dto,
+            Settings = settings,
         };
     }
 
@@ -370,11 +369,12 @@ public class ProjectionService : IProjectionService
     {
         return await _context.ProjectionVersions
             .Where(pv => pv.UserId == userId)
-            .OrderBy(pv => pv.VersionNumber)
+            .OrderBy(pv => pv.SavedAt)
             .Select(pv => new ProjectionVersionSummaryDto
             {
                 Id = pv.Id,
-                VersionNumber = pv.VersionNumber,
+                VersionName = pv.VersionName,
+                IsDefault = pv.IsDefault,
                 SavedAt = pv.SavedAt,
                 Settings = new ProjectionSettingsDto
                 {
@@ -405,7 +405,8 @@ public class ProjectionService : IProjectionService
         return new ProjectionVersionDetailDto
         {
             Id = entity.Id,
-            VersionNumber = entity.VersionNumber,
+            VersionName = entity.VersionName,
+            IsDefault = entity.IsDefault,
             SavedAt = entity.SavedAt,
             Settings = new ProjectionSettingsDto
             {
@@ -419,6 +420,44 @@ public class ProjectionService : IProjectionService
                 ExcludePreExistingFromTax = entity.ExcludePreExistingFromTax,
             },
             DataPoints = dataPoints,
+        };
+    }
+
+    public async Task<ProjectionVersionSummaryDto?> SetDefaultVersionAsync(
+        int userId, int versionId, CancellationToken ct = default)
+    {
+        var target = await _context.ProjectionVersions
+            .FirstOrDefaultAsync(pv => pv.Id == versionId && pv.UserId == userId, ct);
+
+        if (target == null) return null;
+
+        // Clear existing default for this user
+        var currentDefaults = await _context.ProjectionVersions
+            .Where(pv => pv.UserId == userId && pv.IsDefault)
+            .ToListAsync(ct);
+        foreach (var v in currentDefaults)
+            v.IsDefault = false;
+
+        target.IsDefault = true;
+        await _context.SaveChangesAsync(ct);
+
+        return new ProjectionVersionSummaryDto
+        {
+            Id = target.Id,
+            VersionName = target.VersionName,
+            IsDefault = target.IsDefault,
+            SavedAt = target.SavedAt,
+            Settings = new ProjectionSettingsDto
+            {
+                YearlyReturnPercent = target.YearlyReturnPercent,
+                MonthlyBuyAmount = target.MonthlyBuyAmount,
+                AnnualBuyIncreasePercent = target.AnnualBuyIncreasePercent,
+                ProjectionYears = target.ProjectionYears,
+                InflationPercent = target.InflationPercent,
+                CgtPercent = target.CgtPercent,
+                ExitTaxPercent = target.ExitTaxPercent,
+                ExcludePreExistingFromTax = target.ExcludePreExistingFromTax,
+            }
         };
     }
 

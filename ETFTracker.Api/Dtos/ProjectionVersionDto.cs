@@ -4,7 +4,8 @@ namespace ETFTracker.Api.Dtos;
 public class ProjectionVersionSummaryDto
 {
     public int Id { get; set; }
-    public int VersionNumber { get; set; }
+    public string VersionName { get; set; } = string.Empty;
+    public bool IsDefault { get; set; }
     public DateTime SavedAt { get; set; }
     public ProjectionSettingsDto Settings { get; set; } = new();
 }
@@ -13,9 +14,17 @@ public class ProjectionVersionSummaryDto
 public class ProjectionVersionDetailDto
 {
     public int Id { get; set; }
-    public int VersionNumber { get; set; }
+    public string VersionName { get; set; } = string.Empty;
+    public bool IsDefault { get; set; }
     public DateTime SavedAt { get; set; }
     public ProjectionSettingsDto Settings { get; set; } = new();
     public List<ProjectionDataPointDto> DataPoints { get; set; } = new();
+}
+
+/// <summary>Request body for saving a new version.</summary>
+public class SaveVersionRequestDto
+{
+    public string VersionName { get; set; } = string.Empty;
+    public ProjectionSettingsDto Settings { get; set; } = new();
 }
 

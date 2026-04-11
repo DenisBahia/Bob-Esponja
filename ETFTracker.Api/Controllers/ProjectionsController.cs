@@ -79,7 +79,7 @@ public class ProjectionsController : ControllerBase
     /// </summary>
     [HttpPost("versions")]
     public async Task<ActionResult<ProjectionVersionSummaryDto>> SaveVersion(
-        [FromBody] ProjectionSettingsDto dto,
+        [FromBody] SaveVersionRequestDto dto,
         CancellationToken ct = default)
     {
         if (_sharingContext.IsReadOnly())
@@ -162,6 +162,28 @@ public class ProjectionsController : ControllerBase
         {
             _logger.LogError(ex, "Error deleting projection version {Id}", id);
             return StatusCode(500, new { message = "Error deleting projection version" });
+        }
+    }
+
+    /// <summary>
+    /// Sets the specified version as the default for the authenticated user.
+    /// </summary>
+    [HttpPatch("versions/{id:int}/default")]
+    public async Task<ActionResult<ProjectionVersionSummaryDto>> SetDefaultVersion(int id, CancellationToken ct = default)
+    {
+        try
+        {
+            if (_sharingContext.IsReadOnly())
+                return StatusCode(403, new { message = "This profile is shared as read-only." });
+
+            var result = await _projectionService.SetDefaultVersionAsync(GetUserId(), id, ct);
+            if (result == null) return NotFound();
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error setting default projection version {Id}", id);
+            return StatusCode(500, new { message = "Error setting default version" });
         }
     }
 }
