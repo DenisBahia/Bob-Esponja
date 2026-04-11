@@ -67,6 +67,8 @@ export interface ProjectionSettingsDto {
   cgtPercent: number;
   exitTaxPercent: number;
   excludePreExistingFromTax: boolean;
+  /** SIA annual tax percentage — charged yearly on total portfolio value (alternative to CGT/Exit Tax). */
+  siaAnnualPercent: number;
   /** Optional override for the starting portfolio value (0 / undefined = use live portfolio value). */
   startAmount?: number | null;
 }
@@ -82,6 +84,12 @@ export interface ProjectionDataPointDto {
   exitTaxPaid: number;
   afterTaxTotalAmount: number;
   afterTaxInflationCorrectedAmount: number;
+  /** SIA tax charged this year. May be 0 or missing for older saved versions. */
+  siaTax?: number;
+  /** After-tax balance using SIA model. May be missing for older saved versions. */
+  afterTaxSia?: number;
+  /** After-tax balance (SIA) corrected for inflation. May be missing for older saved versions. */
+  afterTaxInflationCorrectedSia?: number;
 }
 
 export interface ProjectionResultDto {
@@ -95,6 +103,8 @@ export interface ProjectionVersionSummaryDto {
   isDefault: boolean;
   savedAt: string;           // ISO datetime string
   settings: ProjectionSettingsDto;
+  /** Saved (frozen) yearly data points — never recalculated after save. */
+  dataPoints: ProjectionDataPointDto[];
 }
 
 export interface ProjectionVersionDetailDto {

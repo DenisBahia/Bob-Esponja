@@ -17,6 +17,7 @@ public class ProjectionVersion
     public decimal CgtPercent { get; set; }
     public decimal ExitTaxPercent { get; set; }
     public bool ExcludePreExistingFromTax { get; set; }
+    public decimal SiaAnnualPercent { get; set; }
 
     // Computed data points serialised as JSON at save time (captures portfolio state)
     public string DataPointsJson { get; set; } = "[]";

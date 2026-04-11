@@ -11,6 +11,8 @@ public class ProjectionSettingsDto
     public decimal ExitTaxPercent { get; set; }
     /// <summary>When true, buys made before 1 Jan 2026 are excluded from deemed disposal and exit tax calculations.</summary>
     public bool ExcludePreExistingFromTax { get; set; }
+    /// <summary>SIA annual tax percentage — charged yearly on total portfolio value (alternative to CGT/Exit Tax).</summary>
+    public decimal SiaAnnualPercent { get; set; }
     /// <summary>
     /// Optional override for the starting portfolio value used in the projection.
     /// When null or 0, the actual current portfolio value (from live prices) is used.
@@ -37,6 +39,13 @@ public class ProjectionDataPointDto
     public decimal AfterTaxTotalAmount { get; set; }
     /// <summary>After-tax balance inflation-corrected: InflationCorrectedAmount - TaxPaid - ExitTaxPaid.</summary>
     public decimal AfterTaxInflationCorrectedAmount { get; set; }
+
+    /// <summary>SIA tax charged this year (siaAnnualPercent × end-of-year balance).</summary>
+    public decimal SiaTax { get; set; }
+    /// <summary>After-tax balance using SIA model: EoY balance minus cumulative SIA tax.</summary>
+    public decimal AfterTaxSia { get; set; }
+    /// <summary>After-tax balance (SIA) corrected for inflation.</summary>
+    public decimal AfterTaxInflationCorrectedSia { get; set; }
 }
 
 public class ProjectionResultDto

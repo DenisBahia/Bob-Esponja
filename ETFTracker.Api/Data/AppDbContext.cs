@@ -167,6 +167,8 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<ProjectionSettings>()
             .Property(ps => ps.ExcludePreExistingFromTax).HasColumnName("exclude_pre_existing_from_tax").HasDefaultValue(false);
         modelBuilder.Entity<ProjectionSettings>()
+            .Property(ps => ps.SiaAnnualPercent).HasColumnName("sia_annual_percent").HasColumnType("decimal(5,2)").HasDefaultValue(0m);
+        modelBuilder.Entity<ProjectionSettings>()
             .Property(ps => ps.StartAmount).HasColumnName("start_amount").HasColumnType("decimal(15,2)").IsRequired(false);
         modelBuilder.Entity<ProjectionSettings>()
             .Property(ps => ps.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
@@ -196,6 +198,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.CgtPercent).HasColumnName("cgt_percent").HasColumnType("decimal(5,2)");
         modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.ExitTaxPercent).HasColumnName("exit_tax_percent").HasColumnType("decimal(5,2)");
         modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.ExcludePreExistingFromTax).HasColumnName("exclude_pre_existing_from_tax").HasDefaultValue(false);
+        modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.SiaAnnualPercent).HasColumnName("sia_annual_percent").HasColumnType("decimal(5,2)").HasDefaultValue(0m);
         modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.DataPointsJson).HasColumnName("data_points_json").HasColumnType("text");
         modelBuilder.Entity<ProjectionVersion>().HasIndex(pv => pv.UserId);
         modelBuilder.Entity<ProjectionVersion>()

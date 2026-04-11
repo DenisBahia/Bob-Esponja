@@ -177,24 +177,47 @@
                  [(ngModel)]="projectionSettings.inflationPercent" />
         </div>
 
-        <div class="param-group">
-          <label for="cgt">Deemed Disposal %</label>
-          <input id="cgt" type="number" step="0.1" min="0" max="100"
-                 [(ngModel)]="projectionSettings.cgtPercent" />
+        <!-- Tax Section: Deemed Disposal / Exit Tax -->
+        <div class="tax-section">
+          <div class="tax-section-header">Deemed Disposal / Exit Tax</div>
+          <div class="tax-section-fields">
+            <div class="param-group">
+              <label for="cgt">Deemed Disposal %</label>
+              <input id="cgt" type="number" step="0.1" min="0" max="100"
+                     [(ngModel)]="projectionSettings.cgtPercent" />
+            </div>
+
+            <div class="param-group">
+              <label for="exitTax">Exit Tax %</label>
+              <input id="exitTax" type="number" step="0.1" min="0" max="100"
+                     [(ngModel)]="projectionSettings.exitTaxPercent" />
+            </div>
+
+            <div class="param-group checkbox-group">
+              <label class="checkbox-label" for="excludePreExisting">
+                <input id="excludePreExisting" type="checkbox"
+                       [(ngModel)]="projectionSettings.excludePreExistingFromTax" />
+                Exclude buys before 01/01/2026 from tax
+              </label>
+            </div>
+          </div>
         </div>
 
-        <div class="param-group">
-          <label for="exitTax">Exit Tax %</label>
-          <input id="exitTax" type="number" step="0.1" min="0" max="100"
-                 [(ngModel)]="projectionSettings.exitTaxPercent" />
-        </div>
+        <div class="tax-section-separator"></div>
 
-        <div class="param-group checkbox-group">
-          <label class="checkbox-label" for="excludePreExisting">
-            <input id="excludePreExisting" type="checkbox"
-                   [(ngModel)]="projectionSettings.excludePreExistingFromTax" />
-            Exclude buys before 01/01/2026 from tax
-          </label>
+        <!-- Tax Section: SIA (Alternative) -->
+        <div class="tax-section">
+          <div class="tax-section-header">
+            SIA Tax (Alternative)
+            <span class="sia-tooltip" title="Replaces Deemed Disposal &amp; Exit Tax — charged yearly on total portfolio value, not just profits.">ℹ️</span>
+          </div>
+          <div class="tax-section-fields">
+            <div class="param-group">
+              <label for="siaAnnual">SIA Annual %</label>
+              <input id="siaAnnual" type="number" step="0.01" min="0" max="100"
+                     [(ngModel)]="projectionSettings.siaAnnualPercent" />
+            </div>
+          </div>
         </div>
 
         <button class="btn btn-primary" (click)="saveProjectionSettings()" [disabled]="projectionSaving" *ngIf="!sharingCtx.isReadOnly()">
@@ -243,6 +266,12 @@
           <p>Calculating projection…</p>
         </div>
         <div class="projection-table-wrapper" *ngIf="projection && !projectionLoading">
+          <div class="table-controls" *ngIf="projectionSettings.siaAnnualPercent > 0">
+            <label class="checkbox-label show-sia-checkbox" for="showSiaNumbers">
+              <input id="showSiaNumbers" type="checkbox" [(ngModel)]="showSiaNumbers" />
+              Show SIA numbers
+            </label>
+          </div>
           <table class="projection-table">
             <thead>
               <tr>
@@ -255,6 +284,9 @@
                 <th>Tax Due</th>
                 <th>After Tax Balance</th>
                 <th>After Tax Balance Inflation-Corrected</th>
+                <th *ngIf="showSiaNumbers" class="sia-col-header">SIA</th>
+                <th *ngIf="showSiaNumbers" class="sia-col-header">After Tax (SIA)</th>
+                <th *ngIf="showSiaNumbers" class="sia-col-header">After Tax Infl.-Corrected (SIA)</th>
               </tr>
             </thead>
             <tbody>
@@ -273,6 +305,9 @@
                 </td>
                 <td class="value-col after-tax-col">{{ formatCurrency(point.afterTaxTotalAmount) }}</td>
                 <td class="value-col after-tax-inflation-col">{{ formatCurrency(point.afterTaxInflationCorrectedAmount) }}</td>
+                <td *ngIf="showSiaNumbers" class="value-col sia-col">{{ formatCurrency(point.siaTax ?? 0) }}</td>
+                <td *ngIf="showSiaNumbers" class="value-col sia-col">{{ formatCurrency(point.afterTaxSia ?? 0) }}</td>
+                <td *ngIf="showSiaNumbers" class="value-col sia-col">{{ formatCurrency(point.afterTaxInflationCorrectedSia ?? 0) }}</td>
               </tr>
             </tbody>
           </table>

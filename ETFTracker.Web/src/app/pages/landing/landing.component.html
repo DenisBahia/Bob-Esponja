@@ -83,7 +83,8 @@
 
     <p class="hero__sub reveal">
       Track your holdings in real time, project your future wealth with compound-interest
-      modelling, and stay ahead of Irish tax obligations — all in one beautifully designed dashboard.
+      modelling, compare Irish tax methods including SIA annual tax, and stay ahead of after-tax outcomes —
+      all in one beautifully designed dashboard.
     </p>
 
     <div class="hero__cta reveal">
@@ -111,7 +112,7 @@
       <span class="hero__stat-sep"></span>
       <div class="hero__stat">
         <span class="hero__stat-val">Irish tax</span>
-        <span class="hero__stat-lbl">CGT &amp; Exit Tax ready</span>
+        <span class="hero__stat-lbl">Exit Tax or SIA ready</span>
       </div>
       <span class="hero__stat-sep"></span>
       <div class="hero__stat">
@@ -177,7 +178,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
         </div>
         <h3>Future Projections</h3>
-        <p>Model your wealth over 1–30 years using customisable return rates, monthly contributions, inflation, and annual buy increases.</p>
+        <p>Model your wealth over 1–30 years using customisable return rates, monthly contributions, inflation, annual buy increases, and multiple Irish tax views.</p>
       </div>
 
       <div class="feature-card reveal" style="--delay:0.25s">
@@ -185,7 +186,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         </div>
         <h3>Irish Tax Aware</h3>
-        <p>Built-in CGT (38%), Exit Tax (38%) and the 8-year Deemed Disposal rule. Know your after-tax wealth before you invest.</p>
+        <p>Built-in Exit Tax, the 8-year Deemed Disposal rule, and SIA annual tax as an alternative yearly charge on the full portfolio value.</p>
       </div>
 
       <div class="feature-card reveal" style="--delay:0.1s">
@@ -209,7 +210,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         </div>
         <h3>Projection Scenarios</h3>
-        <p>Save multiple projection versions — bullish, bearish, or base-case — and visually compare them side-by-side on a single chart.</p>
+        <p>Save multiple projection versions — bullish, bearish, base-case, or SIA-vs-Exit-Tax — and compare them side-by-side on a single chart.</p>
       </div>
     </div>
   </div>
@@ -223,7 +224,7 @@
     <div class="section-header reveal">
       <span class="section-tag">App Preview</span>
       <h2>See what's waiting for you</h2>
-      <p>A pixel-perfect dark dashboard built for focus, not distraction.</p>
+      <p>A pixel-perfect dark dashboard built for focus, not distraction — including richer Irish tax projections and SIA-specific views.</p>
     </div>
 
     <!-- Slide tabs -->
@@ -429,6 +430,7 @@
           <!-- Projection chart area -->
           <rect x="256" y="76" width="626" height="420" rx="7" fill="#111d35" stroke="#1f2e4a" stroke-width="1"/>
           <text x="270" y="98" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="11" font-weight="700">Wealth Projection — 20 Years</text>
+          <text x="730" y="98" fill="#2ec4b6" font-family="Inter,sans-serif" font-size="9" font-weight="700">SIA mode available</text>
 
           <!-- Year label row -->
           <text x="270" y="476" fill="#4d6080" font-family="Inter,sans-serif" font-size="8.5">2025</text>
@@ -485,6 +487,8 @@
           <text x="702" y="135" fill="#8da0bf" font-family="Inter,sans-serif" font-size="9">Gross portfolio</text>
           <line x1="674" y1="149" x2="696" y2="149" stroke="#14d990" stroke-width="2"/>
           <text x="702" y="153" fill="#8da0bf" font-family="Inter,sans-serif" font-size="9">After tax (CGT + Exit)</text>
+          <line x1="674" y1="161" x2="696" y2="161" stroke="#2ec4b6" stroke-width="2"/>
+          <text x="702" y="165" fill="#8da0bf" font-family="Inter,sans-serif" font-size="9">After tax (SIA view)</text>
 
           <!-- Endpoint labels -->
           <text x="875" y="157" fill="#4f8ef7" font-family="Inter,sans-serif" font-size="10" font-weight="700">€496k</text>
@@ -576,7 +580,7 @@
       <p>
         Enter your starting balance, expected annual return, monthly contributions, and inflation rate.
         ETF Tracker instantly models your wealth growth year by year, showing both the gross and
-        after-tax outcome side by side.
+        after-tax outcome side by side — including an SIA annual tax mode that applies a yearly % to the full portfolio value.
       </p>
       <ul class="spotlight__list">
         <li>
@@ -589,7 +593,7 @@
         </li>
         <li>
           <svg viewBox="0 0 24 24" fill="none" stroke="#4f8ef7" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          Irish Exit Tax &amp; CGT automatically factored in
+          Irish Exit Tax automatically factored in when using the deemed-disposal model
         </li>
         <li>
           <svg viewBox="0 0 24 24" fill="none" stroke="#4f8ef7" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
@@ -597,7 +601,15 @@
         </li>
         <li>
           <svg viewBox="0 0 24 24" fill="none" stroke="#4f8ef7" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          Save &amp; compare multiple projection scenarios
+          SIA annual % available as an alternative yearly tax on the whole portfolio
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#4f8ef7" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Extra SIA chart lines and table columns for after-tax comparisons
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#4f8ef7" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Save &amp; compare multiple projection scenarios with tax settings included
         </li>
       </ul>
       <button class="lp-btn lp-btn--primary" (click)="navigateToLogin()">Try it now →</button>
@@ -666,11 +678,11 @@
           </div>
           <div class="proj-stat">
             <span class="proj-stat__val proj-stat__val--green">€348,000</span>
-            <span class="proj-stat__lbl">After all Irish taxes</span>
+            <span class="proj-stat__lbl">After tax (Exit Tax model)</span>
           </div>
           <div class="proj-stat">
             <span class="proj-stat__val proj-stat__val--red">-€148,000</span>
-            <span class="proj-stat__lbl">Tax impact over 20 yrs</span>
+            <span class="proj-stat__lbl">Compare against SIA view in-app</span>
           </div>
         </div>
       </div>
@@ -715,7 +727,7 @@
           </div>
         </div>
         <div class="tax-card__footer">
-          Tax calculated automatically inside every projection
+          Tax calculated automatically inside every projection — including SIA annual mode
         </div>
       </div>
     </div>
@@ -726,7 +738,7 @@
       <p>
         Irish ETF investors face some of the most complex tax rules in Europe — 38% Exit Tax,
         Deemed Disposal every 8 years, and no loss offsetting. ETF Tracker was built from the
-        ground up with these rules baked in.
+        ground up with these rules baked in, while also supporting SIA annual tax as an alternative yearly charge on total portfolio value.
       </p>
       <ul class="spotlight__list">
         <li>
@@ -739,11 +751,15 @@
         </li>
         <li>
           <svg viewBox="0 0 24 24" fill="none" stroke="#14d990" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          SIA annual % available as a replacement model for yearly portfolio-wide tax
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#14d990" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
           Option to exclude pre-2026 holdings from Exit Tax
         </li>
         <li>
           <svg viewBox="0 0 24 24" fill="none" stroke="#14d990" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          Year-by-year breakdown of every tax event
+          Year-by-year breakdown of every tax event, plus SIA rows in charts and tables
         </li>
       </ul>
       <button class="lp-btn lp-btn--primary" (click)="navigateToLogin()">Start calculating →</button>

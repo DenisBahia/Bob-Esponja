@@ -63,10 +63,12 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     cgtPercent: 38,
     exitTaxPercent: 38,
     excludePreExistingFromTax: false,
+    siaAnnualPercent: 0,
     startAmount: null,
   };
   projectionLoading = false;
   projectionSaving = false;
+  showSiaNumbers = false;
   activeProjectionTab: 'chart' | 'table' | 'versions' = 'chart';
   currentYear = new Date().getFullYear();
 
@@ -270,59 +272,91 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     const ctx = this.projectionChartRef.nativeElement.getContext('2d');
     if (!ctx) return;
 
+    const datasets: any[] = [
+      {
+        label: 'Projected Portfolio Value',
+        data: points.map(p => p.totalAmount),
+        borderColor: '#4f8ef7',
+        backgroundColor: 'rgba(79, 142, 247, 0.10)',
+        fill: true,
+        tension: 0.35,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        pointBackgroundColor: '#4f8ef7',
+      },
+      {
+        label: 'Amount corrected by inflation',
+        data: points.map(p => p.inflationCorrectedAmount),
+        borderColor: '#f05252',
+        backgroundColor: 'rgba(240, 82, 82, 0.07)',
+        fill: true,
+        tension: 0.35,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        pointBackgroundColor: '#f05252',
+        borderDash: [6, 3],
+      },
+      {
+        label: 'Projected after taxes',
+        data: points.map(p => p.afterTaxTotalAmount),
+        borderColor: '#4d6080',
+        backgroundColor: 'rgba(77, 96, 128, 0.06)',
+        fill: false,
+        tension: 0.35,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        pointBackgroundColor: '#4d6080',
+        borderDash: [4, 4],
+      },
+      {
+        label: 'After Tax Balance Inflation-Corrected',
+        data: points.map(p => p.afterTaxInflationCorrectedAmount),
+        borderColor: '#f89b29',
+        backgroundColor: 'rgba(248, 155, 41, 0.07)',
+        fill: false,
+        tension: 0.35,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        pointBackgroundColor: '#f89b29',
+        borderDash: [8, 3],
+      }
+    ];
+
+    // Add SIA datasets only when SIA % is configured
+    if (this.projectionSettings.siaAnnualPercent > 0) {
+      datasets.push(
+        {
+          label: 'Projected after tax (SIA)',
+          data: points.map(p => p.afterTaxSia ?? 0),
+          borderColor: '#2ec4b6',
+          backgroundColor: 'rgba(46, 196, 182, 0.07)',
+          fill: false,
+          tension: 0.35,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          pointBackgroundColor: '#2ec4b6',
+          borderDash: [6, 4],
+        },
+        {
+          label: 'After tax inflation-corrected (SIA)',
+          data: points.map(p => p.afterTaxInflationCorrectedSia ?? 0),
+          borderColor: '#9b5de5',
+          backgroundColor: 'rgba(155, 93, 229, 0.07)',
+          fill: false,
+          tension: 0.35,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          pointBackgroundColor: '#9b5de5',
+          borderDash: [10, 4],
+        }
+      );
+    }
+
     this.lineChart = new Chart(ctx, {
       type: 'line',
       data: {
         labels: points.map(p => p.year.toString()),
-        datasets: [
-          {
-            label: 'Projected Portfolio Value',
-            data: points.map(p => p.totalAmount),
-            borderColor: '#4f8ef7',
-            backgroundColor: 'rgba(79, 142, 247, 0.10)',
-            fill: true,
-            tension: 0.35,
-            pointRadius: 5,
-            pointHoverRadius: 7,
-            pointBackgroundColor: '#4f8ef7',
-          },
-          {
-            label: 'Amount corrected by inflation',
-            data: points.map(p => p.inflationCorrectedAmount),
-            borderColor: '#f05252',
-            backgroundColor: 'rgba(240, 82, 82, 0.07)',
-            fill: true,
-            tension: 0.35,
-            pointRadius: 5,
-            pointHoverRadius: 7,
-            pointBackgroundColor: '#f05252',
-            borderDash: [6, 3],
-          },
-          {
-            label: 'Projected after taxes',
-            data: points.map(p => p.afterTaxTotalAmount),
-            borderColor: '#4d6080',
-            backgroundColor: 'rgba(77, 96, 128, 0.06)',
-            fill: false,
-            tension: 0.35,
-            pointRadius: 5,
-            pointHoverRadius: 7,
-            pointBackgroundColor: '#4d6080',
-            borderDash: [4, 4],
-          },
-          {
-            label: 'After Tax Balance Inflation-Corrected',
-            data: points.map(p => p.afterTaxInflationCorrectedAmount),
-            borderColor: '#f89b29',
-            backgroundColor: 'rgba(248, 155, 41, 0.07)',
-            fill: false,
-            tension: 0.35,
-            pointRadius: 5,
-            pointHoverRadius: 7,
-            pointBackgroundColor: '#f89b29',
-            borderDash: [8, 3],
-          }
-        ]
+        datasets,
       },
       options: {
         responsive: true,
@@ -429,6 +463,10 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
         this.versionSaving = false;
         this.newVersionName = '';
         this.projectionVersions = [...this.projectionVersions, v];
+        // Cache the frozen data points so comparison works immediately without an extra fetch
+        if (v.dataPoints?.length) {
+          this.versionCompareData.set(v.id, v.dataPoints);
+        }
         this.cdr.markForCheck();
       },
       error: (err) => {
@@ -528,14 +566,22 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     } else {
       next.add(versionId);
       this.selectedVersionIds = next;
+      // Use the pre-loaded (frozen) data points from the version summary — no extra API call needed.
       if (!this.versionCompareData.has(versionId)) {
-        this.apiService.getProjectionVersionDetail(versionId).subscribe({
-          next: (detail) => {
-            this.versionCompareData.set(versionId, detail.dataPoints);
-            this.rebuildVersionsCompareChart();
-          },
-          error: (err) => console.error('Error loading version detail:', err)
-        });
+        const version = this.projectionVersions.find(v => v.id === versionId);
+        if (version?.dataPoints?.length) {
+          this.versionCompareData.set(versionId, version.dataPoints);
+          this.rebuildVersionsCompareChart();
+        } else {
+          // Fallback: fetch detail if data points weren't included (e.g. older saved version)
+          this.apiService.getProjectionVersionDetail(versionId).subscribe({
+            next: (detail) => {
+              this.versionCompareData.set(versionId, detail.dataPoints);
+              this.rebuildVersionsCompareChart();
+            },
+            error: (err) => console.error('Error loading version detail:', err)
+          });
+        }
       } else {
         this.rebuildVersionsCompareChart();
       }

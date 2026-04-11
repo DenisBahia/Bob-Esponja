@@ -32,6 +32,7 @@ public class ProjectionService : IProjectionService
         CgtPercent = 38m,
         ExitTaxPercent = 38m,
         ExcludePreExistingFromTax = false,
+        SiaAnnualPercent = 0m,
     };
 
     public ProjectionService(AppDbContext context, IPriceService priceService, ILogger<ProjectionService> logger)
@@ -60,6 +61,7 @@ public class ProjectionService : IProjectionService
                 CgtPercent = dbSettings.CgtPercent,
                 ExitTaxPercent = dbSettings.ExitTaxPercent,
                 ExcludePreExistingFromTax = dbSettings.ExcludePreExistingFromTax,
+                SiaAnnualPercent = dbSettings.SiaAnnualPercent,
                 StartAmount = dbSettings.StartAmount,
             }
             : new ProjectionSettingsDto
@@ -72,6 +74,7 @@ public class ProjectionService : IProjectionService
                 CgtPercent = DefaultSettings.CgtPercent,
                 ExitTaxPercent = DefaultSettings.ExitTaxPercent,
                 ExcludePreExistingFromTax = DefaultSettings.ExcludePreExistingFromTax,
+                SiaAnnualPercent = DefaultSettings.SiaAnnualPercent,
                 StartAmount = null,
             };
 
@@ -251,6 +254,7 @@ public class ProjectionService : IProjectionService
         // ── Build data points ─────────────────────────────────────────────────
         var dataPoints = new List<ProjectionDataPointDto>();
         var cumulativeTax = 0m;
+        var cumulativeSia = 0m;
 
         for (int i = 0; i <= settings.ProjectionYears; i++)
         {
@@ -260,6 +264,10 @@ public class ProjectionService : IProjectionService
             var cgtPaid = cgtByYear.TryGetValue(year, out var cgt) ? cgt : 0m;
             var exitTaxPaid = (year == projectionEndYear) ? exitTaxTotal : 0m;
             cumulativeTax += cgtPaid + exitTaxPaid;
+
+            // SIA: annual tax on the entire end-of-year portfolio balance
+            var siaTax = Math.Round(endOfYear[i] * settings.SiaAnnualPercent / 100m, 2);
+            cumulativeSia += siaTax;
 
             dataPoints.Add(new ProjectionDataPointDto
             {
@@ -273,6 +281,9 @@ public class ProjectionService : IProjectionService
                 ExitTaxPaid = exitTaxPaid,
                 AfterTaxTotalAmount = Math.Round(Math.Max(0m, endOfYear[i] - cumulativeTax), 2),
                 AfterTaxInflationCorrectedAmount = Math.Round(Math.Max(0m, (endOfYear[i] - cumulativeTax) / inflationFactor), 2),
+                SiaTax = siaTax,
+                AfterTaxSia = Math.Round(Math.Max(0m, endOfYear[i] - cumulativeSia), 2),
+                AfterTaxInflationCorrectedSia = Math.Round(Math.Max(0m, (endOfYear[i] - cumulativeSia) / inflationFactor), 2),
             });
         }
 
@@ -300,6 +311,7 @@ public class ProjectionService : IProjectionService
                 CgtPercent = dto.CgtPercent,
                 ExitTaxPercent = dto.ExitTaxPercent,
                 ExcludePreExistingFromTax = dto.ExcludePreExistingFromTax,
+                SiaAnnualPercent = dto.SiaAnnualPercent,
                 StartAmount = (dto.StartAmount.HasValue && dto.StartAmount.Value > 0m) ? dto.StartAmount : null,
                 CreatedAt = utcNow,
                 UpdatedAt = utcNow,
@@ -316,6 +328,7 @@ public class ProjectionService : IProjectionService
             existing.CgtPercent = dto.CgtPercent;
             existing.ExitTaxPercent = dto.ExitTaxPercent;
             existing.ExcludePreExistingFromTax = dto.ExcludePreExistingFromTax;
+            existing.SiaAnnualPercent = dto.SiaAnnualPercent;
             existing.StartAmount = (dto.StartAmount.HasValue && dto.StartAmount.Value > 0m) ? dto.StartAmount : null;
             existing.UpdatedAt = utcNow;
         }
@@ -349,6 +362,7 @@ public class ProjectionService : IProjectionService
             CgtPercent = settings.CgtPercent,
             ExitTaxPercent = settings.ExitTaxPercent,
             ExcludePreExistingFromTax = settings.ExcludePreExistingFromTax,
+            SiaAnnualPercent = settings.SiaAnnualPercent,
             DataPointsJson = json,
         };
         _context.ProjectionVersions.Add(entity);
@@ -361,34 +375,39 @@ public class ProjectionService : IProjectionService
             IsDefault = entity.IsDefault,
             SavedAt = entity.SavedAt,
             Settings = settings,
+            DataPoints = dataPoints,
         };
     }
 
     public async Task<List<ProjectionVersionSummaryDto>> GetVersionsAsync(
         int userId, CancellationToken ct = default)
     {
-        return await _context.ProjectionVersions
+        var entities = await _context.ProjectionVersions
             .Where(pv => pv.UserId == userId)
             .OrderBy(pv => pv.SavedAt)
-            .Select(pv => new ProjectionVersionSummaryDto
-            {
-                Id = pv.Id,
-                VersionName = pv.VersionName,
-                IsDefault = pv.IsDefault,
-                SavedAt = pv.SavedAt,
-                Settings = new ProjectionSettingsDto
-                {
-                    YearlyReturnPercent = pv.YearlyReturnPercent,
-                    MonthlyBuyAmount = pv.MonthlyBuyAmount,
-                    AnnualBuyIncreasePercent = pv.AnnualBuyIncreasePercent,
-                    ProjectionYears = pv.ProjectionYears,
-                    InflationPercent = pv.InflationPercent,
-                    CgtPercent = pv.CgtPercent,
-                    ExitTaxPercent = pv.ExitTaxPercent,
-                    ExcludePreExistingFromTax = pv.ExcludePreExistingFromTax,
-                }
-            })
             .ToListAsync(ct);
+
+        return entities.Select(pv => new ProjectionVersionSummaryDto
+        {
+            Id = pv.Id,
+            VersionName = pv.VersionName,
+            IsDefault = pv.IsDefault,
+            SavedAt = pv.SavedAt,
+            Settings = new ProjectionSettingsDto
+            {
+                YearlyReturnPercent = pv.YearlyReturnPercent,
+                MonthlyBuyAmount = pv.MonthlyBuyAmount,
+                AnnualBuyIncreasePercent = pv.AnnualBuyIncreasePercent,
+                ProjectionYears = pv.ProjectionYears,
+                InflationPercent = pv.InflationPercent,
+                CgtPercent = pv.CgtPercent,
+                ExitTaxPercent = pv.ExitTaxPercent,
+                ExcludePreExistingFromTax = pv.ExcludePreExistingFromTax,
+                SiaAnnualPercent = pv.SiaAnnualPercent,
+            },
+            DataPoints = System.Text.Json.JsonSerializer.Deserialize<List<ProjectionDataPointDto>>(pv.DataPointsJson)
+                         ?? new List<ProjectionDataPointDto>(),
+        }).ToList();
     }
 
     public async Task<ProjectionVersionDetailDto?> GetVersionDetailAsync(
@@ -418,6 +437,7 @@ public class ProjectionService : IProjectionService
                 CgtPercent = entity.CgtPercent,
                 ExitTaxPercent = entity.ExitTaxPercent,
                 ExcludePreExistingFromTax = entity.ExcludePreExistingFromTax,
+                SiaAnnualPercent = entity.SiaAnnualPercent,
             },
             DataPoints = dataPoints,
         };
@@ -457,6 +477,7 @@ public class ProjectionService : IProjectionService
                 CgtPercent = target.CgtPercent,
                 ExitTaxPercent = target.ExitTaxPercent,
                 ExcludePreExistingFromTax = target.ExcludePreExistingFromTax,
+                SiaAnnualPercent = target.SiaAnnualPercent,
             }
         };
     }
