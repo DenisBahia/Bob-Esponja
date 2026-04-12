@@ -55,7 +55,7 @@
   <div *ngIf="dashboard && !loading" class="dashboard-content">
     <!-- Header with metrics -->
     <div class="dashboard-header">
-      <h1>📊 ETF Portfolio Dashboard</h1>
+      <h1>📊 Investment Portfolio Dashboard</h1>
 
       <div class="metrics-grid">
         <!-- Total Holdings -->
@@ -466,7 +466,7 @@
             <thead>
               <tr>
                 <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='ticker'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='ticker'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('ticker')">Ticker</th>
-                <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='etfName'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='etfName'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('etfName')">ETF Name</th>
+                <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='etfName'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='etfName'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('etfName')">Asset Name</th>
                 <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='quantity'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='quantity'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('quantity')">Quantity</th>
                 <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='avgCost'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='avgCost'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('avgCost')">Avg Cost</th>
                 <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='currentPrice'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='currentPrice'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('currentPrice')">Current Price</th>
