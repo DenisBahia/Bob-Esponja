@@ -2,7 +2,7 @@
 
 ## What You Now Have
 
-A fully functional **Swagger/OpenAPI API documentation system** for the ETF Tracker API.
+A fully functional **Swagger/OpenAPI API documentation system** for the Investments Tracker API.
 
 ---
 
@@ -241,7 +241,7 @@ A: Yes, see SWAGGER_SETUP.md for customization options.
 
 ## Summary
 
-You have successfully implemented **professional API documentation** for your ETF Tracker API.
+You have successfully implemented **professional API documentation** for your Investments Tracker API.
 
 The system is:
 - ✅ **Automatic** - Updates with your code

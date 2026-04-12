@@ -1,6 +1,6 @@
-# 🎯 ETF Investment Tracker
+# 🎯 Investments Tracker
 
-A modern, full-stack web application for managing and tracking ETF (Exchange-Traded Fund) investments with real-time performance analytics, portfolio sharing, and tax compliance tools designed for Irish investors.
+A modern, full-stack web application for managing and tracking investments (ETFs, stocks, mutual funds, cryptocurrencies, and more) with real-time performance analytics, portfolio sharing, and tax compliance tools designed for Irish investors.
 
 **Live Demo** | **Documentation** | **Support**
 
@@ -38,9 +38,9 @@ A modern, full-stack web application for managing and tracking ETF (Exchange-Tra
 
 ## 🎯 Overview
 
-ETF Investment Tracker is a comprehensive portfolio management solution built for modern investors. Whether you're managing a simple portfolio or complex multi-broker holdings, this application provides the tools you need to:
+Investments Tracker is a comprehensive portfolio management solution built for modern investors. Whether you're managing a simple portfolio or complex multi-broker holdings, this application provides the tools you need to:
 
-- **Track Holdings** across multiple brokers with real-time pricing
+- **Track Holdings** across multiple brokers with real-time pricing (ETFs, stocks, mutual funds, crypto, commodities)
 - **Analyze Performance** with detailed metrics and historical data
 - **Plan Investments** using advanced projection modeling
 - **Stay Compliant** with tax regulations (especially for Irish investors)

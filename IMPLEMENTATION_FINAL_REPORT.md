@@ -1,6 +1,6 @@
 # 🎉 Price Source Tracking Implementation - COMPLETE
 
-## Project: ETF Tracker
+## Project: Investments Tracker
 **Date Completed**: April 2, 2026
 **Feature**: Price Source Tracking for Holdings
 **Status**: ✅ READY FOR DEPLOYMENT

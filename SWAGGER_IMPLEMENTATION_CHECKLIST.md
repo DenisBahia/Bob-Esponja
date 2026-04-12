@@ -196,5 +196,5 @@ dotnet run
 
 🟢 **COMPLETE AND VERIFIED**
 
-The ETF Tracker API now has professional Swagger/OpenAPI documentation ready for use!
+The Investments Tracker API now has professional Swagger/OpenAPI documentation ready for use!
 

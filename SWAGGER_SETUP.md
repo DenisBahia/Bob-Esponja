@@ -2,7 +2,7 @@
 
 ## Summary
 
-Swagger has been successfully integrated into the ETF Tracker API using Swashbuckle.AspNetCore. This provides comprehensive API documentation accessible through the Swagger UI.
+Swagger has been successfully integrated into the Investments Tracker API using Swashbuckle.AspNetCore. This provides comprehensive API documentation accessible through the Swagger UI.
 
 ## Changes Made
 

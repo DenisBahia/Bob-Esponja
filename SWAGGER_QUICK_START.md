@@ -2,7 +2,7 @@
 
 ## What Was Installed
 
-Swagger API documentation has been added to the ETF Tracker API project using **Swashbuckle.AspNetCore**.
+Swagger API documentation has been added to the Investments Tracker API project using **Swashbuckle.AspNetCore**.
 
 ## Running the Application
 

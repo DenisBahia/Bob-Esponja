@@ -1,7 +1,7 @@
-# ETF Investment Tracking Web Application
+# Investment Portfolio Tracking Web Application
 
 ## Project Overview
-A web application designed to help ETF investors in Ireland manage their investment portfolio across multiple brokers, track holdings, manage deemed disposal tax obligations, and visualize investment performance.
+A web application designed to help Irish investors manage their investment portfolio across multiple brokers (ETFs, stocks, mutual funds, cryptocurrencies, and more), track holdings, manage deemed disposal tax obligations, and visualize investment performance.
 
 ## Phase 1: Holdings Management & Tracking
 

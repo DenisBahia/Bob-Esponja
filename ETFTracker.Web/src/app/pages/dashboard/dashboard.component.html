@@ -14,7 +14,7 @@
     <!-- Top nav / user menu -->
     <nav class="top-nav" *ngIf="auth.user() as user">
       <div class="nav-left">
-        <span class="app-brand">📊 ETF Tracker</span>
+        <span class="app-brand">📊 Investments Tracker</span>
       </div>
       <div class="nav-right">
         <div class="user-menu">
@@ -440,29 +440,6 @@
       </div>
     </div>
 
-    <!-- Allocation Pie Chart -->
-    <div class="allocation-section">
-      <h2>Portfolio Allocation</h2>
-      <div class="allocation-content">
-        <div class="pie-wrapper">
-          <canvas #allocationChart></canvas>
-        </div>
-        <div class="allocation-legend">
-          <div class="legend-item" *ngFor="let slice of allocationSlices">
-            <span class="legend-color" [style.background]="slice.color"></span>
-            <div class="legend-details">
-              <span class="legend-ticker">{{ slice.ticker }}</span>
-              <span class="legend-name">{{ slice.etfName }}</span>
-              <div class="legend-metrics">
-                <span class="legend-amount">{{ formatCurrency(slice.value) }}</span>
-                <span class="legend-percent">{{ slice.percent.toFixed(1) }}%</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Holdings Section -->
     <div class="holdings-section">
       <h2>Your Holdings</h2>
@@ -582,6 +559,29 @@
             <span class="legend-label">Portfolio value</span>
           </div>
         </ng-container>
+      </div>
+    </div>
+
+    <!-- Allocation Pie Chart -->
+    <div class="allocation-section">
+      <h2>Portfolio Allocation</h2>
+      <div class="allocation-content">
+        <div class="pie-wrapper">
+          <canvas #allocationChart></canvas>
+        </div>
+        <div class="allocation-legend">
+          <div class="legend-item" *ngFor="let slice of allocationSlices">
+            <span class="legend-color" [style.background]="slice.color"></span>
+            <div class="legend-details">
+              <span class="legend-ticker">{{ slice.ticker }}</span>
+              <span class="legend-name">{{ slice.etfName }}</span>
+              <div class="legend-metrics">
+                <span class="legend-amount">{{ formatCurrency(slice.value) }}</span>
+                <span class="legend-percent">{{ slice.percent.toFixed(1) }}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
