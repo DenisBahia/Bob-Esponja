@@ -1,4 +1,4 @@
-# ETF Investment Tracking Application - Complete Setup Guide
+# Investments Tracker - Complete Setup Guide
 
 ## Project Overview
 

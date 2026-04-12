@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# ETF Investment Tracker - Quick Start Script
+# Investments Tracker - Quick Start Script
 # This script helps set up the development environment
 
 set -e
 
 echo "=========================================="
-echo "ETF Investment Tracker - Quick Start"
+echo "Investments Tracker - Quick Start"
 echo "=========================================="
 echo ""
 

@@ -5,7 +5,7 @@
 
 ## Summary
 
-Successfully transitioned the ETF Investment Tracker to use **Yahoo Finance exclusively** for price data, with automatic daily closing price capture on first login of each day.
+Successfully transitioned Investments Tracker to use **Yahoo Finance exclusively** for price data, with automatic daily closing price capture on first login of each day.
 
 ## Changes Made
 

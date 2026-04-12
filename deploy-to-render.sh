@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# ETF Investment Tracker - Render.com Deployment Quick Start
+# Investments Tracker - Render.com Deployment Quick Start
 # This script helps you push your code and provides the next steps
 
 echo "=========================================="

@@ -8,5 +8,5 @@ import { RouterOutlet } from '@angular/router';
   template: `<router-outlet />`
 })
 export class App {
-  title = 'ETF Investment Tracker';
+  title = 'Investments Tracker';
 }

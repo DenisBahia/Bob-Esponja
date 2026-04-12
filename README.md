@@ -847,7 +847,7 @@ For licensing inquiries, contact the project maintainers.
 
 | Property | Value |
 |---|---|
-| **Name** | ETF Investment Tracker (Bob Esponja) |
+| **Name** | Investments Tracker (Bob Esponja) |
 | **Version** | 1.0.0+ |
 | **Status** | Active Development |
 | **Last Updated** | April 2026 |

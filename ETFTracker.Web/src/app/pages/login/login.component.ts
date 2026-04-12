@@ -13,7 +13,7 @@ import { AuthService } from '../../services/auth.service';
 
         <div class="brand">
           <span class="brand-icon">📊</span>
-          <h1>ETF Investment Tracker</h1>
+          <h1>Investments Tracker</h1>
           <p class="subtitle">Sign in to access your portfolio</p>
         </div>
 

@@ -1,4 +1,4 @@
-# ETF Investment Tracker - Complete File Listing
+# Investments Tracker - Complete File Listing
 
 ## 📁 Project Structure
 

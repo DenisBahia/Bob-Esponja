@@ -1,4 +1,4 @@
--- ETF Investment Tracking Application Database Schema
+-- Investment Portfolio Tracking Application Database Schema
 -- PostgreSQL
 
 -- Create ENUM types

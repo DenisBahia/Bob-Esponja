@@ -1,4 +1,4 @@
-# Multi-stage build for ETF Investment Tracker
+# Multi-stage build for Investments Tracker
 # Stage 1: Build .NET Backend
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS backend-build
 WORKDIR /app
