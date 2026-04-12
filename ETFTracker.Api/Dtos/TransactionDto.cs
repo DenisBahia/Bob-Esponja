@@ -8,6 +8,13 @@ public class CreateTransactionDto
     public DateOnly PurchaseDate { get; set; }
 }
 
+public class UpdateTransactionDto
+{
+    public decimal Quantity { get; set; }
+    public decimal PurchasePrice { get; set; }
+    public DateOnly PurchaseDate { get; set; }
+}
+
 public class TransactionDto
 {
     public int Id { get; set; }

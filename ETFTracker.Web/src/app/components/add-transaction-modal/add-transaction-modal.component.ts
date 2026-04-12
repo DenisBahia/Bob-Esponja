@@ -1,15 +1,16 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Output, HostListener, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, CreateTransactionDto } from '../../services/api.service';
-import { debounceTime, Subject } from 'rxjs';
+import { ApiService, CreateTransactionDto, TickerSearchResult } from '../../services/api.service';
+import { debounceTime, Subject, switchMap, of } from 'rxjs';
 
 @Component({
   selector: 'app-add-transaction-modal',
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './add-transaction-modal.component.html',
-  styleUrls: ['./add-transaction-modal.component.scss']
+  styleUrls: ['./add-transaction-modal.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AddTransactionModalComponent {
   @Output() transactionAdded = new EventEmitter<void>();
@@ -19,50 +20,71 @@ export class AddTransactionModalComponent {
   quantity: number = 0;
   purchasePrice: number = 0;
   purchaseDate: string = new Date().toISOString().split('T')[0];
-  etfDescription: string | null = null;
-  loadingDescription = false;
+
+  // Search
+  searchResults: TickerSearchResult[] = [];
+  showDropdown = false;
+  loadingSearch = false;
+  selectedResult: TickerSearchResult | null = null;
 
   loading = false;
   error: string | null = null;
 
-  private tickerSubject = new Subject<string>();
+  private searchSubject = new Subject<string>();
 
-  constructor(private apiService: ApiService) {
-    // Debounce ticker changes to avoid excessive API calls
-    this.tickerSubject.pipe(
-      debounceTime(500)
-    ).subscribe(ticker => {
-      this.fetchEtfDescription(ticker);
-    });
-  }
-
-  onTickerChange(ticker: string): void {
-    this.etfDescription = null;
-    if (ticker.trim().length > 0) {
-      this.tickerSubject.next(ticker.trim());
-    }
-  }
-
-  private fetchEtfDescription(ticker: string): void {
-    if (!ticker.trim()) {
-      this.etfDescription = null;
-      return;
-    }
-
-    this.loadingDescription = true;
-    this.apiService.getEtfDescription(ticker.toUpperCase()).subscribe({
-      next: (response) => {
-        this.etfDescription = response.description && response.description !== 'ETF not found'
-          ? response.description
-          : null;
-        this.loadingDescription = false;
+  constructor(private apiService: ApiService, private cdr: ChangeDetectorRef) {
+    this.searchSubject.pipe(
+      debounceTime(350),
+      switchMap(query => {
+        if (!query.trim()) {
+          this.loadingSearch = false;
+          this.searchResults = [];
+          this.showDropdown = false;
+          this.cdr.markForCheck();
+          return of([]);
+        }
+        this.loadingSearch = true;
+        this.cdr.markForCheck();
+        return this.apiService.searchTickers(query);
+      })
+    ).subscribe({
+      next: (results) => {
+        this.searchResults = results;
+        this.showDropdown = results.length > 0;
+        this.loadingSearch = false;
+        this.cdr.markForCheck();
       },
-      error: (err) => {
-        console.error('Error fetching ETF description:', err);
-        this.etfDescription = null;
-        this.loadingDescription = false;
+      error: () => {
+        this.searchResults = [];
+        this.showDropdown = false;
+        this.loadingSearch = false;
+        this.cdr.markForCheck();
       }
     });
+  }
+
+  onTickerChange(value: string): void {
+    this.selectedResult = null;
+    this.searchSubject.next(value);
+  }
+
+  selectResult(result: TickerSearchResult): void {
+    this.ticker = result.symbol;
+    this.selectedResult = result;
+    this.showDropdown = false;
+    this.searchResults = [];
+    this.cdr.markForCheck();
+  }
+
+  closeDropdown(): void {
+    this.showDropdown = false;
+    this.cdr.markForCheck();
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.showDropdown = false;
+    this.cdr.markForCheck();
   }
 
   onSubmit(): void {
@@ -83,12 +105,14 @@ export class AddTransactionModalComponent {
     this.apiService.addTransaction(transaction).subscribe({
       next: () => {
         this.loading = false;
+        this.cdr.markForCheck();
         this.transactionAdded.emit();
       },
       error: (err) => {
         console.error('Error adding transaction:', err);
         this.error = 'Failed to add transaction. Please try again.';
         this.loading = false;
+        this.cdr.markForCheck();
       }
     });
   }
@@ -100,25 +124,44 @@ export class AddTransactionModalComponent {
   private validateForm(): boolean {
     if (!this.ticker.trim()) {
       this.error = 'Please enter a ticker';
+      this.cdr.markForCheck();
       return false;
     }
 
     if (this.quantity <= 0) {
       this.error = 'Quantity must be greater than 0';
+      this.cdr.markForCheck();
       return false;
     }
 
     if (this.purchasePrice <= 0) {
       this.error = 'Purchase price must be greater than 0';
+      this.cdr.markForCheck();
       return false;
     }
 
     if (!this.purchaseDate) {
       this.error = 'Please select a purchase date';
+      this.cdr.markForCheck();
       return false;
     }
 
     return true;
   }
+
+  getQuoteTypeIcon(quoteType: string | null): string {
+    switch ((quoteType ?? '').toUpperCase()) {
+      case 'EQUITY':      return '📈';
+      case 'ETF':         return '📊';
+      case 'MUTUALFUND':  return '💼';
+      case 'INDEX':       return '📉';
+      case 'CURRENCY':    return '💱';
+      case 'CRYPTOCURRENCY': return '₿';
+      case 'FUTURE':      return '🏗️';
+      case 'BOND':        return '🏦';
+      default:            return '🔍';
+    }
+  }
 }
+
 

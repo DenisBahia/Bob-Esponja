@@ -28,17 +28,60 @@
             <th>Current Price</th>
             <th>Variation</th>
             <th>Variation %</th>
+            <th *ngIf="!sharingCtx.isReadOnly()"></th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let transaction of transactions" [ngClass]="{'positive': transaction.variationEur >= 0, 'negative': transaction.variationEur < 0}">
-            <td>{{ formatDate(transaction.purchaseDate) }}</td>
-            <td class="quantity">{{ formatQuantity(transaction.quantity) }}</td>
-            <td class="price">{{ formatCurrency(transaction.purchasePrice) }}</td>
-            <td class="price">{{ formatCurrency(transaction.quantity * transaction.purchasePrice) }}</td>
-            <td class="price">{{ formatCurrency(transaction.currentPrice) }}</td>
-            <td class="price">{{ formatCurrency(transaction.variationEur) }}</td>
-            <td class="price">{{ formatPercent(transaction.variationPercent) }}</td>
+          <tr *ngFor="let transaction of transactions"
+              [ngClass]="{'positive': transaction.variationEur >= 0 && editingId !== transaction.id,
+                          'negative': transaction.variationEur < 0 && editingId !== transaction.id,
+                          'row-editing': editingId === transaction.id}">
+
+            <!-- ── EDIT MODE ── -->
+            <ng-container *ngIf="editingId === transaction.id; else viewMode">
+              <td><input type="date" class="edit-input" [(ngModel)]="editForm.purchaseDate" /></td>
+              <td><input type="number" class="edit-input edit-input-sm" [(ngModel)]="editForm.quantity" step="0.0001" min="0.0001" /></td>
+              <td><input type="number" class="edit-input edit-input-sm" [(ngModel)]="editForm.purchasePrice" step="0.01" min="0" /></td>
+              <td class="price">{{ formatCurrency(editForm.quantity * editForm.purchasePrice) }}</td>
+              <td class="price">{{ formatCurrency(transaction.currentPrice) }}</td>
+              <td class="price" colspan="1">—</td>
+              <td class="price">—</td>
+              <td class="action-col">
+                <span class="edit-save-inline">
+                  <button class="btn-confirm-yes" (click)="saveEdit(transaction.id)" [disabled]="savingEdit">{{ savingEdit ? '…' : '✓' }}</button>
+                  <button class="btn-confirm-no" (click)="cancelEdit()">✕</button>
+                </span>
+              </td>
+            </ng-container>
+
+            <!-- ── VIEW MODE ── -->
+            <ng-template #viewMode>
+              <td>{{ formatDate(transaction.purchaseDate) }}</td>
+              <td class="quantity">{{ formatQuantity(transaction.quantity) }}</td>
+              <td class="price">{{ formatCurrency(transaction.purchasePrice) }}</td>
+              <td class="price">{{ formatCurrency(transaction.quantity * transaction.purchasePrice) }}</td>
+              <td class="price">{{ formatCurrency(transaction.currentPrice) }}</td>
+              <td class="price">{{ formatCurrency(transaction.variationEur) }}</td>
+              <td class="price">{{ formatPercent(transaction.variationPercent) }}</td>
+              <td *ngIf="!sharingCtx.isReadOnly()" class="action-col">
+                <ng-container *ngIf="confirmDeleteId === transaction.id; else normalActions">
+                  <span class="delete-confirm-inline">
+                    <button class="btn-confirm-yes" (click)="confirmDelete(transaction.id)" [disabled]="deletingIds.has(transaction.id)">✓</button>
+                    <button class="btn-confirm-no" (click)="cancelDelete()">✕</button>
+                  </span>
+                </ng-container>
+                <ng-template #normalActions>
+                  <button class="btn-edit" (click)="startEdit(transaction)" title="Edit this buy">✏️</button>
+                  <button class="btn-delete"
+                          (click)="requestDelete(transaction.id)"
+                          [disabled]="deletingIds.has(transaction.id)"
+                          title="Delete this buy">
+                    {{ deletingIds.has(transaction.id) ? '…' : '🗑️' }}
+                  </button>
+                </ng-template>
+              </td>
+            </ng-template>
+
           </tr>
         </tbody>
       </table>

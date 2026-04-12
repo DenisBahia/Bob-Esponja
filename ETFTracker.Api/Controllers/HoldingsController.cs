@@ -34,6 +34,30 @@ public class HoldingsController : ControllerBase
     private int GetUserId() => _sharingContext.GetEffectiveUserId();
 
     /// <summary>
+    /// Searches for tickers/instruments via Yahoo Finance.
+    /// </summary>
+    /// <param name="q">Search query (e.g., "apple", "VWRL")</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of matching instruments with symbol, name, exchange and type</returns>
+    [HttpGet("search")]
+    public async Task<ActionResult<List<TickerSearchResult>>> SearchTickers([FromQuery] string q, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(q) || q.Trim().Length < 1)
+                return Ok(new List<TickerSearchResult>());
+
+            var results = await _priceService.SearchTickersAsync(q.Trim(), cancellationToken);
+            return Ok(results);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error searching tickers for query '{q}'");
+            return StatusCode(500, new { message = "Error searching tickers" });
+        }
+    }
+
+    /// <summary>
     /// Gets the description for a given ETF ticker.
     /// </summary>
     /// <param name="ticker">The ETF ticker symbol (e.g., "VGRO", "XGRO")</param>
@@ -176,6 +200,52 @@ public class HoldingsController : ControllerBase
         {
             _logger.LogError(ex, "Error adding transaction");
             return StatusCode(500, new { message = "Error adding transaction" });
+        }
+    }
+
+    /// <summary>Deletes a transaction and recalculates the holding.</summary>
+    [HttpDelete("transactions/{transactionId}")]
+    public async Task<ActionResult> DeleteTransaction(int transactionId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (_sharingContext.IsReadOnly())
+                return StatusCode(403, new { message = "This profile is shared as read-only. You cannot delete transactions." });
+
+            await _holdingsService.DeleteTransactionAsync(transactionId, GetUserId(), cancellationToken);
+            return NoContent();
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(403, new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error deleting transaction {transactionId}");
+            return StatusCode(500, new { message = "Error deleting transaction" });
+        }
+    }
+
+    /// <summary>Updates a transaction's quantity, price and date; recalculates the holding.</summary>
+    [HttpPatch("transactions/{transactionId}")]
+    public async Task<ActionResult> UpdateTransaction(int transactionId, [FromBody] UpdateTransactionDto dto, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (_sharingContext.IsReadOnly())
+                return StatusCode(403, new { message = "This profile is shared as read-only. You cannot edit transactions." });
+
+            await _holdingsService.UpdateTransactionAsync(transactionId, GetUserId(), dto, cancellationToken);
+            return NoContent();
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(403, new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error updating transaction {transactionId}");
+            return StatusCode(500, new { message = "Error updating transaction" });
         }
     }
 }

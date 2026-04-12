@@ -410,6 +410,59 @@ public class PriceService : IPriceService
         }
     }
 
+    public async Task<List<TickerSearchResult>> SearchTickersAsync(string query, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var encodedQuery = Uri.EscapeDataString(query);
+            var url = $"https://query1.finance.yahoo.com/v1/finance/search?q={encodedQuery}&quotesCount=10&newsCount=0&enableFuzzyQuery=false&quotesQueryId=tss_match_phrase_query";
+
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+            request.Headers.Add("Accept", "application/json");
+
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning($"Yahoo Finance search returned {response.StatusCode} for query '{query}'");
+                return new List<TickerSearchResult>();
+            }
+
+            var content = await response.Content.ReadAsStringAsync(cancellationToken);
+            var jsonDoc = System.Text.Json.JsonDocument.Parse(content);
+
+            var results = new List<TickerSearchResult>();
+
+            if (jsonDoc.RootElement.TryGetProperty("quotes", out var quotes))
+            {
+                foreach (var quote in quotes.EnumerateArray())
+                {
+                    if (!quote.TryGetProperty("symbol", out var symbolEl)) continue;
+                    var symbol = symbolEl.GetString();
+                    if (string.IsNullOrEmpty(symbol)) continue;
+
+                    results.Add(new TickerSearchResult
+                    {
+                        Symbol      = symbol,
+                        ShortName   = quote.TryGetProperty("shortname",  out var sn)  ? sn.GetString()  : null,
+                        LongName    = quote.TryGetProperty("longname",   out var ln)  ? ln.GetString()  : null,
+                        Exchange    = quote.TryGetProperty("exchange",   out var ex)  ? ex.GetString()  : null,
+                        QuoteType   = quote.TryGetProperty("quoteType",  out var qt)  ? qt.GetString()  : null,
+                        TypeDisp    = quote.TryGetProperty("typeDisp",   out var td)  ? td.GetString()  : null
+                    });
+                }
+            }
+
+            return results;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, $"Error searching tickers for query '{query}'");
+            return new List<TickerSearchResult>();
+        }
+    }
+
     public async Task<decimal?> GetSnapshotPriceAsync(string ticker, DateTime date, CancellationToken cancellationToken = default)
     {
         try
@@ -425,6 +478,134 @@ public class PriceService : IPriceService
         {
             _logger.LogError(ex, $"Error getting snapshot price for {ticker} on {date:yyyy-MM-dd}");
             return null;
+        }
+    }
+
+    public async Task<int> FetchAndSaveHistoricalPricesAsync(
+        string ticker,
+        DateOnly fromDate,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Yahoo Finance uses ".DE" instead of ".XETRA"
+            var yahooTicker = ticker.Replace(".XETRA", ".DE", StringComparison.OrdinalIgnoreCase);
+
+            var period1 = new DateTimeOffset(fromDate.Year, fromDate.Month, fromDate.Day, 0, 0, 0, TimeSpan.Zero)
+                .ToUnixTimeSeconds();
+            var period2 = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+            var url = $"https://query1.finance.yahoo.com/v8/finance/chart/{Uri.EscapeDataString(yahooTicker)}" +
+                      $"?period1={period1}&period2={period2}&interval=1d";
+
+            _logger.LogInformation(
+                "Fetching historical prices for {Ticker} (Yahoo: {YahooTicker}) from {FromDate} — URL: {Url}",
+                ticker, yahooTicker, fromDate, url);
+
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Add("User-Agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning(
+                    "Yahoo Finance historical API returned {StatusCode} for {Ticker}",
+                    response.StatusCode, ticker);
+                return 0;
+            }
+
+            var content = await response.Content.ReadAsStringAsync(cancellationToken);
+            var jsonDoc = System.Text.Json.JsonDocument.Parse(content);
+
+            if (!jsonDoc.RootElement.TryGetProperty("chart", out var chart) ||
+                !chart.TryGetProperty("result", out var resultArray) ||
+                resultArray.GetArrayLength() == 0)
+            {
+                _logger.LogWarning("No historical data returned for {Ticker}", ticker);
+                return 0;
+            }
+
+            var resultItem = resultArray[0];
+
+            if (!resultItem.TryGetProperty("timestamp", out var timestampsEl) ||
+                !resultItem.TryGetProperty("indicators", out var indicators) ||
+                !indicators.TryGetProperty("quote", out var quoteArray) ||
+                quoteArray.GetArrayLength() == 0)
+            {
+                _logger.LogWarning("Unexpected response structure for historical data of {Ticker}", ticker);
+                return 0;
+            }
+
+            var quoteItem = quoteArray[0];
+            if (!quoteItem.TryGetProperty("close", out var closePricesEl))
+            {
+                _logger.LogWarning("No close prices in historical data for {Ticker}", ticker);
+                return 0;
+            }
+
+            // Load existing snapshot dates to skip duplicates
+            var existingDates = (await _context.PriceSnapshots
+                .Where(ps => ps.Ticker == ticker)
+                .Select(ps => ps.SnapshotDate)
+                .ToListAsync(cancellationToken))
+                .ToHashSet();
+
+            var timestampList = timestampsEl.EnumerateArray().ToList();
+            var closePriceList = closePricesEl.EnumerateArray().ToList();
+
+            var newSnapshots = new List<PriceSnapshot>();
+            var now = DateTime.UtcNow;
+
+            for (var i = 0; i < timestampList.Count; i++)
+            {
+                if (i >= closePriceList.Count) break;
+
+                // Parse close price — Yahoo returns null on non-trading days
+                var closeRaw = closePriceList[i].GetRawText();
+                if (string.IsNullOrEmpty(closeRaw) || closeRaw == "null") continue;
+                if (!decimal.TryParse(closeRaw,
+                        System.Globalization.NumberStyles.Any,
+                        System.Globalization.CultureInfo.InvariantCulture,
+                        out var closePrice) || closePrice <= 0)
+                    continue;
+
+                var unixTs = timestampList[i].GetInt64();
+                var snapshotDate = DateTimeOffset.FromUnixTimeSeconds(unixTs).UtcDateTime.Date;
+
+                if (existingDates.Contains(snapshotDate)) continue;
+
+                newSnapshots.Add(new PriceSnapshot
+                {
+                    Ticker      = ticker,
+                    Price       = closePrice,
+                    SnapshotDate = snapshotDate,
+                    Source      = "Yahoo",
+                    CreatedAt   = now,
+                    UpdatedAt   = now
+                });
+
+                // Track so we don't double-add in the same batch
+                existingDates.Add(snapshotDate);
+            }
+
+            if (newSnapshots.Count > 0)
+            {
+                _context.PriceSnapshots.AddRange(newSnapshots);
+                await _context.SaveChangesAsync(cancellationToken);
+            }
+
+            _logger.LogInformation(
+                "Historical price backfill for {Ticker}: {Count} new snapshots saved",
+                ticker, newSnapshots.Count);
+
+            return newSnapshots.Count;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching historical prices for {Ticker}", ticker);
+            return 0;
         }
     }
 }

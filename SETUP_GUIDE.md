@@ -21,7 +21,7 @@ A full-stack ETF portfolio tracking application with:
 
 ```bash
 # Connect to PostgreSQL
-psql -U postgres
+psql -U denisbahia
 
 # Create database
 CREATE DATABASE etf_tracker;
@@ -34,7 +34,7 @@ CREATE DATABASE etf_tracker;
 
 ```bash
 # Execute the SQL schema file
-psql -U postgres -d etf_tracker -f database_schema.sql
+psql -U denisbahia -d etf_tracker -f database_schema.sql
 ```
 
 Alternatively, use Entity Framework migrations (from the API project):
@@ -53,7 +53,7 @@ Edit `ETFTracker.Api/appsettings.json`:
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Port=5432;Database=etf_tracker;Username=postgres;Password=YOUR_PASSWORD;"
+    "DefaultConnection": "Host=localhost;Port=5432;Database=etf_tracker;Username=denisbahia;Password=postgres;"
   },
   "ExternalApis": {
     "EodhApi": {
@@ -63,7 +63,7 @@ Edit `ETFTracker.Api/appsettings.json`:
 }
 ```
 
-**Important**: Replace `YOUR_PASSWORD` with your PostgreSQL password and `YOUR_EODHD_API_KEY_HERE` with your actual Eodhd API key (get one at https://eodhd.com).
+**Important**: Replace `YOUR_EODHD_API_KEY_HERE` with your actual Eodhd API key (get one at https://eodhd.com).
 
 ### 2. Build Backend
 

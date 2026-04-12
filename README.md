@@ -289,10 +289,10 @@ cd "Bob Esponja"
 #### Option A: Using SQL File
 ```bash
 # Create database
-psql -U postgres -c "CREATE DATABASE etf_tracker;"
+psql -U denisbahia -c "CREATE DATABASE etf_tracker;"
 
 # Import schema
-psql -U postgres -d etf_tracker -f database_schema.sql
+psql -U denisbahia -d etf_tracker -f database_schema.sql
 ```
 
 #### Option B: Using Entity Framework Migrations
@@ -359,7 +359,7 @@ Edit `ETFTracker.Api/appsettings.json`:
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Port=5432;Database=etf_tracker;Username=postgres;Password=YOUR_PASSWORD;"
+    "DefaultConnection": "Host=localhost;Port=5432;Database=etf_tracker;Username=denisbahia;Password=postgres;"
   },
   "ExternalApis": {
     "EodhApi": {
@@ -667,14 +667,14 @@ npm run build -- --configuration production
 #### Database Connection Fails
 ```bash
 # Verify PostgreSQL is running
-psql -U postgres
+psql -U denisbahia
 
 # Check connection string in appsettings.json
 # Verify database exists
-psql -U postgres -l
+psql -U denisbahia -l
 
 # Test connection
-psql -U postgres -d etf_tracker -c "SELECT 1"
+psql -U denisbahia -d etf_tracker -c "SELECT 1"
 ```
 
 #### API Port Already in Use

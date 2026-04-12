@@ -8,6 +8,7 @@ namespace ETFTracker.Api.Services;
 public interface IProjectionService
 {
     Task<ProjectionResultDto> GetProjectionAsync(int userId, CancellationToken ct = default);
+    Task<ProjectionResultDto> CalculateAsync(int userId, ProjectionSettingsDto settings, CancellationToken ct = default);
     Task<ProjectionSettingsDto> SaveSettingsAsync(int userId, ProjectionSettingsDto dto, CancellationToken ct = default);
     Task<ProjectionVersionSummaryDto> SaveVersionAsync(int userId, SaveVersionRequestDto dto, CancellationToken ct = default);
     Task<List<ProjectionVersionSummaryDto>> GetVersionsAsync(int userId, CancellationToken ct = default);
@@ -80,6 +81,20 @@ public class ProjectionService : IProjectionService
 
         var dataPoints = await ComputeDataPointsAsync(userId, settings, ct);
 
+        return new ProjectionResultDto
+        {
+            Settings = settings,
+            DataPoints = dataPoints,
+        };
+    }
+
+    /// <summary>
+    /// Calculates a projection for the given settings WITHOUT saving anything to the database.
+    /// Used to preview a specific scenario (e.g. loading a saved version's settings).
+    /// </summary>
+    public async Task<ProjectionResultDto> CalculateAsync(int userId, ProjectionSettingsDto settings, CancellationToken ct = default)
+    {
+        var dataPoints = await ComputeDataPointsAsync(userId, settings, ct);
         return new ProjectionResultDto
         {
             Settings = settings,

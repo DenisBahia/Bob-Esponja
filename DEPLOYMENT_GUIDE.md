@@ -8,8 +8,8 @@
 
 ```bash
 # PostgreSQL
-brew install postgresql@15
-brew services start postgresql@15
+brew install postgresql@18
+brew services start postgresql@18
 
 # .NET 10 SDK
 # Download from https://dotnet.microsoft.com/download
@@ -62,7 +62,7 @@ sudo npm install -g @angular/cli
     }
   },
   "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Port=5432;Database=etf_tracker;Username=postgres;Password=YOUR_PASSWORD;"
+    "DefaultConnection": "Host=localhost;Port=5432;Database=etf_tracker;Username=denisbahia;Password=postgres;"
   },
   "ExternalApis": {
     "EodhApi": {
@@ -77,16 +77,17 @@ sudo npm install -g @angular/cli
 }
 ```
 
-#### appsettings.Development.json (Optional)
+#### appsettings.Development.json (Local overrides)
 ```json
 {
   "Logging": {
     "LogLevel": {
-      "Default": "Debug",
-      "System": "Information",
-      "Microsoft": "Information",
-      "Microsoft.EntityFrameworkCore": "Debug"
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
     }
+  },
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=localhost;Port=5432;Database=etf_tracker;Username=denisbahia;Password=postgres;"
   }
 }
 ```
@@ -140,7 +141,7 @@ npm start
 #### Terminal 3: Optional - Database Monitoring
 ```bash
 # Monitor PostgreSQL queries
-psql -U postgres -d etf_tracker
+psql -U denisbahia -d etf_tracker
 
 # Useful queries:
 # SELECT * FROM holdings WHERE user_id = 1;
@@ -273,13 +274,13 @@ ProxyPassMatch "^/api/(.*)$" "https://api.yourdomain.com/api/$1"
 
 ```bash
 # Create backup of production database
-pg_dump -U postgres etf_tracker > backup_$(date +%Y%m%d_%H%M%S).sql
+pg_dump -U denisbahia etf_tracker > backup_$(date +%Y%m%d_%H%M%S).sql
 
 # Create new database
-createdb -U postgres etf_tracker_prod
+createdb -U denisbahia etf_tracker_prod
 
 # Restore from backup
-psql -U postgres etf_tracker_prod < backup.sql
+psql -U denisbahia etf_tracker_prod < backup.sql
 
 # Or using migrations from .NET
 dotnet ef database update --environment Production
@@ -303,13 +304,13 @@ tail -f ~/.netcore/logs/etf-tracker.log
 
 ```bash
 # Backup database
-pg_dump -U postgres etf_tracker | gzip > etf_tracker_$(date +%Y%m%d).sql.gz
+pg_dump -U denisbahia etf_tracker | gzip > etf_tracker_$(date +%Y%m%d).sql.gz
 
 # Restore from backup
-gunzip < etf_tracker_20260331.sql.gz | psql -U postgres etf_tracker
+gunzip < etf_tracker_20260331.sql.gz | psql -U denisbahia etf_tracker
 
 # Analyze for performance
-psql -U postgres etf_tracker
+psql -U denisbahia etf_tracker
 ANALYZE;
 ```
 
@@ -345,7 +346,7 @@ ANALYZE;
 1. Verify PostgreSQL is running
 2. Check connection string
 3. Verify database user permissions
-4. Test connection: `psql -U postgres -d etf_tracker`
+    4. Test connection: `psql -U denisbahia -d etf_tracker`
 
 ---
 
@@ -467,5 +468,5 @@ ANALYZE;                                  # Update table statistics
 ---
 
 **Version**: 1.0
-**Last Updated**: March 31, 2026
+**Last Updated**: April 12, 2026
 

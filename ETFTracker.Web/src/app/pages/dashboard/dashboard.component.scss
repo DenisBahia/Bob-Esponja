@@ -303,6 +303,27 @@
   }
 }
 
+// ── Sortable table header ───────────────────────────────────────────────────
+th.sortable {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+
+  &::after {
+    content: ' ⇅';
+    font-size: 0.7em;
+    opacity: 0.35;
+    transition: opacity 0.15s;
+  }
+
+  &:hover::after { opacity: 0.7; }
+
+  &.sort-asc::after  { content: ' ▲'; opacity: 0.85; color: var(--accent); }
+  &.sort-desc::after { content: ' ▼'; opacity: 0.85; color: var(--accent); }
+
+  &:hover { color: var(--accent); }
+}
+
 // ── Dashboard shell ─────────────────────────────────────────────────────────
 .dashboard-container {
   padding: 2rem 2.5rem;
@@ -719,10 +740,25 @@
         }
       }
 
+      // Default-version banner (top of params box)
+      .params-default-banner {
+        width: 100%;
+        padding: 0.55rem 0.9rem;
+        background: rgba(248, 155, 41, 0.07);
+        border: 1px solid rgba(248, 155, 41, 0.22);
+        border-left: 3px solid #f89b29;
+        border-radius: 6px;
+        font-size: 0.82rem;
+        color: var(--text-secondary);
+
+        strong { color: #f89b29; font-weight: 700; }
+      }
+
       // Tab nav
       .projection-tab-nav {
         display: flex;
         gap: 0;
+        align-items: center;
         border-bottom: 1px solid var(--border);
         margin-bottom: 1.5rem;
 
@@ -744,6 +780,48 @@
             color: var(--accent);
             border-bottom-color: var(--accent);
           }
+        }
+
+        // Right-aligned default version badge
+        .default-version-badge {
+          margin-left: auto;
+          padding: 0.22rem 0.75rem;
+          background: rgba(248, 155, 41, 0.10);
+          border: 1px solid rgba(248, 155, 41, 0.28);
+          border-radius: 999px;
+          font-size: 0.76rem;
+          color: #f89b29;
+          white-space: nowrap;
+          flex-shrink: 0;
+
+          strong { color: #f89b29; font-weight: 700; }
+        }
+      }
+
+      // Params-link hint bar (Graph & Table tabs)
+      .params-link-hint {
+        width: 100%;
+        padding: 0.5rem 0.9rem;
+        margin-bottom: 1rem;
+        background: rgba(79, 142, 247, 0.06);
+        border: 1px solid rgba(79, 142, 247, 0.14);
+        border-left: 3px solid var(--accent);
+        border-radius: 6px;
+        font-size: 0.82rem;
+        color: var(--text-secondary);
+        box-sizing: border-box;
+
+        strong { color: var(--text-primary); font-weight: 600; }
+        em { font-style: normal; font-weight: 600; color: var(--accent); }
+
+        // Version-specific variant (amber)
+        &.params-link-hint--versioned {
+          background: rgba(248, 155, 41, 0.06);
+          border-color: rgba(248, 155, 41, 0.18);
+          border-left-color: #f89b29;
+
+          strong { color: #f89b29; }
+          em     { color: var(--accent); }
         }
       }
 
@@ -900,11 +978,11 @@
       .versions-panel {
         .versions-layout {
           display: flex;
-          gap: 1.5rem;
-          align-items: flex-start;
+          flex-direction: column;
+          gap: 1.75rem;
 
           .versions-table-container {
-            flex: 0 0 420px;
+            width: 100%;
             overflow-x: auto;
 
             .no-versions-msg {
@@ -1001,6 +1079,13 @@
                   text-align: right;
                 }
 
+                &.version-bool-col {
+                  text-align: center;
+                  font-weight: 700;
+                  font-family: inherit;
+                  color: var(--positive);
+                }
+
                 &.version-delete-col {
                   text-align: center;
                   width: 72px;
@@ -1087,19 +1172,32 @@
           }
 
           .versions-chart-container {
-            flex: 1;
-            min-height: 380px;
+            width: 100%;
+            min-height: 540px;
             position: relative;
 
             canvas {
               width: 100% !important;
-              height: 380px !important;
+              height: 540px !important;
+            }
+
+            .versions-chart-hint {
+              font-size: 0.8rem;
+              color: var(--text-muted);
+              margin-bottom: 0.85rem;
+              padding: 0.45rem 0.75rem;
+              background: var(--bg-surface);
+              border-radius: 6px;
+              border: 1px solid var(--border);
+              display: inline-block;
+
+              strong { color: var(--accent); }
             }
 
             .no-selection-msg {
               color: var(--text-muted);
               font-style: italic;
-              padding: 3rem 1rem;
+              padding: 4rem 1rem;
               text-align: center;
               font-size: 0.88rem;
             }
@@ -1424,44 +1522,6 @@
                   color: var(--text-secondary);
                 }
 
-                &.price-source {
-                  text-align: center;
-                  padding: 0.65rem 0.5rem;
-
-                  .badge {
-                    display: inline-block;
-                    padding: 0.3rem 0.7rem;
-                    border-radius: 12px;
-                    font-size: 0.76rem;
-                    font-weight: 600;
-                    white-space: nowrap;
-                    cursor: help;
-
-                    &.source-Eodhd {
-                      background: rgba(20, 217, 144, 0.12);
-                      color: var(--positive);
-                      border: 1px solid rgba(20, 217, 144, 0.25);
-                    }
-
-                    &.source-Yahoo {
-                      background: rgba(79, 142, 247, 0.12);
-                      color: var(--accent);
-                      border: 1px solid rgba(79, 142, 247, 0.25);
-                    }
-
-                    &.source-Cache {
-                      background: rgba(248, 155, 41, 0.12);
-                      color: #f89b29;
-                      border: 1px solid rgba(248, 155, 41, 0.25);
-                    }
-
-                    &.source-unavailable {
-                      background: var(--negative-bg);
-                      color: var(--negative);
-                      border: 1px solid rgba(240, 82, 82, 0.25);
-                    }
-                  }
-                }
 
                 &.total-value {
                   text-align: right;

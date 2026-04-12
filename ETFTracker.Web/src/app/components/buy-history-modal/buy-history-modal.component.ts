@@ -1,23 +1,39 @@
 import { ChangeDetectorRef, Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ApiService, TransactionDto } from '../../services/api.service';
+import { FormsModule } from '@angular/forms';
+import { ApiService, TransactionDto, UpdateTransactionDto } from '../../services/api.service';
+import { SharingContextService } from '../../services/sharing-context.service';
 
 @Component({
   selector: 'app-buy-history-modal',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './buy-history-modal.component.html',
   styleUrls: ['./buy-history-modal.component.scss']
 })
 export class BuyHistoryModalComponent implements OnInit {
   @Input() holdingId: number = 0;
   @Output() closed = new EventEmitter<void>();
+  /** Fires whenever a transaction is deleted so the parent can refresh its data. */
+  @Output() changed = new EventEmitter<void>();
 
   transactions: TransactionDto[] = [];
   loading = true;
   error: string | null = null;
 
-  constructor(private apiService: ApiService, private cdr: ChangeDetectorRef) {}
+  confirmDeleteId: number | null = null;
+  deletingIds: Set<number> = new Set();
+
+  // Edit state
+  editingId: number | null = null;
+  editForm: UpdateTransactionDto = { quantity: 0, purchasePrice: 0, purchaseDate: '' };
+  savingEdit = false;
+
+  constructor(
+    private apiService: ApiService,
+    private cdr: ChangeDetectorRef,
+    public sharingCtx: SharingContextService
+  ) {}
 
   ngOnInit(): void {
     this.loadHistory();
@@ -37,6 +53,79 @@ export class BuyHistoryModalComponent implements OnInit {
         console.error('Error loading history:', err);
         this.error = 'Failed to load transaction history.';
         this.loading = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  startEdit(t: TransactionDto): void {
+    this.confirmDeleteId = null;  // cancel any pending delete
+    this.editingId = t.id;
+    this.editForm = {
+      quantity: t.quantity,
+      purchasePrice: t.purchasePrice,
+      purchaseDate: t.purchaseDate.slice(0, 10), // YYYY-MM-DD for <input type="date">
+    };
+    this.cdr.detectChanges();
+  }
+
+  cancelEdit(): void {
+    this.editingId = null;
+    this.cdr.detectChanges();
+  }
+
+  saveEdit(id: number): void {
+    if (this.savingEdit) return;
+    this.savingEdit = true;
+    this.cdr.detectChanges();
+
+    this.apiService.updateTransaction(id, this.editForm).subscribe({
+      next: () => {
+        this.savingEdit = false;
+        this.editingId = null;
+        this.loadHistory();
+        this.changed.emit();
+      },
+      error: (err) => {
+        console.error('Error updating transaction:', err);
+        this.error = 'Failed to update transaction. Please try again.';
+        this.savingEdit = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  requestDelete(id: number): void {
+    this.editingId = null;  // cancel any active edit
+    this.confirmDeleteId = id;
+    this.cdr.detectChanges();
+  }
+
+  cancelDelete(): void {
+    this.confirmDeleteId = null;
+    this.cdr.detectChanges();
+  }
+
+  confirmDelete(id: number): void {
+    this.confirmDeleteId = null;
+    this.deletingIds = new Set(this.deletingIds).add(id);
+    this.cdr.detectChanges();
+
+    this.apiService.deleteTransaction(id).subscribe({
+      next: () => {
+        this.transactions = this.transactions.filter(t => t.id !== id);
+        const next = new Set(this.deletingIds);
+        next.delete(id);
+        this.deletingIds = next;
+        this.changed.emit();
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error deleting transaction:', err);
+        this.error = 'Failed to delete transaction. Please try again.';
+        const next = new Set(this.deletingIds);
+        next.delete(id);
+        this.deletingIds = next;
         this.cdr.detectChanges();
       }
     });
@@ -73,4 +162,3 @@ export class BuyHistoryModalComponent implements OnInit {
     this.closed.emit();
   }
 }
-

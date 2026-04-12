@@ -130,6 +130,12 @@
       <h2>Yearly Projections</h2>
 
       <div class="projection-params">
+
+        <!-- Default-version banner (top of params box) -->
+        <div class="params-default-banner" *ngIf="defaultVersionName">
+          ⭐ Parameters loaded from default version: <strong>{{ defaultVersionName }}</strong>
+        </div>
+
         <div class="param-group start-amount-group">
           <label for="startAmount">Start Amount (€)</label>
           <div class="start-amount-input-row">
@@ -248,10 +254,22 @@
         <button class="tab-btn" [class.active]="activeProjectionTab === 'versions'" (click)="setProjectionTab('versions')">
           🗂️ Versions
         </button>
+        <!-- Default-version badge sits right-aligned in the tab bar -->
+        <span *ngIf="defaultVersionName" class="default-version-badge">
+          ⭐ Default version: <strong>{{ defaultVersionName }}</strong>
+        </span>
       </div>
 
       <!-- Tab: Graph -->
       <div class="tab-panel" *ngIf="activeProjectionTab === 'chart'">
+        <div class="params-link-hint" [class.params-link-hint--versioned]="!!defaultVersionName">
+          <ng-container *ngIf="defaultVersionName; else genericGraphHint">
+            ⭐ Graph based on default version: <strong>{{ defaultVersionName }}</strong> — edit parameters above and click <em>Apply &amp; Save</em> to change.
+          </ng-container>
+          <ng-template #genericGraphHint>
+            📌 This graph reflects the <strong>parameters set above</strong>. Change any value and click <em>Apply &amp; Save</em> to update.
+          </ng-template>
+        </div>
         <div *ngIf="projectionLoading" class="projection-loading">
           <p>Calculating projection…</p>
         </div>
@@ -262,6 +280,14 @@
 
       <!-- Tab: Data Table -->
       <div class="tab-panel" *ngIf="activeProjectionTab === 'table'">
+        <div class="params-link-hint" [class.params-link-hint--versioned]="!!defaultVersionName">
+          <ng-container *ngIf="defaultVersionName; else genericTableHint">
+            ⭐ Table based on default version: <strong>{{ defaultVersionName }}</strong> — edit parameters above and click <em>Apply &amp; Save</em> to change.
+          </ng-container>
+          <ng-template #genericTableHint>
+            📌 This table reflects the <strong>parameters set above</strong>. Change any value and click <em>Apply &amp; Save</em> to update.
+          </ng-template>
+        </div>
         <div *ngIf="projectionLoading" class="projection-loading">
           <p>Calculating projection…</p>
         </div>
@@ -321,7 +347,7 @@
         </div>
         <div class="versions-layout" *ngIf="!versionsLoading">
 
-          <!-- Left: compact table -->
+          <!-- Top: full-width table with all parameters -->
           <div class="versions-table-container">
             <p *ngIf="projectionVersions.length === 0" class="no-versions-msg">
               No versions saved yet. Click "Save new version" to create one.
@@ -330,16 +356,23 @@
               <thead>
                 <tr>
                   <th title="Select to compare">Compare</th>
-                  <th>Name</th>
-                  <th>Saved At</th>
-                  <th>Return %</th>
-                  <th>Monthly Buy</th>
-                  <th>Years</th>
+                  <th class="sortable" [ngClass]="{'sort-asc': versionsSortCol==='name'&&versionsSortDir==='asc','sort-desc': versionsSortCol==='name'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('name')">Name</th>
+                  <th class="sortable" [ngClass]="{'sort-asc': versionsSortCol==='savedAt'&&versionsSortDir==='asc','sort-desc': versionsSortCol==='savedAt'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('savedAt')">Saved At</th>
+                  <th class="sortable" title="Start amount override" [ngClass]="{'sort-asc': versionsSortCol==='startAmount'&&versionsSortDir==='asc','sort-desc': versionsSortCol==='startAmount'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('startAmount')">Start Amount</th>
+                  <th class="sortable" title="Yearly return %" [ngClass]="{'sort-asc': versionsSortCol==='return'&&versionsSortDir==='asc','sort-desc': versionsSortCol==='return'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('return')">Return %</th>
+                  <th class="sortable" title="Monthly buy amount" [ngClass]="{'sort-asc': versionsSortCol==='monthly'&&versionsSortDir==='asc','sort-desc': versionsSortCol==='monthly'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('monthly')">Monthly Buy</th>
+                  <th class="sortable" title="Annual buy increase %" [ngClass]="{'sort-asc': versionsSortCol==='buyInc'&&versionsSortDir==='asc','sort-desc': versionsSortCol==='buyInc'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('buyInc')">Buy Inc. %</th>
+                  <th class="sortable" title="Projection years" [ngClass]="{'sort-asc': versionsSortCol==='years'&&versionsSortDir==='asc','sort-desc': versionsSortCol==='years'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('years')">Years</th>
+                  <th class="sortable" title="Inflation %" [ngClass]="{'sort-asc': versionsSortCol==='inflation'&&versionsSortDir==='asc','sort-desc': versionsSortCol==='inflation'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('inflation')">Inflation %</th>
+                  <th class="sortable" title="Capital Gains Tax %" [ngClass]="{'sort-asc': versionsSortCol==='cgt'&&versionsSortDir==='asc','sort-desc': versionsSortCol==='cgt'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('cgt')">CGT %</th>
+                  <th class="sortable" title="Exit Tax %" [ngClass]="{'sort-asc': versionsSortCol==='exitTax'&&versionsSortDir==='asc','sort-desc': versionsSortCol==='exitTax'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('exitTax')">Exit Tax %</th>
+                  <th title="Exclude pre-existing holdings from tax">Excl. Pre-ex.</th>
+                  <th class="sortable" title="SIA annual tax %" [ngClass]="{'sort-asc': versionsSortCol==='sia'&&versionsSortDir==='asc','sort-desc': versionsSortCol==='sia'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('sia')">SIA %</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let v of projectionVersions"
+                <tr *ngFor="let v of sortedVersions"
                     [class.version-selected]="selectedVersionIds.has(v.id)"
                     [class.version-default]="v.isDefault">
                   <td class="version-check-col">
@@ -352,10 +385,17 @@
                     <span *ngIf="v.isDefault" class="default-badge" title="Default version">⭐ Default</span>
                   </td>
                   <td class="version-date-col">{{ v.savedAt | date:'dd/MM/yyyy HH:mm' }}</td>
+                  <td class="version-stat-col">{{ (v.settings.startAmount != null && v.settings.startAmount > 0) ? formatCurrency(v.settings.startAmount) : '—' }}</td>
                   <td class="version-stat-col">{{ v.settings.yearlyReturnPercent }}%</td>
                   <td class="version-stat-col">{{ formatCurrency(v.settings.monthlyBuyAmount) }}</td>
+                  <td class="version-stat-col">{{ v.settings.annualBuyIncreasePercent }}%</td>
                   <td class="version-stat-col">{{ v.settings.projectionYears }}y</td>
-                   <td class="version-delete-col">
+                  <td class="version-stat-col">{{ v.settings.inflationPercent }}%</td>
+                  <td class="version-stat-col">{{ v.settings.cgtPercent }}%</td>
+                  <td class="version-stat-col">{{ v.settings.exitTaxPercent }}%</td>
+                  <td class="version-stat-col version-bool-col">{{ v.settings.excludePreExistingFromTax ? '✓' : '—' }}</td>
+                  <td class="version-stat-col">{{ v.settings.siaAnnualPercent > 0 ? v.settings.siaAnnualPercent + '%' : '—' }}</td>
+                  <td class="version-delete-col">
                     <ng-container *ngIf="!sharingCtx.isReadOnly()">
                       <button class="btn-set-default"
                               *ngIf="!v.isDefault"
@@ -385,11 +425,14 @@
             </table>
           </div>
 
-          <!-- Right: comparison chart -->
+          <!-- Bottom: comparison chart -->
           <div class="versions-chart-container">
             <p *ngIf="selectedVersionIds.size === 0" class="no-selection-msg">
-              ☑️ Select versions from the table to compare projected portfolio values.
+              ☑️ Select versions from the table above to compare them on the chart.
             </p>
+            <div *ngIf="selectedVersionIds.size > 0" class="versions-chart-hint">
+              💡 Click legend items to show or hide additional metrics. Only <strong>Projected Portfolio Value</strong> is shown by default.
+            </div>
             <canvas #versionsCompareChart *ngIf="selectedVersionIds.size > 0"></canvas>
           </div>
 
@@ -445,37 +488,31 @@
           <table class="holdings-table">
             <thead>
               <tr>
-                <th>Ticker</th>
-                <th>ETF Name</th>
-                <th>Quantity</th>
-                <th>Avg Cost</th>
-                <th>Current Price</th>
-                <th>Price Source</th>
-                <th>Total Value</th>
+                <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='ticker'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='ticker'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('ticker')">Ticker</th>
+                <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='etfName'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='etfName'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('etfName')">ETF Name</th>
+                <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='quantity'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='quantity'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('quantity')">Quantity</th>
+                <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='avgCost'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='avgCost'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('avgCost')">Avg Cost</th>
+                <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='currentPrice'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='currentPrice'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('currentPrice')">Current Price</th>
+                <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='totalValue'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='totalValue'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('totalValue')">Total Value</th>
                 <th colspan="4">Gain/Loss</th>
                 <th>Actions</th>
               </tr>
               <tr class="periods-header">
-                <th colspan="7"></th>
-                <th>Daily</th>
-                <th>Weekly</th>
-                <th>Monthly</th>
-                <th>YTD</th>
+                <th colspan="6"></th>
+                <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='daily'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='daily'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('daily')">Daily</th>
+                <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='weekly'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='weekly'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('weekly')">Weekly</th>
+                <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='monthly'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='monthly'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('monthly')">Monthly</th>
+                <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='ytd'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='ytd'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('ytd')">YTD</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let holding of dashboard.holdings" class="holding-row" [ngClass]="{'price-unavailable': holding.priceUnavailable}">
+              <tr *ngFor="let holding of sortedHoldings" class="holding-row" [ngClass]="{'price-unavailable': holding.priceUnavailable}">
                 <td class="ticker"><strong>{{ holding.ticker }}</strong></td>
                 <td>{{ holding.etfName }}</td>
                 <td class="quantity">{{ formatQuantity(holding.quantity) }}</td>
                 <td class="price">{{ formatCurrency(holding.averageCost) }}</td>
                 <td class="price">{{ formatCurrency(holding.currentPrice) }}</td>
-                <td class="price-source" [title]="getPriceSourceDescription(holding.priceSource)">
-                  <span class="badge" [ngClass]="'source-' + (holding.priceSource || 'unavailable')">
-                    {{ getPriceSourceLabel(holding.priceSource) }}
-                  </span>
-                </td>
                 <td class="total-value"><strong>{{ formatCurrency(holding.totalValue) }}</strong></td>
 
                 <!-- Daily -->
@@ -559,7 +596,8 @@
   <app-buy-history-modal
     *ngIf="showBuyHistoryModal && selectedHoldingId"
     [holdingId]="selectedHoldingId"
-    (closed)="onHistoryModalClosed()">
+    (closed)="onHistoryModalClosed()"
+    (changed)="onHistoryChanged()">
   </app-buy-history-modal>
 
   <app-share-profile-modal

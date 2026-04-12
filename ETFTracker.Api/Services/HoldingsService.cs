@@ -11,6 +11,8 @@ public interface IHoldingsService
     Task<List<HoldingDto>> GetHoldingsAsync(int userId, CancellationToken cancellationToken = default);
     Task<List<TransactionDto>> GetHoldingHistoryAsync(int holdingId, CancellationToken cancellationToken = default);
     Task AddTransactionAsync(int userId, CreateTransactionDto dto, CancellationToken cancellationToken = default);
+    Task DeleteTransactionAsync(int transactionId, int userId, CancellationToken cancellationToken = default);
+    Task UpdateTransactionAsync(int transactionId, int userId, UpdateTransactionDto dto, CancellationToken cancellationToken = default);
     Task<PortfolioEvolutionDto> GetPortfolioEvolutionAsync(int userId, CancellationToken cancellationToken = default);
 }
 
@@ -235,6 +237,13 @@ public class HoldingsService : IHoldingsService
             await _context.SaveChangesAsync(cancellationToken);
 
             await transaction.CommitAsync(cancellationToken);
+
+            // ── Backfill historical prices for this ticker if needed ──────────────
+            // Awaited here (outside the DB transaction) so the scoped AppDbContext is
+            // still alive when the Yahoo Finance call and subsequent SaveChanges run.
+            // Any failure is swallowed inside BackfillHistoricalPricesIfNeededAsync,
+            // so the buy is never rolled back even if the history fetch fails.
+            await BackfillHistoricalPricesIfNeededAsync(dto.Ticker, dto.PurchaseDate, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -244,9 +253,148 @@ public class HoldingsService : IHoldingsService
         }
     }
 
+    /// <summary>
+    /// Checks whether price snapshots for <paramref name="ticker"/> already cover
+    /// <paramref name="purchaseDate"/>.  If not, fetches the full daily history from
+    /// Yahoo Finance (period1 = purchaseDate, period2 = today) and saves it to the DB.
+    /// </summary>
+    private async Task BackfillHistoricalPricesIfNeededAsync(
+        string ticker,
+        DateOnly purchaseDate,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var purchaseDateUtc = purchaseDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+
+            // Find the earliest existing snapshot for this ticker
+            var earliestSnapshotDate = await _context.PriceSnapshots
+                .Where(ps => ps.Ticker == ticker)
+                .MinAsync(ps => (DateTime?)ps.SnapshotDate, cancellationToken);
+
+            // Backfill when: no snapshots at all  OR  purchase date predates earliest snapshot
+            bool needsBackfill = earliestSnapshotDate == null
+                                 || earliestSnapshotDate.Value.Date > purchaseDateUtc.Date;
+
+            if (!needsBackfill)
+            {
+                _logger.LogDebug(
+                    "Price history for {Ticker} already covers {PurchaseDate} — skipping backfill",
+                    ticker, purchaseDate);
+                return;
+            }
+
+            _logger.LogInformation(
+                "Starting historical price backfill for {Ticker} from {PurchaseDate}",
+                ticker, purchaseDate);
+
+            var saved = await _priceService.FetchAndSaveHistoricalPricesAsync(ticker, purchaseDate, cancellationToken);
+
+            _logger.LogInformation(
+                "Historical price backfill complete for {Ticker}: {Count} snapshots saved",
+                ticker, saved);
+        }
+        catch (Exception ex)
+        {
+            // Never surface this error to the caller — the buy was already committed successfully
+            _logger.LogError(ex,
+                "Error during historical price backfill for {Ticker} (purchase date {PurchaseDate})",
+                ticker, purchaseDate);
+        }
+    }
+
+    public async Task DeleteTransactionAsync(int transactionId, int userId, CancellationToken cancellationToken = default)
+    {
+        using var dbTx = await _context.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var txn = await _context.Transactions
+                .Include(t => t.Holding)
+                .FirstOrDefaultAsync(t => t.Id == transactionId, cancellationToken);
+
+            if (txn == null || txn.Holding?.UserId != userId)
+                throw new UnauthorizedAccessException("Transaction not found or access denied.");
+
+            var holdingId = txn.HoldingId;
+            _context.Transactions.Remove(txn);
+            await _context.SaveChangesAsync(cancellationToken);
+
+            var remaining = await _context.Transactions
+                .Where(t => t.HoldingId == holdingId)
+                .ToListAsync(cancellationToken);
+
+            var holding = await _context.Holdings.FindAsync(new object[] { holdingId }, cancellationToken);
+            if (holding != null)
+            {
+                if (remaining.Count == 0)
+                {
+                    _context.Holdings.Remove(holding);
+                }
+                else
+                {
+                    holding.Quantity = remaining.Sum(t => t.Quantity);
+                    holding.AverageCost = remaining.Sum(t => t.Quantity * t.PurchasePrice) / holding.Quantity;
+                    holding.UpdatedAt = new DateTime(DateTime.UtcNow.Ticks, DateTimeKind.Utc);
+                    _context.Holdings.Update(holding);
+                }
+                await _context.SaveChangesAsync(cancellationToken);
+            }
+
+            await dbTx.CommitAsync(cancellationToken);
+        }
+        catch
+        {
+            await dbTx.RollbackAsync(cancellationToken);
+            throw;
+        }
+    }
+
+    public async Task UpdateTransactionAsync(int transactionId, int userId, UpdateTransactionDto dto, CancellationToken cancellationToken = default)
+    {
+        using var dbTx = await _context.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var txn = await _context.Transactions
+                .Include(t => t.Holding)
+                .FirstOrDefaultAsync(t => t.Id == transactionId, cancellationToken);
+
+            if (txn == null || txn.Holding?.UserId != userId)
+                throw new UnauthorizedAccessException("Transaction not found or access denied.");
+
+            txn.Quantity = dto.Quantity;
+            txn.PurchasePrice = dto.PurchasePrice;
+            txn.PurchaseDate = dto.PurchaseDate;
+            txn.UpdatedAt = new DateTime(DateTime.UtcNow.Ticks, DateTimeKind.Utc);
+            _context.Transactions.Update(txn);
+            await _context.SaveChangesAsync(cancellationToken);
+
+            // Recalculate holding averages
+            var holdingId = txn.HoldingId;
+            var allTxns = await _context.Transactions
+                .Where(t => t.HoldingId == holdingId)
+                .ToListAsync(cancellationToken);
+
+            var holding = await _context.Holdings.FindAsync(new object[] { holdingId }, cancellationToken);
+            if (holding != null)
+            {
+                holding.Quantity = allTxns.Sum(t => t.Quantity);
+                holding.AverageCost = allTxns.Sum(t => t.Quantity * t.PurchasePrice) / holding.Quantity;
+                holding.UpdatedAt = new DateTime(DateTime.UtcNow.Ticks, DateTimeKind.Utc);
+                _context.Holdings.Update(holding);
+                await _context.SaveChangesAsync(cancellationToken);
+            }
+
+            await dbTx.CommitAsync(cancellationToken);
+        }
+        catch
+        {
+            await dbTx.RollbackAsync(cancellationToken);
+            throw;
+        }
+    }
+
     public async Task<PortfolioEvolutionDto> GetPortfolioEvolutionAsync(int userId, CancellationToken cancellationToken = default)
     {
-        var startDate = new DateOnly(2026, 1, 1);
         var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
 
         // Load all holdings (and their transactions) for the user
@@ -254,6 +402,16 @@ public class HoldingsService : IHoldingsService
             .Where(h => h.UserId == userId)
             .Include(h => h.Transactions)
             .ToListAsync(cancellationToken);
+
+        // Derive start date from the user's earliest transaction (so backfilled history is visible)
+        var allTransactionDates = dbHoldings
+            .SelectMany(h => h.Transactions)
+            .Select(t => t.PurchaseDate)
+            .ToList();
+
+        var startDate = allTransactionDates.Count > 0
+            ? allTransactionDates.Min()
+            : today;
 
         // Collect all distinct tickers
         var tickers = dbHoldings.Select(h => h.Ticker).Distinct().ToList();

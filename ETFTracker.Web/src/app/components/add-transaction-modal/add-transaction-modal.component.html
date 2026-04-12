@@ -10,21 +10,72 @@
     </div>
 
     <form (ngSubmit)="onSubmit()" class="form">
-      <div class="form-group">
+      <div class="form-group ticker-group">
         <label for="ticker">Ticker *</label>
-        <input
-          id="ticker"
-          type="text"
-          [(ngModel)]="ticker"
-          (ngModelChange)="onTickerChange($event)"
-          name="ticker"
-          placeholder="e.g., VWRL"
-          required>
-        <div *ngIf="loadingDescription" class="ticker-loading">
-          <span class="spinner"></span> Loading ETF info...
+        <div class="ticker-input-wrap">
+          <input
+            id="ticker"
+            type="text"
+            [(ngModel)]="ticker"
+            (ngModelChange)="onTickerChange($event)"
+            (focus)="showDropdown = searchResults.length > 0"
+            name="ticker"
+            placeholder="Search by name or ticker (e.g., Apple, VWRL)"
+            autocomplete="off"
+            required>
+
+          <!-- Loading spinner -->
+          <div *ngIf="loadingSearch" class="ticker-loading">
+            <span class="spinner"></span>
+          </div>
+
+          <!-- Search results dropdown -->
+          <div *ngIf="showDropdown && searchResults.length > 0" class="ticker-dropdown">
+            <button
+              *ngFor="let result of searchResults"
+              type="button"
+              class="ticker-option"
+              (click)="selectResult(result)">
+              <span class="option-icon">{{ getQuoteTypeIcon(result.quoteType) }}</span>
+              <span class="option-body">
+                <span class="option-symbol">{{ result.symbol }}</span>
+                <span class="option-name">{{ result.longName || result.shortName || '—' }}</span>
+              </span>
+              <span class="option-meta">
+                <span class="option-exchange">{{ result.exchange }}</span>
+                <span class="option-type" *ngIf="result.typeDisp">{{ result.typeDisp }}</span>
+              </span>
+            </button>
+          </div>
         </div>
-        <div *ngIf="!loadingDescription && etfDescription" class="ticker-description">
-          {{ etfDescription }}
+
+        <!-- Selected instrument badge -->
+        <div *ngIf="selectedResult" class="selected-instrument">
+          <span class="selected-icon">{{ getQuoteTypeIcon(selectedResult.quoteType) }}</span>
+          <span class="selected-name">{{ selectedResult.longName || selectedResult.shortName }}</span>
+          <span class="selected-exchange">{{ selectedResult.exchange }}</span>
+          <span class="selected-type" *ngIf="selectedResult.typeDisp">· {{ selectedResult.typeDisp }}</span>
+        </div>
+      </div>
+
+      <!-- Supported ticker info -->
+      <div class="ticker-support-info">
+        <div class="ticker-support-header">
+          <span class="ticker-support-icon">🔍</span>
+          <span>
+            Supports any ticker from
+            <a href="https://finance.yahoo.com/lookup/" target="_blank" rel="noopener noreferrer">Yahoo Finance Lookup ↗</a>
+          </span>
+        </div>
+        <div class="asset-types-grid">
+          <span class="asset-type-pill" title="e.g. AAPL">📈 Equity</span>
+          <span class="asset-type-pill" title="e.g. SPY">📊 ETF</span>
+          <span class="asset-type-pill" title="e.g. VTSMX">💼 Mutual Fund</span>
+          <span class="asset-type-pill" title="e.g. ^GSPC">📉 Index</span>
+          <span class="asset-type-pill" title="e.g. EURUSD=X">💱 Forex</span>
+          <span class="asset-type-pill" title="e.g. BTC-USD">₿ Crypto</span>
+          <span class="asset-type-pill" title="e.g. GC=F">🏗️ Futures</span>
+          <span class="asset-type-pill" title="e.g. ^TNX">🏦 Bond</span>
         </div>
       </div>
 

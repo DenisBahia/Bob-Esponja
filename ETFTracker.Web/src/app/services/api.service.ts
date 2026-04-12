@@ -58,6 +58,12 @@ export interface CreateTransactionDto {
   purchaseDate: string;
 }
 
+export interface UpdateTransactionDto {
+  quantity: number;
+  purchasePrice: number;
+  purchaseDate: string; // "YYYY-MM-DD"
+}
+
 export interface ProjectionSettingsDto {
   yearlyReturnPercent: number;
   monthlyBuyAmount: number;
@@ -131,6 +137,17 @@ export interface PortfolioEvolutionDto {
   dataPoints: PortfolioEvolutionDataPointDto[];
 }
 
+// ── Ticker Search ─────────────────────────────────────────────────────────────
+
+export interface TickerSearchResult {
+  symbol: string;
+  shortName: string | null;
+  longName: string | null;
+  exchange: string | null;
+  quoteType: string | null;
+  typeDisp: string | null;
+}
+
 // ── Sharing ───────────────────────────────────────────────────────────────────
 
 export interface CreateShareDto {
@@ -189,12 +206,29 @@ export class ApiService {
     return this.http.post(`${this.apiUrl}/holdings/transaction`, transaction);
   }
 
+  deleteTransaction(transactionId: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/holdings/transactions/${transactionId}`);
+  }
+
+  updateTransaction(transactionId: number, dto: UpdateTransactionDto): Observable<void> {
+    return this.http.patch<void>(`${this.apiUrl}/holdings/transactions/${transactionId}`, dto);
+  }
+
   getEtfDescription(ticker: string): Observable<{ description: string }> {
     return this.http.get<{ description: string }>(`${this.apiUrl}/holdings/etf-description/${ticker}`);
   }
 
+  searchTickers(query: string): Observable<TickerSearchResult[]> {
+    const encoded = encodeURIComponent(query);
+    return this.http.get<TickerSearchResult[]>(`${this.apiUrl}/holdings/search?q=${encoded}`);
+  }
+
   getProjection(): Observable<ProjectionResultDto> {
     return this.http.get<ProjectionResultDto>(`${this.apiUrl}/projections`);
+  }
+
+  calculateProjection(settings: ProjectionSettingsDto): Observable<ProjectionResultDto> {
+    return this.http.post<ProjectionResultDto>(`${this.apiUrl}/projections/calculate`, settings);
   }
 
   saveProjectionSettings(settings: ProjectionSettingsDto): Observable<ProjectionSettingsDto> {

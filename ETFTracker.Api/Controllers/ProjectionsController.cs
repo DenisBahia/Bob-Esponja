@@ -49,6 +49,34 @@ public class ProjectionsController : ControllerBase
     }
 
     /// <summary>
+    /// Calculates a projection for the supplied settings without saving anything.
+    /// Used to preview a specific scenario (e.g. applying a saved version's parameters).
+    /// </summary>
+    [HttpPost("calculate")]
+    public async Task<ActionResult<ProjectionResultDto>> Calculate(
+        [FromBody] ProjectionSettingsDto dto,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var result = await _projectionService.CalculateAsync(GetUserId(), dto, ct);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(403, new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error calculating projection");
+            return StatusCode(500, new { message = "Error calculating projection" });
+        }
+    }
+
+    /// <summary>
     /// Saves projection settings and returns the saved values.
     /// </summary>
     [HttpPut("settings")]

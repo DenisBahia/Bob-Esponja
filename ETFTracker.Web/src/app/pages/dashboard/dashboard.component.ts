@@ -87,6 +87,47 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   selectedVersionIds: Set<number> = new Set();
   versionCompareData: Map<number, ProjectionDataPointDto[]> = new Map();
   versionsCompareChartRendered = false;
+  /** Name of the default version currently driving the params/graph/table (null = saved settings). */
+  defaultVersionName: string | null = null;
+
+  // Versions table sort
+  versionsSortCol = 'savedAt';
+  versionsSortDir: 'asc' | 'desc' = 'desc';
+
+  get sortedVersions(): ProjectionVersionSummaryDto[] {
+    const list = [...this.projectionVersions];
+    const dir = this.versionsSortDir === 'asc' ? 1 : -1;
+    return list.sort((a, b) => {
+      let av: any, bv: any;
+      switch (this.versionsSortCol) {
+        case 'name':        av = a.versionName?.toLowerCase();              bv = b.versionName?.toLowerCase(); break;
+        case 'savedAt':     av = a.savedAt;                                 bv = b.savedAt; break;
+        case 'startAmount': av = a.settings.startAmount ?? 0;               bv = b.settings.startAmount ?? 0; break;
+        case 'return':      av = a.settings.yearlyReturnPercent;             bv = b.settings.yearlyReturnPercent; break;
+        case 'monthly':     av = a.settings.monthlyBuyAmount;               bv = b.settings.monthlyBuyAmount; break;
+        case 'buyInc':      av = a.settings.annualBuyIncreasePercent;        bv = b.settings.annualBuyIncreasePercent; break;
+        case 'years':       av = a.settings.projectionYears;                bv = b.settings.projectionYears; break;
+        case 'inflation':   av = a.settings.inflationPercent;               bv = b.settings.inflationPercent; break;
+        case 'cgt':         av = a.settings.cgtPercent;                     bv = b.settings.cgtPercent; break;
+        case 'exitTax':     av = a.settings.exitTaxPercent;                 bv = b.settings.exitTaxPercent; break;
+        case 'sia':         av = a.settings.siaAnnualPercent;               bv = b.settings.siaAnnualPercent; break;
+        default: return 0;
+      }
+      if (av < bv) return -dir;
+      if (av > bv) return dir;
+      return 0;
+    });
+  }
+
+  sortVersionsBy(col: string): void {
+    if (this.versionsSortCol === col) {
+      this.versionsSortDir = this.versionsSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.versionsSortCol = col;
+      this.versionsSortDir = 'asc';
+    }
+    this.cdr.markForCheck();
+  }
 
   @ViewChild('versionsCompareChart') versionsCompareChartRef!: ElementRef<HTMLCanvasElement>;
   private versionsCompareChart: Chart | null = null;
@@ -96,6 +137,46 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   portfolioEvolution: PortfolioEvolutionDto | null = null;
   evolutionLoading = false;
   evolutionPeriod: 'all' | 'year' | 'month' | 'week' = 'all';
+
+  // Holdings table sort
+  holdingsSortCol = '';
+  holdingsSortDir: 'asc' | 'desc' = 'asc';
+
+  get sortedHoldings(): HoldingDto[] {
+    if (!this.dashboard?.holdings) return [];
+    if (!this.holdingsSortCol) return this.dashboard.holdings;
+    const list = [...this.dashboard.holdings];
+    const dir = this.holdingsSortDir === 'asc' ? 1 : -1;
+    return list.sort((a, b) => {
+      let av: any, bv: any;
+      switch (this.holdingsSortCol) {
+        case 'ticker':       av = a.ticker?.toLowerCase();                   bv = b.ticker?.toLowerCase(); break;
+        case 'etfName':      av = a.etfName?.toLowerCase();                  bv = b.etfName?.toLowerCase(); break;
+        case 'quantity':     av = a.quantity;                                bv = b.quantity; break;
+        case 'avgCost':      av = a.averageCost;                             bv = b.averageCost; break;
+        case 'currentPrice': av = a.currentPrice;                            bv = b.currentPrice; break;
+        case 'totalValue':   av = a.totalValue;                              bv = b.totalValue; break;
+        case 'daily':        av = a.dailyMetrics.gainLossEur;                bv = b.dailyMetrics.gainLossEur; break;
+        case 'weekly':       av = a.weeklyMetrics.gainLossEur;               bv = b.weeklyMetrics.gainLossEur; break;
+        case 'monthly':      av = a.monthlyMetrics.gainLossEur;              bv = b.monthlyMetrics.gainLossEur; break;
+        case 'ytd':          av = a.ytdMetrics.gainLossEur;                  bv = b.ytdMetrics.gainLossEur; break;
+        default: return 0;
+      }
+      if (av < bv) return -dir;
+      if (av > bv) return dir;
+      return 0;
+    });
+  }
+
+  sortHoldingsBy(col: string): void {
+    if (this.holdingsSortCol === col) {
+      this.holdingsSortDir = this.holdingsSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.holdingsSortCol = col;
+      this.holdingsSortDir = 'asc';
+    }
+    this.cdr.markForCheck();
+  }
 
   @ViewChild('evolutionChart') evolutionChartRef!: ElementRef<HTMLCanvasElement>;
   private evolutionChart: Chart | null = null;
@@ -141,7 +222,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   ngOnInit(): void {
     console.log('Dashboard component initialized');
     this.loadDashboard();
-    this.loadProjection();
+    this.initProjection();
     this.loadPortfolioEvolution();
   }
 
@@ -155,6 +236,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.dashboard = null;
     this.projection = null;
     this.portfolioEvolution = null;
+    this.defaultVersionName = null;
     this.loading = true;
     this.projectionLoading = true;
     this.projectionVersions = [];
@@ -166,7 +248,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.evolutionChart?.destroy(); this.evolutionChart = null;
     this.cdr.detectChanges();
     this.loadDashboard();
-    this.loadProjection();
+    this.initProjection();
     this.loadPortfolioEvolution();
   }
 
@@ -176,6 +258,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.dashboard = null;
     this.projection = null;
     this.portfolioEvolution = null;
+    this.defaultVersionName = null;
     this.loading = true;
     this.projectionLoading = true;
     this.projectionVersions = [];
@@ -187,7 +270,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.evolutionChart?.destroy(); this.evolutionChart = null;
     this.cdr.detectChanges();
     this.loadDashboard();
-    this.loadProjection();
+    this.initProjection();
     this.loadPortfolioEvolution();
   }
 
@@ -396,6 +479,47 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     });
   }
 
+  /** Called on init / view-switch. Loads versions first; if a default is set, calculates projection from it. */
+  private initProjection(): void {
+    this.projectionLoading = true;
+    this.projectionChartRendered = false;
+    this.lineChart?.destroy();
+    this.lineChart = null;
+    this.cdr.markForCheck();
+
+    this.apiService.getProjectionVersions().subscribe({
+      next: (versions) => {
+        this.projectionVersions = versions;
+        const defaultVersion = versions.find(v => v.isDefault) ?? null;
+
+        if (defaultVersion) {
+          this.defaultVersionName = defaultVersion.versionName;
+          this.projectionSettings = { ...defaultVersion.settings };
+          // Calculate a fresh projection using the default version's settings (no DB write)
+          this.apiService.calculateProjection(defaultVersion.settings).subscribe({
+            next: (result) => {
+              this.projection = result;
+              this.projectionLoading = false;
+              this.cdr.markForCheck();
+            },
+            error: () => {
+              // Fallback: load from saved settings
+              this.defaultVersionName = null;
+              this.loadProjection();
+            }
+          });
+        } else {
+          this.defaultVersionName = null;
+          this.loadProjection();
+        }
+      },
+      error: () => {
+        // If versions fail to load, fall back to normal projection load
+        this.loadProjection();
+      }
+    });
+  }
+
   loadProjection(): void {
     this.projectionLoading = true;
     this.projectionChartRendered = false;
@@ -424,7 +548,8 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.apiService.saveProjectionSettings(this.projectionSettings).subscribe({
       next: () => {
         this.projectionSaving = false;
-        // Reload projection with new settings
+        // User has manually applied custom settings — clear the default version badge
+        this.defaultVersionName = null;
         this.projectionChartRendered = false;
         this.lineChart?.destroy();
         this.lineChart = null;
@@ -445,6 +570,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
       this.lineChart?.destroy();
       this.lineChart = null;
     }
+    // Versions are already eagerly loaded in initProjection(); only reload if empty (e.g. after error)
     if (tab === 'versions' && this.projectionVersions.length === 0 && !this.versionsLoading) {
       this.loadProjectionVersions();
     }
@@ -545,6 +671,19 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
         const next = new Set(this.versionSettingDefault);
         next.delete(versionId);
         this.versionSettingDefault = next;
+        // Apply the newly-set default version to params + graph
+        const newDefault = this.projectionVersions.find(v => v.id === versionId);
+        if (newDefault) {
+          this.defaultVersionName = newDefault.versionName;
+          this.projectionSettings = { ...newDefault.settings };
+          this.projectionChartRendered = false;
+          this.lineChart?.destroy();
+          this.lineChart = null;
+          this.apiService.calculateProjection(newDefault.settings).subscribe({
+            next: (result) => { this.projection = result; this.cdr.markForCheck(); },
+            error: () => this.cdr.markForCheck()
+          });
+        }
         this.cdr.markForCheck();
       },
       error: (err) => {
@@ -602,25 +741,50 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     const ctx = this.versionsCompareChartRef?.nativeElement?.getContext('2d');
     if (!ctx) return;
 
+    // Each metric has its own colour family; each version gets a different shade of that family
+    const LINE_TYPE_CONFIG: { key: keyof ProjectionDataPointDto; label: string; dash: number[]; shades: string[] }[] = [
+      { key: 'totalAmount',                       label: 'Projected Portfolio Value',             dash: [],      shades: ['#4f8ef7', '#2563d4', '#7cb5ff', '#1a47a0'] },
+      { key: 'inflationCorrectedAmount',          label: 'Inflation Corrected',                   dash: [6, 3],  shades: ['#f05252', '#b91c1c', '#f87171', '#7f1d1d'] },
+      { key: 'afterTaxTotalAmount',               label: 'After Taxes',                           dash: [4, 4],  shades: ['#4d6080', '#2d4565', '#6d80a0', '#1d2f45'] },
+      { key: 'afterTaxInflationCorrectedAmount',  label: 'After Tax + Inflation Corrected',       dash: [8, 3],  shades: ['#f89b29', '#c27416', '#fbba60', '#7c4a0a'] },
+      { key: 'afterTaxSia',                       label: 'After Tax (SIA)',                       dash: [6, 4],  shades: ['#2ec4b6', '#178077', '#5de0d4', '#0e5550'] },
+      { key: 'afterTaxInflationCorrectedSia',     label: 'After Tax + Inflation Corrected (SIA)', dash: [10, 4], shades: ['#9b5de5', '#6d28d9', '#bf8af7', '#4c1d95'] },
+    ];
+
     const selectedIds = Array.from(this.selectedVersionIds);
-    const datasets = selectedIds
-      .filter(id => this.versionCompareData.has(id))
-      .map((id, i) => {
-        const version = this.projectionVersions.find(v => v.id === id);
-        const dataPoints = this.versionCompareData.get(id) ?? [];
-        const color = PIE_COLORS[i % PIE_COLORS.length];
-        return {
-          label: version?.versionName ?? `#${id}`,
-          data: dataPoints.map(p => p.totalAmount),
+    const datasets: any[] = [];
+
+    selectedIds.forEach((id, versionIndex) => {
+      if (!this.versionCompareData.has(id)) return;
+      const version = this.projectionVersions.find(v => v.id === id);
+      const dataPoints = this.versionCompareData.get(id) ?? [];
+
+      LINE_TYPE_CONFIG.forEach((lineType, lineIndex) => {
+        // Skip SIA lines when this version has no meaningful SIA data
+        if (lineType.key === 'afterTaxSia' || lineType.key === 'afterTaxInflationCorrectedSia') {
+          const hasSia = dataPoints.some(p => ((p as any)[lineType.key] ?? 0) > 0);
+          if (!hasSia) return;
+        }
+
+        const data = dataPoints.map(p => (p as any)[lineType.key] ?? 0);
+        // Colour = metric family hue, shade = version index
+        const color = lineType.shades[versionIndex % lineType.shades.length];
+        datasets.push({
+          label: `${version?.versionName ?? `#${id}`} — ${lineType.label}`,
+          data,
           borderColor: color,
-          backgroundColor: color + '22',
+          backgroundColor: color + '18',
           fill: false,
           tension: 0.35,
           pointRadius: 4,
           pointHoverRadius: 6,
           pointBackgroundColor: color,
-        };
+          borderDash: lineType.dash,
+          borderWidth: lineIndex === 0 ? 2.5 : 1.5,
+          hidden: lineIndex > 0, // only "Projected Portfolio Value" visible by default
+        });
       });
+    });
 
     if (datasets.length === 0) return;
 
@@ -640,7 +804,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
           },
           y: {
             ...DARK_SCALE_DEFAULTS,
-            title: { display: true, text: 'Projected Portfolio Value (€)', font: { weight: 'bold' }, color: '#8da0bf' },
+            title: { display: true, text: 'Value (€)', font: { weight: 'bold' }, color: '#8da0bf' },
             ticks: {
               color: '#8da0bf',
               callback: (value) => `€${Number(value).toLocaleString('de-IE', { maximumFractionDigits: 0 })}`
@@ -651,7 +815,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
           legend: {
             display: true,
             position: 'top',
-            labels: { usePointStyle: true, padding: 20, color: '#8da0bf' }
+            labels: { usePointStyle: true, padding: 14, color: '#8da0bf', font: { size: 11 } }
           },
           tooltip: {
             backgroundColor: '#172040',
@@ -861,25 +1025,12 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.selectedHoldingId = null;
   }
 
-  getPriceSourceLabel(source: string | null): string {
-    if (!source) return 'N/A';
-    const labels: { [key: string]: string } = {
-      'Eodhd': 'Eodhd',
-      'Yahoo': 'Yahoo',
-      'Cache': 'Cached'
-    };
-    return labels[source] || 'Unknown';
+  onHistoryChanged(): void {
+    // A transaction was deleted — reload portfolio data so holdings & metrics stay in sync
+    this.loadDashboard();
+    this.loadProjection();
   }
 
-  getPriceSourceDescription(source: string | null): string {
-    if (!source) return 'Price data unavailable';
-    const descriptions: { [key: string]: string } = {
-      'Eodhd': 'Real-time price from Eodhd API (Premium)',
-      'Yahoo': 'Real-time price from Yahoo Finance',
-      'Cache': 'Cached price from last update'
-    };
-    return descriptions[source] || 'Unknown source';
-  }
 
   copyPortfolioTotal(): void {
     if (this.dashboard) {
