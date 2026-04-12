@@ -18,6 +18,7 @@ export class LandingComponent implements OnInit, OnDestroy {
     { label: 'Dashboard' },
     { label: 'Projections' },
     { label: 'Portfolio Sharing' },
+    { label: 'Buy History' },
   ];
 
   private slideInterval: ReturnType<typeof setInterval> | null = null;
