@@ -29,10 +29,6 @@ export class AddTransactionModalComponent {
   }
   /** Available quantity for the selected holding (used for sell validation hint). */
   @Input() availableQty: number | null = null;
-  /** Current market price of the pre-selected holding (shown in sell mode). */
-  @Input() currentMarketPrice: number | null = null;
-  /** Average cost of the pre-selected holding (shown in sell mode). */
-  @Input() averageCost: number | null = null;
 
   transactionType: 'Buy' | 'Sell' = 'Buy';
   ticker: string = '';
@@ -86,17 +82,6 @@ export class AddTransactionModalComponent {
     this.transactionType = type;
     this.error = null;
     this.cdr.markForCheck();
-  }
-
-  /** Unrealized gain/loss per unit vs avg cost, for the sell preview panel. */
-  get sellPreviewGainPerUnit(): number | null {
-    if (this.currentMarketPrice === null || this.averageCost === null) return null;
-    return this.currentMarketPrice - this.averageCost;
-  }
-
-  get sellPreviewGainPercent(): number | null {
-    if (this.sellPreviewGainPerUnit === null || !this.averageCost) return null;
-    return (this.sellPreviewGainPerUnit / this.averageCost) * 100;
   }
 
   onTickerChange(value: string): void {
@@ -197,15 +182,6 @@ export class AddTransactionModalComponent {
       case 'BOND':           return '🏦';
       default:               return '🔍';
     }
-  }
-
-  formatCurrency(v: number): string {
-    return new Intl.NumberFormat('de-IE', { style: 'currency', currency: 'EUR',
-      minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
-  }
-
-  formatPercent(v: number): string {
-    return (v >= 0 ? '+' : '') + v.toFixed(2) + '%';
   }
 }
 

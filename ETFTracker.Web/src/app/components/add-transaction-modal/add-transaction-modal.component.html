@@ -85,30 +85,6 @@
         📦 Available to sell: <strong>{{ availableQty | number:'1.0-4' }}</strong> units
       </div>
 
-      <!-- Sell price preview (when current price is known) -->
-      <div class="sell-price-preview" *ngIf="transactionType === 'Sell' && currentMarketPrice !== null">
-        <div class="sell-preview-row">
-          <span class="preview-label">Current market price</span>
-          <span class="preview-value">{{ formatCurrency(currentMarketPrice) }}</span>
-        </div>
-        <div class="sell-preview-row" *ngIf="averageCost !== null">
-          <span class="preview-label">Your avg cost</span>
-          <span class="preview-value">{{ formatCurrency(averageCost) }}</span>
-        </div>
-        <div class="sell-preview-row" *ngIf="sellPreviewGainPerUnit !== null">
-          <span class="preview-label">Unrealised gain / unit</span>
-          <span class="preview-value" [ngClass]="sellPreviewGainPerUnit >= 0 ? 'gain-pos' : 'gain-neg'">
-            {{ formatCurrency(sellPreviewGainPerUnit) }}
-            <span *ngIf="sellPreviewGainPercent !== null">({{ formatPercent(sellPreviewGainPercent) }})</span>
-          </span>
-        </div>
-        <div class="sell-preview-row" *ngIf="availableQty !== null && currentMarketPrice !== null">
-          <span class="preview-label">Full position value</span>
-          <span class="preview-value">{{ formatCurrency(availableQty * currentMarketPrice) }}</span>
-        </div>
-        <p class="sell-preview-note">💡 Enter your actual sell price below — it may differ from the current market price.</p>
-      </div>
-
       <div class="form-group">
         <label for="quantity">Quantity *</label>
         <input id="quantity" type="number" [(ngModel)]="quantity" name="quantity"
