@@ -1,3 +1,52 @@
+// Top-level menu that splits dashboard into Portfolio and Projections views.
+.main-menu-nav {
+  display: flex;
+  gap: 0.75rem;
+  margin: 0 0 1.25rem;
+  padding: 0.35rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(79, 142, 247, 0.18);
+  border-radius: 12px;
+}
+
+.main-menu-btn {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #8da0bf;
+  font-weight: 700;
+  font-size: 0.92rem;
+  border-radius: 9px;
+  padding: 0.65rem 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    color: #d8e5f8;
+    background: rgba(79, 142, 247, 0.1);
+  }
+
+  &.active {
+    color: #f4f8ff;
+    background: linear-gradient(135deg, rgba(79, 142, 247, 0.25) 0%, rgba(124, 92, 252, 0.22) 100%);
+    border-color: rgba(79, 142, 247, 0.45);
+    box-shadow: 0 0 0 1px rgba(79, 142, 247, 0.2) inset;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-menu-nav {
+    gap: 0.5rem;
+    padding: 0.3rem;
+  }
+
+  .main-menu-btn {
+    font-size: 0.85rem;
+    padding: 0.55rem 0.65rem;
+  }
+}
+
 // ── STICKY HEADER WRAPPER ────────────────────────────────────────────────────
 // Wraps both the viewing-as banner and the nav so they stick together at top.
 .sticky-header {

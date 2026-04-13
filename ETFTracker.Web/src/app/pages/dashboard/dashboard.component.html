@@ -53,9 +53,23 @@
   </div>
 
   <div *ngIf="dashboard && !loading" class="dashboard-content">
-    <!-- Header with metrics -->
-    <div class="dashboard-header">
-      <h1>📊 Investment Portfolio Dashboard</h1>
+    <div class="main-menu-nav">
+      <button class="main-menu-btn"
+              [class.active]="activeMainSection === 'portfolio'"
+              (click)="setMainSection('portfolio')">
+        📂 Actual Portfolio
+      </button>
+      <button class="main-menu-btn"
+              [class.active]="activeMainSection === 'projections'"
+              (click)="setMainSection('projections')">
+        📈 Projections
+      </button>
+    </div>
+
+    <div *ngIf="activeMainSection === 'portfolio'">
+      <!-- Header with metrics -->
+      <div class="dashboard-header">
+        <h1>📊 Investment Portfolio Dashboard</h1>
 
       <div class="metrics-grid">
         <!-- Total Holdings -->
@@ -123,11 +137,158 @@
           </div>
         </div>
       </div>
+      </div>
+
+      <!-- Holdings Section -->
+      <div class="holdings-section">
+        <h2>Your Holdings</h2>
+
+        <div class="action-buttons">
+          <button class="btn btn-primary" (click)="onAddTransactionClick()" *ngIf="!sharingCtx.isReadOnly()">+ Add New Buy</button>
+          <div *ngIf="sharingCtx.isReadOnly()" class="readonly-notice">🔒 Read-only view — you cannot add transactions</div>
+        </div>
+
+        <!-- Tab navigation -->
+        <div class="holdings-tab-nav">
+          <button class="tab-btn" [class.active]="activeHoldingsTab === 'table'" (click)="setHoldingsTab('table')">
+            📋 Holdings Table
+          </button>
+          <button class="tab-btn" [class.active]="activeHoldingsTab === 'evolution'" (click)="setHoldingsTab('evolution')">
+            📈 Portfolio Evolution
+          </button>
+        </div>
+
+        <!-- Tab: Holdings Table -->
+        <div class="tab-panel" *ngIf="activeHoldingsTab === 'table'">
+          <div class="table-wrapper">
+            <table class="holdings-table">
+              <thead>
+                <tr>
+                  <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='ticker'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='ticker'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('ticker')">Ticker</th>
+                  <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='etfName'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='etfName'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('etfName')">Asset Name</th>
+                  <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='quantity'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='quantity'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('quantity')">Quantity</th>
+                  <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='avgCost'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='avgCost'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('avgCost')">Avg Cost</th>
+                  <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='currentPrice'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='currentPrice'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('currentPrice')">Current Price</th>
+                  <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='totalValue'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='totalValue'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('totalValue')">Total Value</th>
+                  <th colspan="4">Gain/Loss</th>
+                  <th>Actions</th>
+                </tr>
+                <tr class="periods-header">
+                  <th colspan="6"></th>
+                  <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='daily'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='daily'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('daily')">Daily</th>
+                  <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='weekly'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='weekly'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('weekly')">Weekly</th>
+                  <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='monthly'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='monthly'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('monthly')">Monthly</th>
+                  <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='ytd'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='ytd'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('ytd')">YTD</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let holding of sortedHoldings" class="holding-row" [ngClass]="{'price-unavailable': holding.priceUnavailable}">
+                  <td class="ticker"><strong>{{ holding.ticker }}</strong></td>
+                  <td>{{ holding.etfName }}</td>
+                  <td class="quantity">{{ formatQuantity(holding.quantity) }}</td>
+                  <td class="price">{{ formatCurrency(holding.averageCost) }}</td>
+                  <td class="price">{{ formatCurrency(holding.currentPrice) }}</td>
+                  <td class="total-value"><strong>{{ formatCurrency(holding.totalValue) }}</strong></td>
+
+                  <!-- Daily -->
+                  <td [ngClass]="getMetricsClass(holding.dailyMetrics.gainLossEur)">
+                    <div class="gain-loss">
+                      <div>{{ formatCurrency(holding.dailyMetrics.gainLossEur) }}</div>
+                      <div class="percent">{{ formatPercent(holding.dailyMetrics.gainLossPercent) }}</div>
+                    </div>
+                  </td>
+
+                  <!-- Weekly -->
+                  <td [ngClass]="getMetricsClass(holding.weeklyMetrics.gainLossEur)">
+                    <div class="gain-loss">
+                      <div>{{ formatCurrency(holding.weeklyMetrics.gainLossEur) }}</div>
+                      <div class="percent">{{ formatPercent(holding.weeklyMetrics.gainLossPercent) }}</div>
+                    </div>
+                  </td>
+
+                  <!-- Monthly -->
+                  <td [ngClass]="getMetricsClass(holding.monthlyMetrics.gainLossEur)">
+                    <div class="gain-loss">
+                      <div>{{ formatCurrency(holding.monthlyMetrics.gainLossEur) }}</div>
+                      <div class="percent">{{ formatPercent(holding.monthlyMetrics.gainLossPercent) }}</div>
+                    </div>
+                  </td>
+
+                  <!-- YTD -->
+                  <td [ngClass]="getMetricsClass(holding.ytdMetrics.gainLossEur)">
+                    <div class="gain-loss">
+                      <div>{{ formatCurrency(holding.ytdMetrics.gainLossEur) }}</div>
+                      <div class="percent">{{ formatPercent(holding.ytdMetrics.gainLossPercent) }}</div>
+                    </div>
+                  </td>
+
+                  <td class="actions">
+                    <button class="btn-link" (click)="onBuyHistoryClick(holding.id)">History</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab: Portfolio Evolution Chart -->
+        <div class="tab-panel" *ngIf="activeHoldingsTab === 'evolution'">
+          <div *ngIf="evolutionLoading" class="evolution-loading">
+            <p>Loading portfolio evolution…</p>
+          </div>
+          <ng-container *ngIf="portfolioEvolution && !evolutionLoading">
+            <!-- Period filter -->
+            <div class="evolution-period-nav">
+              <button class="period-btn" [class.active]="evolutionPeriod === 'all'" (click)="setEvolutionPeriod('all')">Whole Period</button>
+              <button class="period-btn" [class.active]="evolutionPeriod === 'year'" (click)="setEvolutionPeriod('year')">Current Year</button>
+              <button class="period-btn" [class.active]="evolutionPeriod === 'month'" (click)="setEvolutionPeriod('month')">Current Month</button>
+              <button class="period-btn" [class.active]="evolutionPeriod === 'week'" (click)="setEvolutionPeriod('week')">Current Week</button>
+            </div>
+            <div class="evolution-chart-wrapper" *ngIf="filteredEvolutionPoints.length > 0">
+              <canvas #evolutionChart></canvas>
+            </div>
+            <div class="evolution-no-data" *ngIf="filteredEvolutionPoints.length === 0">
+              <p>No data available for the selected period.</p>
+            </div>
+            <div class="evolution-legend">
+              <span class="legend-dot buy-dot"></span>
+              <span class="legend-label">Buy recorded on this day</span>
+              <span class="legend-dot value-dot"></span>
+              <span class="legend-label">Portfolio value</span>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+
+      <!-- Allocation Pie Chart -->
+      <div class="allocation-section">
+        <h2>Portfolio Allocation</h2>
+        <div class="allocation-content">
+          <div class="pie-wrapper">
+            <canvas #allocationChart></canvas>
+          </div>
+          <div class="allocation-legend">
+            <div class="legend-item" *ngFor="let slice of allocationSlices">
+              <span class="legend-color" [style.background]="slice.color"></span>
+              <div class="legend-details">
+                <span class="legend-ticker">{{ slice.ticker }}</span>
+                <span class="legend-name">{{ slice.etfName }}</span>
+                <div class="legend-metrics">
+                  <span class="legend-amount">{{ formatCurrency(slice.value) }}</span>
+                  <span class="legend-percent">{{ slice.percent.toFixed(1) }}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- Yearly Projections -->
-    <div class="projection-section">
-      <h2>Yearly Projections</h2>
+    <div *ngIf="activeMainSection === 'projections'">
+      <!-- Yearly Projections -->
+      <div class="projection-section">
+        <h2>Yearly Projections</h2>
 
       <div class="projection-params">
 
@@ -436,151 +597,6 @@
             <canvas #versionsCompareChart *ngIf="selectedVersionIds.size > 0"></canvas>
           </div>
 
-        </div>
-      </div>
-    </div>
-
-    <!-- Holdings Section -->
-    <div class="holdings-section">
-      <h2>Your Holdings</h2>
-
-      <div class="action-buttons">
-        <button class="btn btn-primary" (click)="onAddTransactionClick()" *ngIf="!sharingCtx.isReadOnly()">+ Add New Buy</button>
-        <div *ngIf="sharingCtx.isReadOnly()" class="readonly-notice">🔒 Read-only view — you cannot add transactions</div>
-      </div>
-
-      <!-- Tab navigation -->
-      <div class="holdings-tab-nav">
-        <button class="tab-btn" [class.active]="activeHoldingsTab === 'table'" (click)="setHoldingsTab('table')">
-          📋 Holdings Table
-        </button>
-        <button class="tab-btn" [class.active]="activeHoldingsTab === 'evolution'" (click)="setHoldingsTab('evolution')">
-          📈 Portfolio Evolution
-        </button>
-      </div>
-
-      <!-- Tab: Holdings Table -->
-      <div class="tab-panel" *ngIf="activeHoldingsTab === 'table'">
-        <div class="table-wrapper">
-          <table class="holdings-table">
-            <thead>
-              <tr>
-                <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='ticker'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='ticker'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('ticker')">Ticker</th>
-                <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='etfName'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='etfName'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('etfName')">Asset Name</th>
-                <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='quantity'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='quantity'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('quantity')">Quantity</th>
-                <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='avgCost'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='avgCost'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('avgCost')">Avg Cost</th>
-                <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='currentPrice'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='currentPrice'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('currentPrice')">Current Price</th>
-                <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='totalValue'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='totalValue'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('totalValue')">Total Value</th>
-                <th colspan="4">Gain/Loss</th>
-                <th>Actions</th>
-              </tr>
-              <tr class="periods-header">
-                <th colspan="6"></th>
-                <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='daily'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='daily'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('daily')">Daily</th>
-                <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='weekly'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='weekly'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('weekly')">Weekly</th>
-                <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='monthly'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='monthly'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('monthly')">Monthly</th>
-                <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='ytd'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='ytd'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('ytd')">YTD</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let holding of sortedHoldings" class="holding-row" [ngClass]="{'price-unavailable': holding.priceUnavailable}">
-                <td class="ticker"><strong>{{ holding.ticker }}</strong></td>
-                <td>{{ holding.etfName }}</td>
-                <td class="quantity">{{ formatQuantity(holding.quantity) }}</td>
-                <td class="price">{{ formatCurrency(holding.averageCost) }}</td>
-                <td class="price">{{ formatCurrency(holding.currentPrice) }}</td>
-                <td class="total-value"><strong>{{ formatCurrency(holding.totalValue) }}</strong></td>
-
-                <!-- Daily -->
-                <td [ngClass]="getMetricsClass(holding.dailyMetrics.gainLossEur)">
-                  <div class="gain-loss">
-                    <div>{{ formatCurrency(holding.dailyMetrics.gainLossEur) }}</div>
-                    <div class="percent">{{ formatPercent(holding.dailyMetrics.gainLossPercent) }}</div>
-                  </div>
-                </td>
-
-                <!-- Weekly -->
-                <td [ngClass]="getMetricsClass(holding.weeklyMetrics.gainLossEur)">
-                  <div class="gain-loss">
-                    <div>{{ formatCurrency(holding.weeklyMetrics.gainLossEur) }}</div>
-                    <div class="percent">{{ formatPercent(holding.weeklyMetrics.gainLossPercent) }}</div>
-                  </div>
-                </td>
-
-                <!-- Monthly -->
-                <td [ngClass]="getMetricsClass(holding.monthlyMetrics.gainLossEur)">
-                  <div class="gain-loss">
-                    <div>{{ formatCurrency(holding.monthlyMetrics.gainLossEur) }}</div>
-                    <div class="percent">{{ formatPercent(holding.monthlyMetrics.gainLossPercent) }}</div>
-                  </div>
-                </td>
-
-                <!-- YTD -->
-                <td [ngClass]="getMetricsClass(holding.ytdMetrics.gainLossEur)">
-                  <div class="gain-loss">
-                    <div>{{ formatCurrency(holding.ytdMetrics.gainLossEur) }}</div>
-                    <div class="percent">{{ formatPercent(holding.ytdMetrics.gainLossPercent) }}</div>
-                  </div>
-                </td>
-
-                <td class="actions">
-                  <button class="btn-link" (click)="onBuyHistoryClick(holding.id)">History</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Tab: Portfolio Evolution Chart -->
-      <div class="tab-panel" *ngIf="activeHoldingsTab === 'evolution'">
-        <div *ngIf="evolutionLoading" class="evolution-loading">
-          <p>Loading portfolio evolution…</p>
-        </div>
-        <ng-container *ngIf="portfolioEvolution && !evolutionLoading">
-          <!-- Period filter -->
-          <div class="evolution-period-nav">
-            <button class="period-btn" [class.active]="evolutionPeriod === 'all'" (click)="setEvolutionPeriod('all')">Whole Period</button>
-            <button class="period-btn" [class.active]="evolutionPeriod === 'year'" (click)="setEvolutionPeriod('year')">Current Year</button>
-            <button class="period-btn" [class.active]="evolutionPeriod === 'month'" (click)="setEvolutionPeriod('month')">Current Month</button>
-            <button class="period-btn" [class.active]="evolutionPeriod === 'week'" (click)="setEvolutionPeriod('week')">Current Week</button>
-          </div>
-          <div class="evolution-chart-wrapper" *ngIf="filteredEvolutionPoints.length > 0">
-            <canvas #evolutionChart></canvas>
-          </div>
-          <div class="evolution-no-data" *ngIf="filteredEvolutionPoints.length === 0">
-            <p>No data available for the selected period.</p>
-          </div>
-          <div class="evolution-legend">
-            <span class="legend-dot buy-dot"></span>
-            <span class="legend-label">Buy recorded on this day</span>
-            <span class="legend-dot value-dot"></span>
-            <span class="legend-label">Portfolio value</span>
-          </div>
-        </ng-container>
-      </div>
-    </div>
-
-    <!-- Allocation Pie Chart -->
-    <div class="allocation-section">
-      <h2>Portfolio Allocation</h2>
-      <div class="allocation-content">
-        <div class="pie-wrapper">
-          <canvas #allocationChart></canvas>
-        </div>
-        <div class="allocation-legend">
-          <div class="legend-item" *ngFor="let slice of allocationSlices">
-            <span class="legend-color" [style.background]="slice.color"></span>
-            <div class="legend-details">
-              <span class="legend-ticker">{{ slice.ticker }}</span>
-              <span class="legend-name">{{ slice.etfName }}</span>
-              <div class="legend-metrics">
-                <span class="legend-amount">{{ formatCurrency(slice.value) }}</span>
-                <span class="legend-percent">{{ slice.percent.toFixed(1) }}%</span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

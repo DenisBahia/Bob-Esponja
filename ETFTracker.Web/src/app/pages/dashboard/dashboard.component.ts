@@ -39,6 +39,7 @@ const DARK_SCALE_DEFAULTS = {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
+  activeMainSection: 'portfolio' | 'projections' = 'portfolio';
   dashboard: DashboardDto | null = null;
   loading = true;
   error: string | null = null;
@@ -574,6 +575,29 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     if (tab === 'versions' && this.projectionVersions.length === 0 && !this.versionsLoading) {
       this.loadProjectionVersions();
     }
+    this.cdr.markForCheck();
+  }
+
+  setMainSection(section: 'portfolio' | 'projections'): void {
+    if (this.activeMainSection === section) return;
+
+    this.activeMainSection = section;
+
+    // Recreate charts when canvases are re-mounted after section switches.
+    this.chartRendered = false;
+    this.projectionChartRendered = false;
+    this.evolutionChartRendered = false;
+    this.versionsCompareChartRendered = false;
+
+    this.pieChart?.destroy();
+    this.pieChart = null;
+    this.lineChart?.destroy();
+    this.lineChart = null;
+    this.evolutionChart?.destroy();
+    this.evolutionChart = null;
+    this.versionsCompareChart?.destroy();
+    this.versionsCompareChart = null;
+
     this.cdr.markForCheck();
   }
 
