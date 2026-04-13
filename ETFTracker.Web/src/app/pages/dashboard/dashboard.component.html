@@ -34,10 +34,6 @@
             <span>🔗</span>
             <span class="share-text">Sharing</span>
           </button>
-          <a class="btn-settings" routerLink="/settings" title="Tax Rates & Settings">
-            <span>⚙️</span>
-            <span class="settings-text">Settings</span>
-          </a>
           <button class="btn-logout" (click)="auth.logout()" title="Sign out">
             <span class="logout-icon">🚪</span>
             <span class="logout-text">Sign out</span>
@@ -449,7 +445,7 @@
       <h2>Your Holdings</h2>
 
       <div class="action-buttons">
-        <button class="btn btn-primary" (click)="onAddTransactionClick()" *ngIf="!sharingCtx.isReadOnly()">🛒 Add New Buy</button>
+        <button class="btn btn-primary" (click)="onAddTransactionClick()" *ngIf="!sharingCtx.isReadOnly()">+ Add New Buy</button>
         <div *ngIf="sharingCtx.isReadOnly()" class="readonly-notice">🔒 Read-only view — you cannot add transactions</div>
       </div>
 
@@ -475,15 +471,11 @@
                 <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='avgCost'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='avgCost'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('avgCost')">Avg Cost</th>
                 <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='currentPrice'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='currentPrice'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('currentPrice')">Current Price</th>
                 <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='totalValue'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='totalValue'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('totalValue')">Total Value</th>
-                <th class="deemed-disposal-th">
-                  Deemed Disposal Due
-                  <span class="col-info-icon" title="Deemed Disposal applies to ETFs and Funds only. The tax amount will be calculated on the due date based on the profit at that time.">ℹ️</span>
-                </th>
                 <th colspan="4">Gain/Loss</th>
                 <th>Actions</th>
               </tr>
               <tr class="periods-header">
-                <th colspan="7"></th>
+                <th colspan="6"></th>
                 <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='daily'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='daily'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('daily')">Daily</th>
                 <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='weekly'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='weekly'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('weekly')">Weekly</th>
                 <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='monthly'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='monthly'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('monthly')">Monthly</th>
@@ -499,20 +491,6 @@
                 <td class="price">{{ formatCurrency(holding.averageCost) }}</td>
                 <td class="price">{{ formatCurrency(holding.currentPrice) }}</td>
                 <td class="total-value"><strong>{{ formatCurrency(holding.totalValue) }}</strong></td>
-
-                <!-- Deemed Disposal Due -->
-                <td class="deemed-disposal-cell">
-                  <ng-container *ngIf="holding.deemedDisposalDueDate; else noDeemedDisposal">
-                    <span
-                      class="deemed-disposal-date"
-                      [attr.data-tooltip]="deemedDisposalTooltip(holding.deemedDisposalDueDate)">
-                      📅 {{ formatDate(holding.deemedDisposalDueDate) }}
-                    </span>
-                  </ng-container>
-                  <ng-template #noDeemedDisposal>
-                    <span class="deemed-disposal-na">—</span>
-                  </ng-template>
-                </td>
 
                 <!-- Daily -->
                 <td [ngClass]="getMetricsClass(holding.dailyMetrics.gainLossEur)">
@@ -547,8 +525,7 @@
                 </td>
 
                 <td class="actions">
-                  <button class="btn-link" (click)="onBuyHistoryClick(holding.id)">📋 History</button>
-                  <button class="btn-link btn-sell-action" (click)="onSellClick(holding)" *ngIf="!sharingCtx.isReadOnly() && holding.quantity > 0">💰 Sell</button>
+                  <button class="btn-link" (click)="onBuyHistoryClick(holding.id)">History</button>
                 </td>
               </tr>
             </tbody>
@@ -577,139 +554,16 @@
           </div>
           <div class="evolution-legend">
             <span class="legend-dot buy-dot"></span>
-            <span class="legend-label">Buy recorded</span>
-            <span class="legend-dot sell-dot"></span>
-            <span class="legend-label">Sell recorded</span>
+            <span class="legend-label">Buy recorded on this day</span>
             <span class="legend-dot value-dot"></span>
             <span class="legend-label">Portfolio value</span>
           </div>
         </ng-container>
       </div>
-  </div>
-
-  <!-- ── Tax Year Summary ────────────────────────────────────────────────── -->
-  <div class="tax-summary-section">
-    <div class="tax-summary-header" (click)="toggleTaxSummary()">
-      <h2>
-        🧾 Tax Year Summary
-        <span class="tax-summary-badge" *ngIf="taxYears.length > 0">{{ taxYears.length }} year{{ taxYears.length !== 1 ? 's' : '' }} with sells</span>
-        <span class="tax-summary-badge tax-summary-badge--none" *ngIf="taxYears.length === 0">No sells recorded</span>
-      </h2>
-      <span class="collapse-chevron" [class.open]="taxSummaryExpanded">▼</span>
     </div>
 
-    <div class="tax-summary-body" *ngIf="taxSummaryExpanded">
-
-      <!-- Year selector -->
-      <div class="tax-year-controls" *ngIf="taxYears.length > 0">
-        <label for="taxYear">Tax Year:</label>
-        <select id="taxYear" [(ngModel)]="selectedTaxYear" (ngModelChange)="onTaxYearChange()">
-          <option *ngFor="let y of taxYears" [value]="y">{{ y }}</option>
-        </select>
-        <span class="tax-year-hint">Irish tax year = calendar year (Jan 1 – Dec 31)</span>
-      </div>
-
-      <div *ngIf="taxSummaryLoading" class="tax-summary-loading">Loading…</div>
-
-      <ng-container *ngIf="taxSummary && !taxSummaryLoading">
-
-        <!-- No sells for the year -->
-        <p *ngIf="taxSummary.entries.length === 0" class="tax-no-data">
-          No sell transactions recorded for {{ taxSummary.year }}.
-        </p>
-
-        <ng-container *ngIf="taxSummary.entries.length > 0">
-
-          <!-- Summary totals -->
-          <div class="tax-totals-grid">
-            <div class="tax-total-card">
-              <div class="tax-total-label">Total Taxable Profit</div>
-              <div class="tax-total-value" [ngClass]="taxSummary.totalTaxableProfit >= 0 ? 'positive' : 'negative'">
-                {{ formatCurrency(taxSummary.totalTaxableProfit) }}
-              </div>
-            </div>
-            <div class="tax-total-card">
-              <div class="tax-total-label">Total Exit Tax Due</div>
-              <div class="tax-total-value" [ngClass]="taxSummary.totalExitTaxDue > 0 ? 'tax-due' : ''">
-                {{ formatCurrency(taxSummary.totalExitTaxDue) }}
-              </div>
-            </div>
-            <div class="tax-total-card tax-total-card--note" *ngIf="taxSummary.hasMissingRates">
-              <div class="tax-total-label">⚠️ Note</div>
-              <div class="tax-missing-rates-msg">
-                Some assets have no Exit Tax rate configured.
-                <a routerLink="/settings">Configure rates →</a>
-              </div>
-            </div>
-          </div>
-
-          <!-- Per-sell breakdown table -->
-          <div class="tax-table-wrapper">
-            <table class="tax-table">
-              <thead>
-                <tr>
-                  <th>Asset</th>
-                  <th>Sell Date</th>
-                  <th>Qty Sold</th>
-                  <th>Sell Price</th>
-                  <th>Avg Buy Price</th>
-                  <th>Taxable Profit</th>
-                  <th>Exit Tax %</th>
-                  <th>Exit Tax Due</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let e of taxSummary.entries"
-                    [ngClass]="e.taxableProfit >= 0 ? 'tax-row-gain' : 'tax-row-loss'">
-                  <td class="tax-asset-col">
-                    <strong>{{ e.ticker }}</strong>
-                    <span class="tax-etf-name" *ngIf="e.etfName">{{ e.etfName }}</span>
-                    <span class="tax-type-chip" *ngIf="e.securityType">{{ e.securityType }}</span>
-                  </td>
-                  <td>{{ formatDate(e.sellDate) }}</td>
-                  <td class="quantity">{{ formatQuantity(e.quantitySold) }}</td>
-                  <td class="price">{{ formatCurrency(e.sellPrice) }}</td>
-                  <td class="price">{{ formatCurrency(e.weightedBuyPrice) }}</td>
-                  <td class="price" [ngClass]="e.taxableProfit >= 0 ? 'positive' : 'negative'">
-                    {{ formatCurrency(e.taxableProfit) }}
-                  </td>
-                  <td>
-                    <span *ngIf="e.exitTaxPercent !== null" class="tax-pct-badge">{{ e.exitTaxPercent }}%</span>
-                    <span *ngIf="e.exitTaxPercent === null" class="muted" title="No rate configured for this asset type">—</span>
-                  </td>
-                  <td class="price" [ngClass]="(e.exitTaxDue ?? 0) > 0 ? 'tax-due' : ''">
-                    {{ e.exitTaxDue !== null ? formatCurrency(e.exitTaxDue) : '—' }}
-                  </td>
-                </tr>
-              </tbody>
-              <tfoot>
-                <tr class="tax-total-row">
-                  <td colspan="5"><strong>Total {{ taxSummary.year }}</strong></td>
-                  <td class="price" [ngClass]="taxSummary.totalTaxableProfit >= 0 ? 'positive' : 'negative'">
-                    <strong>{{ formatCurrency(taxSummary.totalTaxableProfit) }}</strong>
-                  </td>
-                  <td></td>
-                  <td class="price" [ngClass]="taxSummary.totalExitTaxDue > 0 ? 'tax-due' : ''">
-                    <strong>{{ formatCurrency(taxSummary.totalExitTaxDue) }}</strong>
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-
-        </ng-container>
-      </ng-container>
-
-      <!-- No sell years yet -->
-      <p *ngIf="taxYears.length === 0 && !taxSummaryLoading" class="tax-no-data">
-        No sell transactions recorded yet. Record a sell to see your tax summary here.
-      </p>
-
-    </div>
-  </div>
-
-  <!-- Allocation Pie Chart -->
-  <div class="allocation-section">
+    <!-- Allocation Pie Chart -->
+    <div class="allocation-section">
       <h2>Portfolio Allocation</h2>
       <div class="allocation-content">
         <div class="pie-wrapper">
@@ -735,9 +589,6 @@
   <!-- Modals -->
   <app-add-transaction-modal
     *ngIf="showAddTransactionModal"
-    [initialType]="addTransactionInitialType"
-    [preselectedTicker]="addTransactionTicker"
-    [availableQty]="addTransactionAvailableQty"
     (transactionAdded)="onTransactionAdded()"
     (cancelled)="onTransactionCancelled()">
   </app-add-transaction-modal>

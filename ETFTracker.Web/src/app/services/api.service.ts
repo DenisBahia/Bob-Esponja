@@ -19,9 +19,6 @@ export interface HoldingDto {
   totalValue: number;
   priceUnavailable: boolean;
   priceSource: string | null;
-  securityType: string | null;
-  /** ISO date string (YYYY-MM-DD) of the next upcoming Deemed Disposal due date, or null if N/A. */
-  deemedDisposalDueDate: string | null;
   dailyMetrics: PeriodMetrics;
   weeklyMetrics: PeriodMetrics;
   monthlyMetrics: PeriodMetrics;
@@ -45,7 +42,6 @@ export interface DashboardDto {
 export interface TransactionDto {
   id: number;
   holdingId: number;
-  transactionType: 'Buy' | 'Sell';
   quantity: number;
   purchasePrice: number;
   purchaseDate: string;
@@ -53,24 +49,10 @@ export interface TransactionDto {
   currentPrice: number;
   variationEur: number;
   variationPercent: number;
-  // Sell-specific (null for buys)
-  taxableProfitEur: number | null;
-  exitTaxPercent: number | null;
-  exitTaxDueEur: number | null;
-  allocations: SellAllocationDto[] | null;
-}
-
-export interface SellAllocationDto {
-  buyTransactionId: number;
-  buyDate: string;
-  buyPrice: number;
-  allocatedQuantity: number;
-  profitEur: number;
 }
 
 export interface CreateTransactionDto {
   ticker: string;
-  transactionType: 'Buy' | 'Sell';
   quantity: number;
   purchasePrice: number;
   purchaseDate: string;
@@ -80,12 +62,6 @@ export interface UpdateTransactionDto {
   quantity: number;
   purchasePrice: number;
   purchaseDate: string; // "YYYY-MM-DD"
-}
-
-export interface AssetTaxRateDto {
-  securityType: string;
-  exitTaxPercent: number;
-  label: string | null;
 }
 
 export interface ProjectionSettingsDto {
@@ -155,7 +131,6 @@ export interface PortfolioEvolutionDataPointDto {
   date: string;       // "yyyy-MM-dd"
   totalValue: number;
   hasBuy: boolean;
-  hasSell: boolean;
 }
 
 export interface PortfolioEvolutionDto {
@@ -202,30 +177,6 @@ export interface SharedWithMeDto {
   ownerName: string | null;
   ownerAvatarUrl: string | null;
   isReadOnly: boolean;
-}
-
-// ── Tax Year Summary ──────────────────────────────────────────────────────────
-
-export interface TaxSellEntryDto {
-  transactionId: number;
-  ticker: string;
-  etfName: string | null;
-  sellDate: string;           // "yyyy-MM-dd"
-  quantitySold: number;
-  sellPrice: number;
-  weightedBuyPrice: number;
-  taxableProfit: number;
-  exitTaxPercent: number | null;
-  exitTaxDue: number | null;
-  securityType: string | null;
-}
-
-export interface TaxYearSummaryDto {
-  year: number;
-  entries: TaxSellEntryDto[];
-  totalTaxableProfit: number;
-  totalExitTaxDue: number;
-  hasMissingRates: boolean;
 }
 
 @Injectable({
@@ -308,20 +259,6 @@ export class ApiService {
     return this.http.get<PortfolioEvolutionDto>(`${this.apiUrl}/holdings/portfolio-evolution`);
   }
 
-  // ── Asset Tax Rates ───────────────────────────────────────────────────────
-
-  getTaxRates(): Observable<AssetTaxRateDto[]> {
-    return this.http.get<AssetTaxRateDto[]>(`${this.apiUrl}/holdings/tax-rates`);
-  }
-
-  upsertTaxRate(dto: AssetTaxRateDto): Observable<AssetTaxRateDto> {
-    return this.http.put<AssetTaxRateDto>(`${this.apiUrl}/holdings/tax-rates`, dto);
-  }
-
-  deleteTaxRate(securityType: string): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/holdings/tax-rates/${encodeURIComponent(securityType)}`);
-  }
-
   // ── Sharing ──────────────────────────────────────────────────────────────────
 
   createShare(dto: CreateShareDto): Observable<ShareSummaryDto> {
@@ -342,15 +279,5 @@ export class ApiService {
 
   getSharedWithMe(): Observable<SharedWithMeDto[]> {
     return this.http.get<SharedWithMeDto[]>(`${this.apiUrl}/sharing/shared-with-me`);
-  }
-
-  // ── Tax Year Summary ──────────────────────────────────────────────────────
-
-  getTaxYears(): Observable<number[]> {
-    return this.http.get<number[]>(`${this.apiUrl}/holdings/tax-years`);
-  }
-
-  getTaxSummary(year: number): Observable<TaxYearSummaryDto> {
-    return this.http.get<TaxYearSummaryDto>(`${this.apiUrl}/holdings/tax-summary?year=${year}`);
   }
 }

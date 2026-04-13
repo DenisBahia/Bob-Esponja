@@ -1,7 +1,7 @@
 import { ChangeDetectorRef, Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, TransactionDto, UpdateTransactionDto, SellAllocationDto } from '../../services/api.service';
+import { ApiService, TransactionDto, UpdateTransactionDto } from '../../services/api.service';
 import { SharingContextService } from '../../services/sharing-context.service';
 
 @Component({
@@ -24,13 +24,10 @@ export class BuyHistoryModalComponent implements OnInit {
   confirmDeleteId: number | null = null;
   deletingIds: Set<number> = new Set();
 
-  // Edit state (buys only)
+  // Edit state
   editingId: number | null = null;
   editForm: UpdateTransactionDto = { quantity: 0, purchasePrice: 0, purchaseDate: '' };
   savingEdit = false;
-
-  // FIFO breakdown expand
-  expandedSellId: number | null = null;
 
   constructor(
     private apiService: ApiService,
@@ -38,21 +35,22 @@ export class BuyHistoryModalComponent implements OnInit {
     public sharingCtx: SharingContextService
   ) {}
 
-  ngOnInit(): void { this.loadHistory(); }
-
-  get buyCount(): number  { return this.transactions.filter(t => t.transactionType === 'Buy').length; }
-  get sellCount(): number { return this.transactions.filter(t => t.transactionType === 'Sell').length; }
+  ngOnInit(): void {
+    this.loadHistory();
+  }
 
   private loadHistory(): void {
     this.loading = true;
     this.error = null;
+
     this.apiService.getHoldingHistory(this.holdingId).subscribe({
       next: (data) => {
         this.transactions = data;
         this.loading = false;
         this.cdr.detectChanges();
       },
-      error: () => {
+      error: (err) => {
+        console.error('Error loading history:', err);
         this.error = 'Failed to load transaction history.';
         this.loading = false;
         this.cdr.detectChanges();
@@ -60,18 +58,13 @@ export class BuyHistoryModalComponent implements OnInit {
     });
   }
 
-  toggleSellExpand(id: number): void {
-    this.expandedSellId = this.expandedSellId === id ? null : id;
-    this.cdr.detectChanges();
-  }
-
   startEdit(t: TransactionDto): void {
-    this.confirmDeleteId = null;
+    this.confirmDeleteId = null;  // cancel any pending delete
     this.editingId = t.id;
     this.editForm = {
       quantity: t.quantity,
       purchasePrice: t.purchasePrice,
-      purchaseDate: t.purchaseDate.slice(0, 10),
+      purchaseDate: t.purchaseDate.slice(0, 10), // YYYY-MM-DD for <input type="date">
     };
     this.cdr.detectChanges();
   }
@@ -85,6 +78,7 @@ export class BuyHistoryModalComponent implements OnInit {
     if (this.savingEdit) return;
     this.savingEdit = true;
     this.cdr.detectChanges();
+
     this.apiService.updateTransaction(id, this.editForm).subscribe({
       next: () => {
         this.savingEdit = false;
@@ -93,7 +87,8 @@ export class BuyHistoryModalComponent implements OnInit {
         this.changed.emit();
       },
       error: (err) => {
-        this.error = err?.error?.message || 'Failed to update transaction.';
+        console.error('Error updating transaction:', err);
+        this.error = 'Failed to update transaction. Please try again.';
         this.savingEdit = false;
         this.cdr.detectChanges();
       }
@@ -101,7 +96,7 @@ export class BuyHistoryModalComponent implements OnInit {
   }
 
   requestDelete(id: number): void {
-    this.editingId = null;
+    this.editingId = null;  // cancel any active edit
     this.confirmDeleteId = id;
     this.cdr.detectChanges();
   }
@@ -115,6 +110,7 @@ export class BuyHistoryModalComponent implements OnInit {
     this.confirmDeleteId = null;
     this.deletingIds = new Set(this.deletingIds).add(id);
     this.cdr.detectChanges();
+
     this.apiService.deleteTransaction(id).subscribe({
       next: () => {
         this.transactions = this.transactions.filter(t => t.id !== id);
@@ -125,7 +121,8 @@ export class BuyHistoryModalComponent implements OnInit {
         this.cdr.detectChanges();
       },
       error: (err) => {
-        this.error = err?.error?.message || 'Failed to delete transaction.';
+        console.error('Error deleting transaction:', err);
+        this.error = 'Failed to delete transaction. Please try again.';
         const next = new Set(this.deletingIds);
         next.delete(id);
         this.deletingIds = next;
@@ -135,15 +132,33 @@ export class BuyHistoryModalComponent implements OnInit {
   }
 
   formatCurrency(value: number): string {
-    return new Intl.NumberFormat('de-IE', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
+    return new Intl.NumberFormat('de-IE', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value);
   }
+
   formatDate(dateString: string): string {
-    const [y, m, d] = dateString.slice(0, 10).split('-');
-    return `${d}/${m}/${y}`;
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('de-IE', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(date);
   }
-  formatQuantity(value: number): string { return value.toFixed(4); }
+
+  formatQuantity(value: number): string {
+    return value.toFixed(4);
+  }
+
   formatPercent(value: number): string {
-    return (value >= 0 ? '+' : '') + value.toFixed(2) + '%';
+    const sign = value >= 0 ? '+' : '';
+    return sign + value.toFixed(2) + '%';
   }
-  onClose(): void { this.closed.emit(); }
+
+  onClose(): void {
+    this.closed.emit();
+  }
 }

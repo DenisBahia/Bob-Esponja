@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, HostListener, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, EventEmitter, Output, HostListener, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, CreateTransactionDto, TickerSearchResult } from '../../services/api.service';
@@ -16,21 +16,6 @@ export class AddTransactionModalComponent {
   @Output() transactionAdded = new EventEmitter<void>();
   @Output() cancelled = new EventEmitter<void>();
 
-  /** Pre-selected ticker (e.g. when opened via per-row Sell button). */
-  @Input() set preselectedTicker(val: string | null) {
-    if (val) {
-      this.ticker = val;
-      this.showDropdown = false;
-    }
-  }
-  /** Pre-selected transaction type. */
-  @Input() set initialType(val: 'Buy' | 'Sell') {
-    this.transactionType = val;
-  }
-  /** Available quantity for the selected holding (used for sell validation hint). */
-  @Input() availableQty: number | null = null;
-
-  transactionType: 'Buy' | 'Sell' = 'Buy';
   ticker: string = '';
   quantity: number = 0;
   purchasePrice: number = 0;
@@ -78,12 +63,6 @@ export class AddTransactionModalComponent {
     });
   }
 
-  setType(type: 'Buy' | 'Sell'): void {
-    this.transactionType = type;
-    this.error = null;
-    this.cdr.markForCheck();
-  }
-
   onTickerChange(value: string): void {
     this.selectedResult = null;
     this.searchSubject.next(value);
@@ -109,14 +88,15 @@ export class AddTransactionModalComponent {
   }
 
   onSubmit(): void {
-    if (!this.validateForm()) return;
+    if (!this.validateForm()) {
+      return;
+    }
 
     this.loading = true;
     this.error = null;
 
     const transaction: CreateTransactionDto = {
       ticker: this.ticker.toUpperCase(),
-      transactionType: this.transactionType,
       quantity: this.quantity,
       purchasePrice: this.purchasePrice,
       purchaseDate: this.purchaseDate
@@ -129,8 +109,8 @@ export class AddTransactionModalComponent {
         this.transactionAdded.emit();
       },
       error: (err) => {
-        const msg = err?.error?.message;
-        this.error = msg || 'Failed to add transaction. Please try again.';
+        console.error('Error adding transaction:', err);
+        this.error = 'Failed to add transaction. Please try again.';
         this.loading = false;
         this.cdr.markForCheck();
       }
@@ -147,41 +127,41 @@ export class AddTransactionModalComponent {
       this.cdr.markForCheck();
       return false;
     }
+
     if (this.quantity <= 0) {
       this.error = 'Quantity must be greater than 0';
       this.cdr.markForCheck();
       return false;
     }
-    if (this.transactionType === 'Sell' && this.availableQty !== null && this.quantity > this.availableQty) {
-      this.error = `Cannot sell ${this.quantity} — only ${this.availableQty} units available`;
-      this.cdr.markForCheck();
-      return false;
-    }
+
     if (this.purchasePrice <= 0) {
-      this.error = `${this.transactionType === 'Sell' ? 'Sell' : 'Purchase'} price must be greater than 0`;
+      this.error = 'Purchase price must be greater than 0';
       this.cdr.markForCheck();
       return false;
     }
+
     if (!this.purchaseDate) {
-      this.error = 'Please select a date';
+      this.error = 'Please select a purchase date';
       this.cdr.markForCheck();
       return false;
     }
+
     return true;
   }
 
   getQuoteTypeIcon(quoteType: string | null): string {
     switch ((quoteType ?? '').toUpperCase()) {
-      case 'EQUITY':         return '📈';
-      case 'ETF':            return '📊';
-      case 'MUTUALFUND':     return '💼';
-      case 'INDEX':          return '📉';
-      case 'CURRENCY':       return '💱';
+      case 'EQUITY':      return '📈';
+      case 'ETF':         return '📊';
+      case 'MUTUALFUND':  return '💼';
+      case 'INDEX':       return '📉';
+      case 'CURRENCY':    return '💱';
       case 'CRYPTOCURRENCY': return '₿';
-      case 'FUTURE':         return '🏗️';
-      case 'BOND':           return '🏦';
-      default:               return '🔍';
+      case 'FUTURE':      return '🏗️';
+      case 'BOND':        return '🏦';
+      default:            return '🔍';
     }
   }
 }
+
 

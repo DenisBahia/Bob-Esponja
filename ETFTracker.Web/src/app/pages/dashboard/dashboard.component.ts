@@ -1,8 +1,7 @@
 import { Component, OnInit, OnDestroy, AfterViewChecked, ChangeDetectionStrategy, ChangeDetectorRef, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
-import { ApiService, DashboardDto, HoldingDto, ProjectionResultDto, ProjectionSettingsDto, PortfolioEvolutionDto, ProjectionVersionSummaryDto, ProjectionVersionDetailDto, ProjectionDataPointDto, SaveVersionRequestDto, TaxYearSummaryDto, TaxSellEntryDto } from '../../services/api.service';
+import { ApiService, DashboardDto, HoldingDto, ProjectionResultDto, ProjectionSettingsDto, PortfolioEvolutionDto, ProjectionVersionSummaryDto, ProjectionVersionDetailDto, ProjectionDataPointDto, SaveVersionRequestDto } from '../../services/api.service';
 import { AuthService, CurrentUser } from '../../services/auth.service';
 import { AddTransactionModalComponent } from '../../components/add-transaction-modal/add-transaction-modal.component';
 import { BuyHistoryModalComponent } from '../../components/buy-history-modal/buy-history-modal.component';
@@ -34,7 +33,7 @@ const DARK_SCALE_DEFAULTS = {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, AddTransactionModalComponent, BuyHistoryModalComponent, ShareProfileModalComponent],
+  imports: [CommonModule, FormsModule, AddTransactionModalComponent, BuyHistoryModalComponent, ShareProfileModalComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -48,11 +47,6 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   showBuyHistoryModal = false;
   selectedHoldingId: number | null = null;
   showShareModal = false;
-
-  // Add-transaction modal context
-  addTransactionInitialType: 'Buy' | 'Sell' = 'Buy';
-  addTransactionTicker: string | null = null;
-  addTransactionAvailableQty: number | null = null;
 
   @ViewChild('allocationChart') allocationChartRef!: ElementRef<HTMLCanvasElement>;
   private pieChart: Chart | null = null;
@@ -230,7 +224,6 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.loadDashboard();
     this.initProjection();
     this.loadPortfolioEvolution();
-    this.loadTaxYears();
   }
 
   onShareModalClosed(): void {
@@ -247,9 +240,6 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.loading = true;
     this.projectionLoading = true;
     this.projectionVersions = [];
-    this.taxYears = [];
-    this.taxSummary = null;
-    this.taxSummaryExpanded = false;
     this.chartRendered = false;
     this.projectionChartRendered = false;
     this.evolutionChartRendered = false;
@@ -260,7 +250,6 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.loadDashboard();
     this.initProjection();
     this.loadPortfolioEvolution();
-    this.loadTaxYears();
   }
 
   stopViewingAs(): void {
@@ -273,9 +262,6 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.loading = true;
     this.projectionLoading = true;
     this.projectionVersions = [];
-    this.taxYears = [];
-    this.taxSummary = null;
-    this.taxSummaryExpanded = false;
     this.chartRendered = false;
     this.projectionChartRendered = false;
     this.evolutionChartRendered = false;
@@ -286,7 +272,6 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.loadDashboard();
     this.initProjection();
     this.loadPortfolioEvolution();
-    this.loadTaxYears();
   }
 
   ngAfterViewChecked(): void {
@@ -865,11 +850,11 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     if (!ctx) return;
 
     // Build per-point arrays for dynamic point styling
-    const pointRadii       = points.map(p => (p.hasBuy || p.hasSell ? 8 : 3));
-    const pointColors      = points.map(p => p.hasSell ? '#f08252' : p.hasBuy ? '#f05252' : '#4f8ef7');
-    const pointBorderColors = points.map(p => p.hasSell ? '#c96035' : p.hasBuy ? '#c0392b' : '#4f8ef7');
-    const pointBorderWidths = points.map(p => (p.hasBuy || p.hasSell ? 2 : 1));
-    const pointHoverRadii  = points.map(p => (p.hasBuy || p.hasSell ? 10 : 5));
+    const pointRadii = points.map(p => (p.hasBuy ? 8 : 3));
+    const pointColors = points.map(p => (p.hasBuy ? '#f05252' : '#4f8ef7'));
+    const pointBorderColors = points.map(p => (p.hasBuy ? '#c0392b' : '#4f8ef7'));
+    const pointBorderWidths = points.map(p => (p.hasBuy ? 2 : 1));
+    const pointHoverRadii = points.map(p => (p.hasBuy ? 10 : 5));
 
     this.evolutionChart = new Chart(ctx, {
       type: 'line',
@@ -926,10 +911,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
               title: (items) => {
                 const idx = items[0].dataIndex;
                 const pt = points[idx];
-                const tags = [];
-                if (pt.hasBuy)  tags.push('🛒 Buy recorded');
-                if (pt.hasSell) tags.push('💰 Sell recorded');
-                return tags.length ? `${pt.date}  ${tags.join('  ')}` : pt.date;
+                return pt.hasBuy ? `${pt.date}  🛒 Buy recorded` : pt.date;
               },
               label: (tooltipCtx) =>
                 ` Portfolio: ${this.formatCurrency(tooltipCtx.parsed.y as number)}`
@@ -1016,46 +998,17 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     return value.toFixed(4);
   }
 
-  /** Format an ISO date string (YYYY-MM-DD) to dd/MM/yyyy for display. */
-  formatDate(isoDate: string | null): string {
-    if (!isoDate) return '—';
-    const [year, month, day] = isoDate.split('-');
-    return `${day}/${month}/${year}`;
-  }
-
-  /** Tooltip text for the Deemed Disposal Due column. */
-  deemedDisposalTooltip(isoDate: string | null): string {
-    if (!isoDate) return '';
-    const formatted = this.formatDate(isoDate);
-    return `Deemed Disposal will be calculated on ${formatted}. The taxable amount depends on the profit at that date — it cannot be determined in advance.`;
-  }
-
   getMetricsClass(gainLossEur: number): string {
     return gainLossEur >= 0 ? 'positive' : 'negative';
   }
 
   onAddTransactionClick(): void {
-    this.addTransactionInitialType = 'Buy';
-    this.addTransactionTicker = null;
-    this.addTransactionAvailableQty = null;
-    this.showAddTransactionModal = true;
-  }
-
-  onSellClick(holding: HoldingDto): void {
-    this.addTransactionInitialType = 'Sell';
-    this.addTransactionTicker = holding.ticker;
-    this.addTransactionAvailableQty = holding.quantity;
     this.showAddTransactionModal = true;
   }
 
   onTransactionAdded(): void {
     this.showAddTransactionModal = false;
     this.loadDashboard();
-    if (this.taxSummaryExpanded) {
-      this.taxSummary = null;
-      this.loadTaxSummary();
-    }
-    this.loadTaxYears();
   }
 
   onTransactionCancelled(): void {
@@ -1076,12 +1029,6 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     // A transaction was deleted — reload portfolio data so holdings & metrics stay in sync
     this.loadDashboard();
     this.loadProjection();
-    // Refresh tax summary if the panel is open
-    if (this.taxSummaryExpanded) {
-      this.taxSummary = null;
-      this.loadTaxSummary();
-    }
-    this.loadTaxYears();
   }
 
 
@@ -1090,56 +1037,6 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
       this.projectionSettings.startAmount = Math.round(this.dashboard.header.totalHoldingsAmount);
       this.cdr.markForCheck();
     }
-  }
-
-  // ── Tax Year Summary ────────────────────────────────────────────────────────
-
-  taxYears: number[] = [];
-  selectedTaxYear: number = new Date().getFullYear();
-  taxSummary: TaxYearSummaryDto | null = null;
-  taxSummaryLoading = false;
-  taxSummaryExpanded = false;
-
-  loadTaxYears(): void {
-    this.apiService.getTaxYears().subscribe({
-      next: (years) => {
-        this.taxYears = years;
-        if (years.length > 0 && !years.includes(this.selectedTaxYear)) {
-          this.selectedTaxYear = years[0];
-        }
-        this.cdr.markForCheck();
-      },
-      error: () => this.cdr.markForCheck()
-    });
-  }
-
-  toggleTaxSummary(): void {
-    this.taxSummaryExpanded = !this.taxSummaryExpanded;
-    if (this.taxSummaryExpanded && this.taxSummary === null) {
-      this.loadTaxSummary();
-    }
-    this.cdr.markForCheck();
-  }
-
-  onTaxYearChange(): void {
-    this.taxSummary = null;
-    this.loadTaxSummary();
-  }
-
-  loadTaxSummary(): void {
-    this.taxSummaryLoading = true;
-    this.cdr.markForCheck();
-    this.apiService.getTaxSummary(this.selectedTaxYear).subscribe({
-      next: (data) => {
-        this.taxSummary = data;
-        this.taxSummaryLoading = false;
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.taxSummaryLoading = false;
-        this.cdr.markForCheck();
-      }
-    });
   }
 
 }

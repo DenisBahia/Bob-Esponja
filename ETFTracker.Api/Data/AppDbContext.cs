@@ -12,8 +12,6 @@ public class AppDbContext : DbContext
     public DbSet<User> Users { get; set; }
     public DbSet<Holding> Holdings { get; set; }
     public DbSet<Transaction> Transactions { get; set; }
-    public DbSet<SellAllocation> SellAllocations { get; set; }
-    public DbSet<AssetTaxRate> AssetTaxRates { get; set; }
     public DbSet<PriceSnapshot> PriceSnapshots { get; set; }
     public DbSet<ProjectionSettings> ProjectionSettings { get; set; }
     public DbSet<ProjectionVersion> ProjectionVersions { get; set; }
@@ -83,8 +81,6 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Holding>()
             .Property(h => h.PriceSource).HasColumnName("price_source");
         modelBuilder.Entity<Holding>()
-            .Property(h => h.SecurityType).HasColumnName("security_type").HasMaxLength(50);
-        modelBuilder.Entity<Holding>()
             .Property(h => h.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
         modelBuilder.Entity<Holding>()
             .Property(h => h.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
@@ -107,8 +103,6 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Transaction>()
             .Property(t => t.HoldingId).HasColumnName("holding_id");
         modelBuilder.Entity<Transaction>()
-            .Property(t => t.TransactionType).HasColumnName("transaction_type").HasDefaultValue(TransactionType.Buy);
-        modelBuilder.Entity<Transaction>()
             .Property(t => t.Quantity).HasColumnName("quantity");
         modelBuilder.Entity<Transaction>()
             .Property(t => t.PurchasePrice).HasColumnName("purchase_price");
@@ -122,36 +116,6 @@ public class AppDbContext : DbContext
             .HasIndex(t => t.HoldingId);
         modelBuilder.Entity<Transaction>()
             .HasIndex(t => t.PurchaseDate);
-        modelBuilder.Entity<Transaction>()
-            .HasMany(t => t.SellAllocations)
-            .WithOne(a => a.SellTransaction)
-            .HasForeignKey(a => a.SellTransactionId)
-            .OnDelete(DeleteBehavior.Cascade);
-        modelBuilder.Entity<Transaction>()
-            .HasMany(t => t.BuyAllocations)
-            .WithOne(a => a.BuyTransaction)
-            .HasForeignKey(a => a.BuyTransactionId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        // SellAllocation
-        modelBuilder.Entity<SellAllocation>().ToTable("sell_allocations");
-        modelBuilder.Entity<SellAllocation>().HasKey(a => a.Id);
-        modelBuilder.Entity<SellAllocation>().Property(a => a.Id).HasColumnName("id");
-        modelBuilder.Entity<SellAllocation>().Property(a => a.SellTransactionId).HasColumnName("sell_transaction_id");
-        modelBuilder.Entity<SellAllocation>().Property(a => a.BuyTransactionId).HasColumnName("buy_transaction_id");
-        modelBuilder.Entity<SellAllocation>().Property(a => a.AllocatedQuantity).HasColumnName("allocated_quantity");
-        modelBuilder.Entity<SellAllocation>().Property(a => a.BuyPrice).HasColumnName("buy_price");
-        modelBuilder.Entity<SellAllocation>().HasIndex(a => a.SellTransactionId);
-        modelBuilder.Entity<SellAllocation>().HasIndex(a => a.BuyTransactionId);
-
-        // AssetTaxRate
-        modelBuilder.Entity<AssetTaxRate>().ToTable("asset_tax_rates");
-        modelBuilder.Entity<AssetTaxRate>().HasKey(r => r.SecurityType);
-        modelBuilder.Entity<AssetTaxRate>().Property(r => r.SecurityType).HasColumnName("security_type").HasMaxLength(50);
-        modelBuilder.Entity<AssetTaxRate>().Property(r => r.ExitTaxPercent).HasColumnName("exit_tax_percent").HasColumnType("decimal(5,2)");
-        modelBuilder.Entity<AssetTaxRate>().Property(r => r.Label).HasColumnName("label").HasMaxLength(100);
-        modelBuilder.Entity<AssetTaxRate>().Property(r => r.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
-        modelBuilder.Entity<AssetTaxRate>().Property(r => r.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
 
         // PriceSnapshot
         modelBuilder.Entity<PriceSnapshot>()

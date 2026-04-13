@@ -13,8 +13,6 @@ public class Holding
     public string? Broker { get; set; }
     [MaxLength(50)]
     public string? PriceSource { get; set; }
-    [MaxLength(50)]
-    public string? SecurityType { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set;}
 
