@@ -53,6 +53,8 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   addTransactionInitialType: 'Buy' | 'Sell' = 'Buy';
   addTransactionTicker: string | null = null;
   addTransactionAvailableQty: number | null = null;
+  addTransactionCurrentPrice: number | null = null;
+  addTransactionAverageCost: number | null = null;
 
   @ViewChild('allocationChart') allocationChartRef!: ElementRef<HTMLCanvasElement>;
   private pieChart: Chart | null = null;
@@ -1053,6 +1055,8 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.addTransactionInitialType = 'Buy';
     this.addTransactionTicker = null;
     this.addTransactionAvailableQty = null;
+    this.addTransactionCurrentPrice = null;
+    this.addTransactionAverageCost = null;
     this.showAddTransactionModal = true;
   }
 
@@ -1060,6 +1064,8 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.addTransactionInitialType = 'Sell';
     this.addTransactionTicker = holding.ticker;
     this.addTransactionAvailableQty = holding.quantity;
+    this.addTransactionCurrentPrice = holding.currentPrice;
+    this.addTransactionAverageCost = holding.averageCost;
     this.showAddTransactionModal = true;
   }
 
