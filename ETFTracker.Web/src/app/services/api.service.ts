@@ -205,6 +205,27 @@ export interface SharedWithMeDto {
   isReadOnly: boolean;
 }
 
+// ── FIFO Preview ──────────────────────────────────────────────────────────────
+
+export interface FifoPreviewAllocationDto {
+  buyTransactionId: number;
+  buyDate: string;          // "YYYY-MM-DD"
+  buyPrice: number;
+  allocatedQuantity: number;
+  profitEur: number;
+}
+
+export interface FifoPreviewDto {
+  isFeasible: boolean;
+  requestedQuantity: number;
+  availableQuantity: number;
+  allocations: FifoPreviewAllocationDto[];
+  weightedAvgBuyPrice: number;
+  totalProfit: number;
+  exitTaxRate: number | null;
+  exitTaxDue: number | null;
+}
+
 // ── Tax Year Summary ──────────────────────────────────────────────────────────
 
 export interface TaxSellEntryDto {
@@ -353,5 +374,13 @@ export class ApiService {
 
   getTaxSummary(year: number): Observable<TaxYearSummaryDto> {
     return this.http.get<TaxYearSummaryDto>(`${this.apiUrl}/holdings/tax-summary?year=${year}`);
+  }
+
+  // ── FIFO Preview ──────────────────────────────────────────────────────────
+
+  getFifoPreview(holdingId: number, quantity: number, sellPrice: number): Observable<FifoPreviewDto> {
+    return this.http.get<FifoPreviewDto>(
+      `${this.apiUrl}/holdings/${holdingId}/fifo-preview?quantity=${quantity}&sellPrice=${sellPrice}`
+    );
   }
 }

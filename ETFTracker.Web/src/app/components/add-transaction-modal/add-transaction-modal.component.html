@@ -111,14 +111,79 @@
 
       <div class="form-group">
         <label for="quantity">Quantity *</label>
-        <input id="quantity" type="number" [(ngModel)]="quantity" name="quantity"
+        <input id="quantity" type="number" [(ngModel)]="quantity" (ngModelChange)="triggerFifoPreview()" name="quantity"
                placeholder="e.g., 10.5" step="0.0001" required>
       </div>
 
       <div class="form-group">
         <label for="purchasePrice">{{ transactionType === 'Sell' ? 'Sell Price (EUR) *' : 'Purchase Price (EUR) *' }}</label>
-        <input id="purchasePrice" type="number" [(ngModel)]="purchasePrice" name="purchasePrice"
+        <input id="purchasePrice" type="number" [(ngModel)]="purchasePrice" (ngModelChange)="triggerFifoPreview()" name="purchasePrice"
                placeholder="e.g., 45.50" step="0.01" required>
+      </div>
+
+      <!-- ── FIFO Allocation Preview (sell mode only, when opened from a holding row) ── -->
+      <div class="fifo-preview-panel" *ngIf="transactionType === 'Sell' && holdingId !== null">
+        <div class="fifo-preview-header">
+          <span class="fifo-preview-title">📊 FIFO Allocation Preview</span>
+          <span class="fifo-spinner" *ngIf="fifoPreviewLoading"><span class="spinner"></span> Calculating…</span>
+        </div>
+
+        <ng-container *ngIf="fifoPreview && !fifoPreviewLoading">
+          <!-- Infeasible warning -->
+          <div class="fifo-infeasible" *ngIf="!fifoPreview.isFeasible">
+            ⚠️ Insufficient units — you have
+            <strong>{{ fifoPreview.availableQuantity | number:'1.0-4' }}</strong> available but requested
+            <strong>{{ fifoPreview.requestedQuantity | number:'1.0-4' }}</strong>.
+          </div>
+
+          <!-- Allocation table -->
+          <table class="fifo-table" *ngIf="fifoPreview.allocations.length > 0">
+            <thead>
+              <tr>
+                <th>Buy Date</th>
+                <th>Buy Price</th>
+                <th>Units</th>
+                <th>Gain / Loss</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let a of fifoPreview.allocations">
+                <td>{{ a.buyDate }}</td>
+                <td>{{ formatCurrency(a.buyPrice) }}</td>
+                <td>{{ a.allocatedQuantity | number:'1.0-4' }}</td>
+                <td [ngClass]="a.profitEur >= 0 ? 'lot-gain' : 'lot-loss'">
+                  {{ formatCurrency(a.profitEur) }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Summary -->
+          <div class="fifo-summary">
+            <div class="fifo-summary-row">
+              <span>Weighted avg buy price</span>
+              <span>{{ formatCurrency(fifoPreview.weightedAvgBuyPrice) }}</span>
+            </div>
+            <div class="fifo-summary-row total-row">
+              <span>Total profit / loss</span>
+              <span [ngClass]="fifoPreview.totalProfit >= 0 ? 'lot-gain' : 'lot-loss'">
+                {{ formatCurrency(fifoPreview.totalProfit) }}
+              </span>
+            </div>
+            <div class="fifo-summary-row" *ngIf="fifoPreview.exitTaxRate !== null">
+              <span>Exit tax rate</span>
+              <span class="tax-badge">{{ fifoPreview.exitTaxRate }}%</span>
+            </div>
+            <div class="fifo-summary-row tax-row" *ngIf="fifoPreview.exitTaxDue !== null">
+              <span>Est. exit tax due</span>
+              <span class="tax-due">{{ formatCurrency(fifoPreview.exitTaxDue) }}</span>
+            </div>
+          </div>
+        </ng-container>
+
+        <div class="fifo-empty" *ngIf="!fifoPreview && !fifoPreviewLoading">
+          Enter quantity and sell price to see the FIFO breakdown &amp; tax estimate.
+        </div>
       </div>
 
       <div class="form-group">

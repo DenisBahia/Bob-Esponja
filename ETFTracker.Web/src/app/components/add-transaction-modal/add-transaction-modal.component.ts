@@ -1,8 +1,8 @@
-import { Component, EventEmitter, Input, Output, HostListener, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, Output, HostListener, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, CreateTransactionDto, TickerSearchResult } from '../../services/api.service';
-import { debounceTime, Subject, switchMap, of } from 'rxjs';
+import { ApiService, CreateTransactionDto, FifoPreviewDto, TickerSearchResult } from '../../services/api.service';
+import { debounceTime, Subject, switchMap, of, Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-add-transaction-modal',
@@ -12,10 +12,12 @@ import { debounceTime, Subject, switchMap, of } from 'rxjs';
   styleUrls: ['./add-transaction-modal.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class AddTransactionModalComponent {
+export class AddTransactionModalComponent implements OnDestroy {
   @Output() transactionAdded = new EventEmitter<void>();
   @Output() cancelled = new EventEmitter<void>();
 
+  /** Holding ID (required for FIFO preview). Only set when opened from a per-row Sell button. */
+  @Input() holdingId: number | null = null;
   /** Pre-selected ticker (e.g. when opened via per-row Sell button). */
   @Input() set preselectedTicker(val: string | null) {
     if (val) {
@@ -49,43 +51,94 @@ export class AddTransactionModalComponent {
   loading = false;
   error: string | null = null;
 
+  // FIFO preview
+  fifoPreview: FifoPreviewDto | null = null;
+  fifoPreviewLoading = false;
+  private fifoPreviewSubject = new Subject<{ quantity: number; price: number }>();
+  private _subs = new Subscription();
+
   private searchSubject = new Subject<string>();
 
   constructor(private apiService: ApiService, private cdr: ChangeDetectorRef) {
-    this.searchSubject.pipe(
-      debounceTime(350),
-      switchMap(query => {
-        if (!query.trim()) {
+    this._subs.add(
+      this.searchSubject.pipe(
+        debounceTime(350),
+        switchMap(query => {
+          if (!query.trim()) {
+            this.loadingSearch = false;
+            this.searchResults = [];
+            this.showDropdown = false;
+            this.cdr.markForCheck();
+            return of([]);
+          }
+          this.loadingSearch = true;
+          this.cdr.markForCheck();
+          return this.apiService.searchTickers(query);
+        })
+      ).subscribe({
+        next: (results) => {
+          this.searchResults = results;
+          this.showDropdown = results.length > 0;
           this.loadingSearch = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
           this.searchResults = [];
           this.showDropdown = false;
+          this.loadingSearch = false;
           this.cdr.markForCheck();
-          return of([]);
         }
-        this.loadingSearch = true;
-        this.cdr.markForCheck();
-        return this.apiService.searchTickers(query);
       })
-    ).subscribe({
-      next: (results) => {
-        this.searchResults = results;
-        this.showDropdown = results.length > 0;
-        this.loadingSearch = false;
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.searchResults = [];
-        this.showDropdown = false;
-        this.loadingSearch = false;
-        this.cdr.markForCheck();
-      }
-    });
+    );
+
+    this._subs.add(
+      this.fifoPreviewSubject.pipe(
+        debounceTime(600),
+        switchMap(({ quantity, price }) => {
+          if (!this.holdingId || quantity <= 0 || price <= 0) {
+            this.fifoPreview = null;
+            this.fifoPreviewLoading = false;
+            this.cdr.markForCheck();
+            return of(null);
+          }
+          this.fifoPreviewLoading = true;
+          this.cdr.markForCheck();
+          return this.apiService.getFifoPreview(this.holdingId, quantity, price);
+        })
+      ).subscribe({
+        next: (preview) => {
+          this.fifoPreview = preview;
+          this.fifoPreviewLoading = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.fifoPreview = null;
+          this.fifoPreviewLoading = false;
+          this.cdr.markForCheck();
+        }
+      })
+    );
+  }
+
+  ngOnDestroy(): void {
+    this._subs.unsubscribe();
   }
 
   setType(type: 'Buy' | 'Sell'): void {
     this.transactionType = type;
     this.error = null;
+    if (type === 'Buy') {
+      this.fifoPreview = null;
+      this.fifoPreviewLoading = false;
+    }
     this.cdr.markForCheck();
+  }
+
+  /** Emit to fifoPreviewSubject whenever quantity or sell price changes in sell mode. */
+  triggerFifoPreview(): void {
+    if (this.transactionType === 'Sell' && this.holdingId != null) {
+      this.fifoPreviewSubject.next({ quantity: this.quantity, price: this.purchasePrice });
+    }
   }
 
   /** Unrealized gain/loss per unit vs avg cost, for the sell preview panel. */
