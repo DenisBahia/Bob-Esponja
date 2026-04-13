@@ -553,47 +553,6 @@
               </tr>
             </tbody>
           </table>
-
-          <!-- Empty active holdings notice -->
-          <div *ngIf="sortedHoldings.length === 0 && closedHoldings.length > 0" class="no-active-holdings">
-            <p>No active positions. All holdings have been fully sold.</p>
-          </div>
-          <div *ngIf="sortedHoldings.length === 0 && closedHoldings.length === 0" class="no-active-holdings">
-            <p>No holdings yet. Click <strong>Add New Buy</strong> to get started.</p>
-          </div>
-
-          <!-- Closed positions -->
-          <div *ngIf="closedHoldings.length > 0" class="closed-positions-section">
-            <div class="closed-positions-header" (click)="toggleClosedPositions()">
-              <span>📦 Closed Positions ({{ closedHoldings.length }})</span>
-              <span class="collapse-chevron" [class.open]="closedPositionsExpanded">▼</span>
-            </div>
-            <div *ngIf="closedPositionsExpanded" class="closed-positions-body">
-              <table class="holdings-table closed-table">
-                <thead>
-                  <tr>
-                    <th>Ticker</th>
-                    <th>Asset Name</th>
-                    <th>Security Type</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let h of closedHoldings" class="holding-row closed-row">
-                    <td class="ticker"><strong>{{ h.ticker }}</strong></td>
-                    <td>{{ h.etfName }}</td>
-                    <td>
-                      <span *ngIf="h.securityType" class="type-chip">{{ h.securityType }}</span>
-                      <span *ngIf="!h.securityType" class="muted">—</span>
-                    </td>
-                    <td class="actions">
-                      <button class="btn-link" (click)="onBuyHistoryClick(h.id)">📋 History</button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
         </div>
       </div>
 

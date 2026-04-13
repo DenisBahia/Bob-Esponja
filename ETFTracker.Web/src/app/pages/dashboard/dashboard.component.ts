@@ -150,9 +150,8 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   get sortedHoldings(): HoldingDto[] {
     if (!this.dashboard?.holdings) return [];
-    const active = this.dashboard.holdings.filter(h => h.quantity > 0);
-    if (!this.holdingsSortCol) return active;
-    const list = [...active];
+    if (!this.holdingsSortCol) return this.dashboard.holdings;
+    const list = [...this.dashboard.holdings];
     const dir = this.holdingsSortDir === 'asc' ? 1 : -1;
     return list.sort((a, b) => {
       let av: any, bv: any;
@@ -173,18 +172,6 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
       if (av > bv) return dir;
       return 0;
     });
-  }
-
-  get closedHoldings(): HoldingDto[] {
-    if (!this.dashboard?.holdings) return [];
-    return this.dashboard.holdings.filter(h => h.quantity === 0);
-  }
-
-  closedPositionsExpanded = false;
-
-  toggleClosedPositions(): void {
-    this.closedPositionsExpanded = !this.closedPositionsExpanded;
-    this.cdr.markForCheck();
   }
 
   sortHoldingsBy(col: string): void {
@@ -263,7 +250,6 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.taxYears = [];
     this.taxSummary = null;
     this.taxSummaryExpanded = false;
-    this.closedPositionsExpanded = false;
     this.chartRendered = false;
     this.projectionChartRendered = false;
     this.evolutionChartRendered = false;
@@ -290,7 +276,6 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.taxYears = [];
     this.taxSummary = null;
     this.taxSummaryExpanded = false;
-    this.closedPositionsExpanded = false;
     this.chartRendered = false;
     this.projectionChartRendered = false;
     this.evolutionChartRendered = false;
