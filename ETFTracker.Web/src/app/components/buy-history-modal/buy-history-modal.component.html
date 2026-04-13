@@ -1,88 +1,167 @@
 <div class="modal-overlay" (click)="onClose()">
   <div class="modal-content" (click)="$event.stopPropagation()">
     <div class="modal-header">
-      <h2>Buy History</h2>
+      <h2>📋 Transaction History</h2>
       <button class="close-btn" (click)="onClose()">×</button>
     </div>
 
-    <div *ngIf="loading" class="loading">
-      <p>Loading history...</p>
-    </div>
-
-    <div *ngIf="error" class="error-message">
-      {{ error }}
-    </div>
+    <div *ngIf="loading" class="loading"><p>Loading history…</p></div>
+    <div *ngIf="error" class="error-message">{{ error }}</div>
 
     <div *ngIf="!loading && !error" class="history-content">
-      <div *ngIf="transactions.length === 0" class="no-data">
-        <p>No transactions found.</p>
+      <!-- Summary pills -->
+      <div class="tx-summary" *ngIf="transactions.length > 0">
+        <span class="pill pill-buy">🛒 {{ buyCount }} Buy{{ buyCount !== 1 ? 's' : '' }}</span>
+        <span class="pill pill-sell" *ngIf="sellCount > 0">💰 {{ sellCount }} Sell{{ sellCount !== 1 ? 's' : '' }}</span>
       </div>
+
+      <div *ngIf="transactions.length === 0" class="no-data"><p>No transactions found.</p></div>
 
       <table *ngIf="transactions.length > 0" class="history-table">
         <thead>
           <tr>
+            <th>Type</th>
             <th>Date</th>
-            <th>Quantity</th>
-            <th>Purchase Price</th>
-            <th>Total Invested</th>
-            <th>Current Price</th>
-            <th>Variation</th>
-            <th>Variation %</th>
+            <th>Qty</th>
+            <th>Price / unit</th>
+            <th>Total</th>
+            <th class="buy-only-col">Cur. Price</th>
+            <th class="buy-only-col">Variation</th>
+            <th class="buy-only-col">Var %</th>
+            <th class="sell-only-col">Taxable Profit</th>
+            <th class="sell-only-col">Exit Tax Rate</th>
+            <th class="sell-only-col">Exit Tax Due</th>
             <th *ngIf="!sharingCtx.isReadOnly()"></th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let transaction of transactions"
-              [ngClass]="{'positive': transaction.variationEur >= 0 && editingId !== transaction.id,
-                          'negative': transaction.variationEur < 0 && editingId !== transaction.id,
-                          'row-editing': editingId === transaction.id}">
+          <ng-container *ngFor="let t of transactions">
 
-            <!-- ── EDIT MODE ── -->
-            <ng-container *ngIf="editingId === transaction.id; else viewMode">
-              <td><input type="date" class="edit-input" [(ngModel)]="editForm.purchaseDate" /></td>
-              <td><input type="number" class="edit-input edit-input-sm" [(ngModel)]="editForm.quantity" step="0.0001" min="0.0001" /></td>
-              <td><input type="number" class="edit-input edit-input-sm" [(ngModel)]="editForm.purchasePrice" step="0.01" min="0" /></td>
-              <td class="price">{{ formatCurrency(editForm.quantity * editForm.purchasePrice) }}</td>
-              <td class="price">{{ formatCurrency(transaction.currentPrice) }}</td>
-              <td class="price" colspan="1">—</td>
-              <td class="price">—</td>
-              <td class="action-col">
-                <span class="edit-save-inline">
-                  <button class="btn-confirm-yes" (click)="saveEdit(transaction.id)" [disabled]="savingEdit">{{ savingEdit ? '…' : '✓' }}</button>
-                  <button class="btn-confirm-no" (click)="cancelEdit()">✕</button>
-                </span>
+            <!-- ── BUY ROW ── -->
+            <tr *ngIf="t.transactionType === 'Buy'"
+                class="row-buy"
+                [ngClass]="{'positive': t.variationEur >= 0 && editingId !== t.id,
+                            'negative': t.variationEur < 0 && editingId !== t.id,
+                            'row-editing': editingId === t.id}">
+
+              <ng-container *ngIf="editingId === t.id; else buyView">
+                <td><span class="type-badge buy">🛒 Buy</span></td>
+                <td><input type="date" class="edit-input" [(ngModel)]="editForm.purchaseDate" /></td>
+                <td><input type="number" class="edit-input edit-input-sm" [(ngModel)]="editForm.quantity" step="0.0001" min="0.0001" /></td>
+                <td><input type="number" class="edit-input edit-input-sm" [(ngModel)]="editForm.purchasePrice" step="0.01" min="0" /></td>
+                <td class="price">{{ formatCurrency(editForm.quantity * editForm.purchasePrice) }}</td>
+                <td class="price">—</td><td class="price">—</td><td class="price">—</td>
+                <td>—</td><td>—</td><td>—</td>
+                <td class="action-col">
+                  <span class="edit-save-inline">
+                    <button class="btn-confirm-yes" (click)="saveEdit(t.id)" [disabled]="savingEdit">{{ savingEdit ? '…' : '✓' }}</button>
+                    <button class="btn-confirm-no" (click)="cancelEdit()">✕</button>
+                  </span>
+                </td>
+              </ng-container>
+
+              <ng-template #buyView>
+                <td><span class="type-badge buy">🛒 Buy</span></td>
+                <td>{{ formatDate(t.purchaseDate) }}</td>
+                <td class="quantity">{{ formatQuantity(t.quantity) }}</td>
+                <td class="price">{{ formatCurrency(t.purchasePrice) }}</td>
+                <td class="price">{{ formatCurrency(t.quantity * t.purchasePrice) }}</td>
+                <td class="price buy-only-col">{{ formatCurrency(t.currentPrice) }}</td>
+                <td class="price buy-only-col">{{ formatCurrency(t.variationEur) }}</td>
+                <td class="price buy-only-col">{{ formatPercent(t.variationPercent) }}</td>
+                <td class="sell-only-col muted">—</td>
+                <td class="sell-only-col muted">—</td>
+                <td class="sell-only-col muted">—</td>
+                <td *ngIf="!sharingCtx.isReadOnly()" class="action-col">
+                  <ng-container *ngIf="confirmDeleteId === t.id; else buyActions">
+                    <span class="delete-confirm-inline">
+                      <button class="btn-confirm-yes" (click)="confirmDelete(t.id)" [disabled]="deletingIds.has(t.id)">✓</button>
+                      <button class="btn-confirm-no" (click)="cancelDelete()">✕</button>
+                    </span>
+                  </ng-container>
+                  <ng-template #buyActions>
+                    <button class="btn-edit" (click)="startEdit(t)" title="Edit buy">✏️</button>
+                    <button class="btn-delete" (click)="requestDelete(t.id)" [disabled]="deletingIds.has(t.id)" title="Delete buy">
+                      {{ deletingIds.has(t.id) ? '…' : '🗑️' }}
+                    </button>
+                  </ng-template>
+                </td>
+              </ng-template>
+            </tr>
+
+            <!-- ── SELL ROW ── -->
+            <tr *ngIf="t.transactionType === 'Sell'" class="row-sell"
+                [class.row-sell-expanded]="expandedSellId === t.id">
+              <td><span class="type-badge sell">💰 Sell</span></td>
+              <td>{{ formatDate(t.purchaseDate) }}</td>
+              <td class="quantity">{{ formatQuantity(t.quantity) }}</td>
+              <td class="price">{{ formatCurrency(t.purchasePrice) }}</td>
+              <td class="price">{{ formatCurrency(t.quantity * t.purchasePrice) }}</td>
+              <td class="buy-only-col muted">—</td>
+              <td class="buy-only-col muted">—</td>
+              <td class="buy-only-col muted">—</td>
+              <!-- Taxable Profit -->
+              <td class="price sell-only-col" [ngClass]="(t.taxableProfitEur ?? 0) >= 0 ? 'profit-pos' : 'profit-neg'">
+                {{ t.taxableProfitEur !== null ? formatCurrency(t.taxableProfitEur) : '—' }}
               </td>
-            </ng-container>
-
-            <!-- ── VIEW MODE ── -->
-            <ng-template #viewMode>
-              <td>{{ formatDate(transaction.purchaseDate) }}</td>
-              <td class="quantity">{{ formatQuantity(transaction.quantity) }}</td>
-              <td class="price">{{ formatCurrency(transaction.purchasePrice) }}</td>
-              <td class="price">{{ formatCurrency(transaction.quantity * transaction.purchasePrice) }}</td>
-              <td class="price">{{ formatCurrency(transaction.currentPrice) }}</td>
-              <td class="price">{{ formatCurrency(transaction.variationEur) }}</td>
-              <td class="price">{{ formatPercent(transaction.variationPercent) }}</td>
+              <!-- Exit Tax Rate -->
+              <td class="sell-only-col">
+                <span *ngIf="t.exitTaxPercent !== null" class="tax-badge">{{ t.exitTaxPercent }}%</span>
+                <span *ngIf="t.exitTaxPercent === null" class="muted" title="No Exit Tax rate configured for this asset type">—</span>
+              </td>
+              <!-- Exit Tax Due -->
+              <td class="price sell-only-col tax-due-col" [ngClass]="(t.exitTaxDueEur ?? 0) > 0 ? 'tax-positive' : ''">
+                {{ t.exitTaxDueEur !== null ? formatCurrency(t.exitTaxDueEur) : '—' }}
+              </td>
               <td *ngIf="!sharingCtx.isReadOnly()" class="action-col">
-                <ng-container *ngIf="confirmDeleteId === transaction.id; else normalActions">
+                <button class="btn-expand" (click)="toggleSellExpand(t.id)"
+                        [title]="expandedSellId === t.id ? 'Hide FIFO breakdown' : 'Show FIFO breakdown'">
+                  {{ expandedSellId === t.id ? '▲' : '▼' }} FIFO
+                </button>
+                <ng-container *ngIf="confirmDeleteId === t.id; else sellActions">
                   <span class="delete-confirm-inline">
-                    <button class="btn-confirm-yes" (click)="confirmDelete(transaction.id)" [disabled]="deletingIds.has(transaction.id)">✓</button>
+                    <button class="btn-confirm-yes" (click)="confirmDelete(t.id)" [disabled]="deletingIds.has(t.id)">✓</button>
                     <button class="btn-confirm-no" (click)="cancelDelete()">✕</button>
                   </span>
                 </ng-container>
-                <ng-template #normalActions>
-                  <button class="btn-edit" (click)="startEdit(transaction)" title="Edit this buy">✏️</button>
-                  <button class="btn-delete"
-                          (click)="requestDelete(transaction.id)"
-                          [disabled]="deletingIds.has(transaction.id)"
-                          title="Delete this buy">
-                    {{ deletingIds.has(transaction.id) ? '…' : '🗑️' }}
+                <ng-template #sellActions>
+                  <button class="btn-delete" (click)="requestDelete(t.id)" [disabled]="deletingIds.has(t.id)" title="Delete sell">
+                    {{ deletingIds.has(t.id) ? '…' : '🗑️' }}
                   </button>
                 </ng-template>
               </td>
-            </ng-template>
+            </tr>
 
-          </tr>
+            <!-- ── FIFO breakdown sub-row ── -->
+            <tr *ngIf="t.transactionType === 'Sell' && expandedSellId === t.id" class="fifo-row">
+              <td colspan="12">
+                <div class="fifo-breakdown">
+                  <h4>📊 FIFO Allocation Breakdown</h4>
+                  <table class="fifo-table">
+                    <thead>
+                      <tr>
+                        <th>Buy Date</th>
+                        <th>Buy Price / unit</th>
+                        <th>Qty Allocated</th>
+                        <th>Profit on this lot</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let a of t.allocations">
+                        <td>{{ formatDate(a.buyDate) }}</td>
+                        <td class="price">{{ formatCurrency(a.buyPrice) }}</td>
+                        <td class="quantity">{{ formatQuantity(a.allocatedQuantity) }}</td>
+                        <td class="price" [ngClass]="a.profitEur >= 0 ? 'profit-pos' : 'profit-neg'">
+                          {{ formatCurrency(a.profitEur) }}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </td>
+            </tr>
+
+          </ng-container>
         </tbody>
       </table>
     </div>

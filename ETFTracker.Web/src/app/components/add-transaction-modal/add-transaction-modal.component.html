@@ -1,13 +1,17 @@
 <div class="modal-overlay" (click)="onCancel()">
   <div class="modal-content" (click)="$event.stopPropagation()">
     <div class="modal-header">
-      <h2>Add New Buy</h2>
+      <h2>{{ transactionType === 'Buy' ? '🛒 Add New Buy' : '💰 Record Sell' }}</h2>
       <button class="close-btn" (click)="onCancel()">×</button>
     </div>
 
-    <div *ngIf="error" class="error-message">
-      {{ error }}
+    <!-- Buy / Sell toggle -->
+    <div class="type-toggle">
+      <button class="type-btn" [class.active-buy]="transactionType === 'Buy'" (click)="setType('Buy')">🛒 Buy</button>
+      <button class="type-btn" [class.active-sell]="transactionType === 'Sell'" (click)="setType('Sell')">💰 Sell</button>
     </div>
+
+    <div *ngIf="error" class="error-message">{{ error }}</div>
 
     <form (ngSubmit)="onSubmit()" class="form">
       <div class="form-group ticker-group">
@@ -24,12 +28,10 @@
             autocomplete="off"
             required>
 
-          <!-- Loading spinner -->
           <div *ngIf="loadingSearch" class="ticker-loading">
             <span class="spinner"></span>
           </div>
 
-          <!-- Search results dropdown -->
           <div *ngIf="showDropdown && searchResults.length > 0" class="ticker-dropdown">
             <button
               *ngFor="let result of searchResults"
@@ -49,7 +51,6 @@
           </div>
         </div>
 
-        <!-- Selected instrument badge -->
         <div *ngIf="selectedResult" class="selected-instrument">
           <span class="selected-icon">{{ getQuoteTypeIcon(selectedResult.quoteType) }}</span>
           <span class="selected-name">{{ selectedResult.longName || selectedResult.shortName }}</span>
@@ -58,8 +59,8 @@
         </div>
       </div>
 
-      <!-- Supported ticker info -->
-      <div class="ticker-support-info">
+      <!-- Yahoo Finance info — only for buys -->
+      <div class="ticker-support-info" *ngIf="transactionType === 'Buy'">
         <div class="ticker-support-header">
           <span class="ticker-support-icon">🔍</span>
           <span>
@@ -79,46 +80,32 @@
         </div>
       </div>
 
+      <!-- Available qty hint for sells -->
+      <div class="sell-hint" *ngIf="transactionType === 'Sell' && availableQty !== null">
+        📦 Available to sell: <strong>{{ availableQty | number:'1.0-4' }}</strong> units
+      </div>
+
       <div class="form-group">
         <label for="quantity">Quantity *</label>
-        <input
-          id="quantity"
-          type="number"
-          [(ngModel)]="quantity"
-          name="quantity"
-          placeholder="e.g., 10.5"
-          step="0.0001"
-          required>
+        <input id="quantity" type="number" [(ngModel)]="quantity" name="quantity"
+               placeholder="e.g., 10.5" step="0.0001" required>
       </div>
 
       <div class="form-group">
-        <label for="purchasePrice">Purchase Price (EUR) *</label>
-        <input
-          id="purchasePrice"
-          type="number"
-          [(ngModel)]="purchasePrice"
-          name="purchasePrice"
-          placeholder="e.g., 45.50"
-          step="0.01"
-          required>
+        <label for="purchasePrice">{{ transactionType === 'Sell' ? 'Sell Price (EUR) *' : 'Purchase Price (EUR) *' }}</label>
+        <input id="purchasePrice" type="number" [(ngModel)]="purchasePrice" name="purchasePrice"
+               placeholder="e.g., 45.50" step="0.01" required>
       </div>
 
       <div class="form-group">
-        <label for="purchaseDate">Purchase Date *</label>
-        <input
-          id="purchaseDate"
-          type="date"
-          [(ngModel)]="purchaseDate"
-          name="purchaseDate"
-          required>
+        <label for="purchaseDate">{{ transactionType === 'Sell' ? 'Sell Date *' : 'Purchase Date *' }}</label>
+        <input id="purchaseDate" type="date" [(ngModel)]="purchaseDate" name="purchaseDate" required>
       </div>
 
       <div class="form-actions">
-        <button type="button" class="btn btn-secondary" (click)="onCancel()" [disabled]="loading">
-          Cancel
-        </button>
-        <button type="submit" class="btn btn-primary" [disabled]="loading">
-          {{ loading ? 'Adding...' : 'Add Transaction' }}
+        <button type="button" class="btn btn-secondary" (click)="onCancel()" [disabled]="loading">Cancel</button>
+        <button type="submit" class="btn" [class.btn-primary]="transactionType === 'Buy'" [class.btn-sell]="transactionType === 'Sell'" [disabled]="loading">
+          {{ loading ? 'Saving...' : (transactionType === 'Buy' ? 'Add Buy' : 'Record Sell') }}
         </button>
       </div>
     </form>

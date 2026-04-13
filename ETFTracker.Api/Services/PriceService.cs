@@ -157,6 +157,59 @@ public class PriceService : IPriceService
         }
     }
 
+    public async Task<string?> GetSecurityTypeAsync(string ticker, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var yahooTicker = ticker.Replace(".XETRA", ".DE", StringComparison.OrdinalIgnoreCase);
+            var url = $"https://query1.finance.yahoo.com/v8/finance/chart/{yahooTicker}?interval=1d&range=2d";
+
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode) return null;
+
+            var content = await response.Content.ReadAsStringAsync(cancellationToken);
+            var jsonDoc = System.Text.Json.JsonDocument.Parse(content);
+
+            if (jsonDoc.RootElement.TryGetProperty("chart", out var chart) &&
+                chart.TryGetProperty("result", out var resultArr) &&
+                resultArr.GetArrayLength() > 0 &&
+                resultArr[0].TryGetProperty("meta", out var meta))
+            {
+                // Try instrumentType first (e.g. "ETF", "EQUITY", "MUTUALFUND")
+                if (meta.TryGetProperty("instrumentType", out var typeEl))
+                {
+                    var type = typeEl.GetString();
+                    if (!string.IsNullOrEmpty(type))
+                        return type.ToUpperInvariant();
+                }
+                // Some endpoints return quoteType instead
+                if (meta.TryGetProperty("quoteType", out var qtEl))
+                {
+                    var qt = qtEl.GetString();
+                    if (!string.IsNullOrEmpty(qt))
+                        return qt.ToUpperInvariant();
+                }
+            }
+
+            // Fallback: use search API
+            var searchResults = await SearchTickersAsync(ticker, cancellationToken);
+            var match = searchResults.FirstOrDefault(r =>
+                string.Equals(r.Symbol, ticker, StringComparison.OrdinalIgnoreCase));
+            if (match?.QuoteType != null)
+                return match.QuoteType.ToUpperInvariant();
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error fetching security type for {Ticker}", ticker);
+            return null;
+        }
+    }
+
     public async Task<decimal?> GetPriceAsync(string ticker, CancellationToken cancellationToken = default)
     {
         var result = await GetPriceWithSourceAsync(ticker, cancellationToken);

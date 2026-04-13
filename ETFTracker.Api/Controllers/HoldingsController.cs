@@ -176,12 +176,7 @@ public class HoldingsController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Adds a new transaction (buy or sell) for a holding.
-    /// </summary>
-    /// <param name="dto">Transaction details including ticker, quantity, price, and date</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Success message if transaction was added</returns>
+    /// <summary>Adds a new transaction (buy or sell) for a holding.</summary>
     [HttpPost("transaction")]
     public async Task<ActionResult> AddTransaction([FromBody] CreateTransactionDto dto, CancellationToken cancellationToken = default)
     {
@@ -195,6 +190,10 @@ public class HoldingsController : ControllerBase
 
             await _holdingsService.AddTransactionAsync(GetUserId(), dto, cancellationToken);
             return Ok(new { message = "Transaction added successfully" });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
         }
         catch (Exception ex)
         {
@@ -218,6 +217,10 @@ public class HoldingsController : ControllerBase
         catch (UnauthorizedAccessException ex)
         {
             return StatusCode(403, new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
         }
         catch (Exception ex)
         {
@@ -246,6 +249,103 @@ public class HoldingsController : ControllerBase
         {
             _logger.LogError(ex, $"Error updating transaction {transactionId}");
             return StatusCode(500, new { message = "Error updating transaction" });
+        }
+    }
+
+    // ── Asset Tax Rates ───────────────────────────────────────────────────────
+
+    /// <summary>Returns all Exit Tax rates by security type.</summary>
+    [HttpGet("tax-rates")]
+    public async Task<ActionResult<List<AssetTaxRateDto>>> GetTaxRates(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var rates = await _holdingsService.GetAssetTaxRatesAsync(cancellationToken);
+            return Ok(rates);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting tax rates");
+            return StatusCode(500, new { message = "Error retrieving tax rates" });
+        }
+    }
+
+    /// <summary>Creates or updates an Exit Tax rate for a security type.</summary>
+    [HttpPut("tax-rates")]
+    public async Task<ActionResult<AssetTaxRateDto>> UpsertTaxRate([FromBody] AssetTaxRateDto dto, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (_sharingContext.IsReadOnly())
+                return StatusCode(403, new { message = "Read-only access." });
+
+            if (string.IsNullOrWhiteSpace(dto.SecurityType))
+                return BadRequest(new { message = "SecurityType is required." });
+
+            var result = await _holdingsService.UpsertAssetTaxRateAsync(dto, cancellationToken);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error upserting tax rate");
+            return StatusCode(500, new { message = "Error saving tax rate" });
+        }
+    }
+
+    /// <summary>Deletes an Exit Tax rate for a security type.</summary>
+    [HttpDelete("tax-rates/{securityType}")]
+    public async Task<ActionResult> DeleteTaxRate(string securityType, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (_sharingContext.IsReadOnly())
+                return StatusCode(403, new { message = "Read-only access." });
+
+            await _holdingsService.DeleteAssetTaxRateAsync(securityType, cancellationToken);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error deleting tax rate for {securityType}");
+            return StatusCode(500, new { message = "Error deleting tax rate" });
+        }
+    }
+
+    // ── Tax Year Summary ───────────────────────────────────────────────────────
+
+    /// <summary>Returns the list of years that have at least one sell transaction.</summary>
+    [HttpGet("tax-years")]
+    public async Task<ActionResult<List<int>>> GetTaxYears(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var years = await _holdingsService.GetTaxYearsAsync(GetUserId(), cancellationToken);
+            return Ok(years);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting tax years");
+            return StatusCode(500, new { message = "Error retrieving tax years" });
+        }
+    }
+
+    /// <summary>Returns all realized gains and exit tax due for the specified year.</summary>
+    /// <param name="year">Tax year (e.g., 2026)</param>
+    [HttpGet("tax-summary")]
+    public async Task<ActionResult<TaxYearSummaryDto>> GetTaxSummary([FromQuery] int year, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (year < 2000 || year > 2100)
+                return BadRequest(new { message = "Invalid year." });
+
+            var summary = await _holdingsService.GetTaxYearSummaryAsync(GetUserId(), year, cancellationToken);
+            return Ok(summary);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error getting tax summary for year {year}");
+            return StatusCode(500, new { message = "Error retrieving tax summary" });
         }
     }
 }

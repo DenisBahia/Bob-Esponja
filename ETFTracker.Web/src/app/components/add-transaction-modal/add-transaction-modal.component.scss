@@ -64,6 +64,56 @@
   }
 }
 
+// ── Buy / Sell toggle ─────────────────────────────────────────────────────────
+.type-toggle {
+  display: flex;
+  gap: 0;
+  padding: 0.85rem 1.5rem 0;
+
+  .type-btn {
+    flex: 1;
+    padding: 0.52rem 1rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    border: 1px solid var(--border-light);
+    background: var(--bg-elevated);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.18s;
+
+    &:first-child { border-radius: 8px 0 0 8px; }
+    &:last-child  { border-radius: 0 8px 8px 0; margin-left: -1px; }
+
+    &.active-buy {
+      background: rgba(79, 142, 247, 0.15);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    &.active-sell {
+      background: rgba(240, 130, 82, 0.15);
+      border-color: #f08252;
+      color: #f08252;
+    }
+    &:hover:not(.active-buy):not(.active-sell) {
+      background: var(--bg-surface);
+      color: var(--text-primary);
+    }
+  }
+}
+
+// ── Sell hint ─────────────────────────────────────────────────────────────────
+.sell-hint {
+  margin: 0 1.5rem 0.25rem;
+  padding: 0.55rem 0.85rem;
+  background: rgba(240, 130, 82, 0.08);
+  border: 1px solid rgba(240, 130, 82, 0.25);
+  border-radius: 7px;
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+
+  strong { color: #f08252; }
+}
+
 .error-message {
   margin: 1rem 1.5rem 0;
   padding: 0.85rem 1rem;
@@ -314,8 +364,12 @@
       &.btn-primary {
         background: var(--accent);
         color: #fff;
-
         &:not(:disabled):hover { background: var(--accent-hover); }
+      }
+      &.btn-sell {
+        background: #f08252;
+        color: #fff;
+        &:not(:disabled):hover { background: #d96535; }
       }
 
       &.btn-secondary {

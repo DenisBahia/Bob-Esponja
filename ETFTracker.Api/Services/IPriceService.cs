@@ -5,6 +5,7 @@ public interface IPriceService
     Task<decimal?> GetPriceAsync(string ticker, CancellationToken cancellationToken = default);
     Task<PriceResult> GetPriceWithSourceAsync(string ticker, CancellationToken cancellationToken = default);
     Task<string?> GetEtfDescriptionAsync(string ticker, CancellationToken cancellationToken = default);
+    Task<string?> GetSecurityTypeAsync(string ticker, CancellationToken cancellationToken = default);
     Task SavePriceSnapshotAsync(string ticker, decimal price, string source, CancellationToken cancellationToken = default);
     Task<decimal?> GetSnapshotPriceAsync(string ticker, DateTime date, CancellationToken cancellationToken = default);
     Task<List<TickerSearchResult>> SearchTickersAsync(string query, CancellationToken cancellationToken = default);

@@ -18,7 +18,13 @@ public class HoldingDto
     public decimal TotalValue { get; set; }
     public bool PriceUnavailable { get; set; }
     public string? PriceSource { get; set; }
-    
+    public string? SecurityType { get; set; }
+    /// <summary>
+    /// The next upcoming date when Deemed Disposal tax is due (8 years after a buy).
+    /// Null when not applicable (non-fund) or no future dates exist.
+    /// </summary>
+    public DateOnly? DeemedDisposalDueDate { get; set; }
+
     // Period metrics
     public PeriodMetrics DailyMetrics { get; set; } = new();
     public PeriodMetrics WeeklyMetrics { get; set; } = new();
