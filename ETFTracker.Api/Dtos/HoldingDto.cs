@@ -35,6 +35,8 @@ public class HoldingDto
 public class DashboardHeaderDto
 {
     public decimal TotalHoldingsAmount { get; set; }
+    /// <summary>Total cost basis of all current (open) positions.</summary>
+    public decimal TotalInvestedAmount { get; set; }
     public PeriodMetrics TotalVariation { get; set; } = new();
     public PeriodMetrics DailyMetrics { get; set; } = new();
     public PeriodMetrics WeeklyMetrics { get; set; } = new();

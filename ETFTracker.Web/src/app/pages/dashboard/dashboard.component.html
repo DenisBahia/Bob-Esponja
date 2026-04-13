@@ -68,6 +68,13 @@
           <div class="metric-value">{{ formatCurrency(dashboard.header.totalHoldingsAmount) }}</div>
         </div>
 
+        <!-- Total Invested -->
+        <div class="metric-card invested">
+          <div class="metric-label">Total Invested</div>
+          <div class="metric-value">{{ formatCurrency(dashboard.header.totalInvestedAmount) }}</div>
+          <div class="metric-hint">Cost basis (open positions)</div>
+        </div>
+
         <!-- Total Variation -->
         <div class="metric-card" [ngClass]="getMetricsClass(dashboard.header.totalVariation.gainLossEur)">
           <div class="metric-label">Total Variation</div>

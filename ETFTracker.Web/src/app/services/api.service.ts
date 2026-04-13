@@ -30,6 +30,7 @@ export interface HoldingDto {
 
 export interface DashboardHeaderDto {
   totalHoldingsAmount: number;
+  totalInvestedAmount: number;
   totalVariation: PeriodMetrics;
   dailyMetrics: PeriodMetrics;
   weeklyMetrics: PeriodMetrics;
