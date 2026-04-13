@@ -13,34 +13,12 @@
         <h2>Asset Type Exit Tax Rates</h2>
         <p class="section-desc">
           These rates are used to calculate Exit Tax due when you sell an asset.
-          ETFs and Mutual Funds are subject to <strong>41% Exit Tax</strong> in Ireland.
+          ETFs and Mutual Funds are subject to <strong>38% Exit Tax</strong> in Ireland.
           Add other asset types below to track their rates.
         </p>
       </div>
-      <div class="section-header-actions">
-        <button class="btn btn-outline-ie" (click)="toggleIrelandPreset()" [class.btn-cancel]="showIrelandPreset"
-                title="Pre-fill common Irish tax rates">
-          {{ showIrelandPreset ? '✕ Cancel' : '🇮🇪 Quick Setup (Ireland)' }}
-        </button>
-        <button class="btn btn-primary" (click)="toggleAddNew()" [class.btn-cancel]="addingNew">
-          {{ addingNew ? '✕ Cancel' : '+ Add Type' }}
-        </button>
-      </div>
-    </div>
-
-    <!-- Ireland preset confirmation -->
-    <div *ngIf="showIrelandPreset" class="ireland-preset-box">
-      <h4>🇮🇪 Irish Tax Rates Preset</h4>
-      <p>This will add or update the following rates:</p>
-      <ul class="preset-list">
-        <li><strong>ETF</strong> — 41% Exit Tax (ETF / UCITS Fund)</li>
-        <li><strong>MUTUALFUND</strong> — 41% Exit Tax (Mutual Fund / UCITS)</li>
-        <li><strong>EQUITY</strong> — 33% CGT (Shares / Stocks)</li>
-        <li><strong>CRYPTOCURRENCY</strong> — 33% CGT</li>
-      </ul>
-      <p class="preset-note">Existing rates with the same security type will be updated.</p>
-      <button class="btn btn-primary" (click)="applyIrelandPreset()" [disabled]="applyingPreset">
-        {{ applyingPreset ? 'Applying…' : '✓ Apply Preset' }}
+      <button class="btn btn-primary" (click)="toggleAddNew()" [class.btn-cancel]="addingNew">
+        {{ addingNew ? '✕ Cancel' : '+ Add Type' }}
       </button>
     </div>
 
