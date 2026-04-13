@@ -320,3 +320,66 @@
   }
 }
 
+// ── Section header actions ─────────────────────────────────────────────────────
+.section-header-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.btn-outline-ie {
+  background: rgba(45, 212, 191, 0.08);
+  color: #2dd4bf;
+  border: 1px solid rgba(45, 212, 191, 0.25);
+  border-radius: 8px;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+
+  &:hover {
+    background: rgba(45, 212, 191, 0.16);
+    border-color: rgba(45, 212, 191, 0.4);
+  }
+}
+
+// ── Ireland preset box ────────────────────────────────────────────────────────
+.ireland-preset-box {
+  background: rgba(45, 212, 191, 0.05);
+  border: 1px solid rgba(45, 212, 191, 0.2);
+  border-radius: 10px;
+  padding: 1.2rem 1.5rem;
+  margin-bottom: 1.5rem;
+
+  h4 {
+    margin: 0 0 0.6rem;
+    font-size: 0.95rem;
+    color: #2dd4bf;
+  }
+
+  p {
+    font-size: 0.87rem;
+    color: var(--text-secondary);
+    margin: 0 0 0.5rem;
+  }
+
+  .preset-list {
+    margin: 0.5rem 0 1rem 1.2rem;
+    padding: 0;
+    font-size: 0.87rem;
+    color: var(--text-primary);
+    li { margin-bottom: 0.3rem; }
+    strong { color: var(--accent); }
+  }
+
+  .preset-note {
+    font-size: 0.78rem;
+    color: var(--text-muted, #5e7494);
+    font-style: italic;
+    margin-bottom: 0.9rem !important;
+  }
+}
