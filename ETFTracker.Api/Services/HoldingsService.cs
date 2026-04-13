@@ -44,8 +44,7 @@ public class HoldingsService : IHoldingsService
 
         var totalValue    = holdings.Sum(h => h.TotalValue);
         var totalInvested = holdings.Sum(h => h.Quantity * h.AverageCost);
-        dashboard.Header.TotalHoldingsAmount  = totalValue;
-        dashboard.Header.TotalInvestedAmount  = totalInvested;
+        dashboard.Header.TotalHoldingsAmount = totalValue;
 
         var totalVariationEur     = totalValue - totalInvested;
         var totalVariationPercent = totalInvested > 0 ? (totalVariationEur / totalInvested) * 100 : 0;

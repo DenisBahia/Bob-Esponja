@@ -505,20 +505,6 @@ th.sortable {
             .metric-value { color: #fff; font-size: 1.9rem; }
           }
 
-          // Total Invested – subtle teal accent
-          &.invested {
-            border-color: rgba(45, 212, 191, 0.2);
-            &::before { background: #2dd4bf; }
-            .metric-value { color: #2dd4bf; }
-          }
-
-          .metric-hint {
-            font-size: 0.72rem;
-            color: var(--text-muted);
-            margin-top: 0.2rem;
-            font-style: italic;
-          }
-
           &.positive {
             .metric-value, .metric-percent { color: var(--positive); }
             &::before { background: var(--positive); }
