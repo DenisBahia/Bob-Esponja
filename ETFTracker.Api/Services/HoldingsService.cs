@@ -19,7 +19,6 @@ public interface IHoldingsService
     Task DeleteAssetTaxRateAsync(string securityType, CancellationToken cancellationToken = default);
     Task<TaxYearSummaryDto> GetTaxYearSummaryAsync(int userId, int year, CancellationToken cancellationToken = default);
     Task<List<int>> GetTaxYearsAsync(int userId, CancellationToken cancellationToken = default);
-    Task<FifoPreviewDto> GetFifoPreviewAsync(int userId, int holdingId, decimal quantity, decimal sellPrice, CancellationToken cancellationToken = default);
 }
 
 public class HoldingsService : IHoldingsService
@@ -697,81 +696,6 @@ public class HoldingsService : IHoldingsService
             TotalTaxableProfit = entries.Sum(e => e.TaxableProfit),
             TotalExitTaxDue    = entries.Sum(e => e.ExitTaxDue ?? 0m),
             HasMissingRates    = entries.Any(e => e.ExitTaxPercent == null)
-        };
-    }
-
-    // ── FIFO Preview (read-only, no DB writes) ────────────────────────────────
-
-    public async Task<FifoPreviewDto> GetFifoPreviewAsync(int userId, int holdingId, decimal quantity, decimal sellPrice, CancellationToken cancellationToken = default)
-    {
-        var holding = await _context.Holdings
-            .FirstOrDefaultAsync(h => h.Id == holdingId && h.UserId == userId, cancellationToken);
-
-        if (holding == null) throw new UnauthorizedAccessException("Holding not found.");
-
-        var buys = await _context.Transactions
-            .Where(t => t.HoldingId == holdingId && t.TransactionType == TransactionType.Buy)
-            .OrderBy(t => t.PurchaseDate)
-            .ThenBy(t => t.Id)
-            .ToListAsync(cancellationToken);
-
-        var buyIds = buys.Select(b => b.Id).ToList();
-        var alreadyAllocated = buyIds.Count > 0
-            ? await _context.SellAllocations
-                .Where(a => buyIds.Contains(a.BuyTransactionId))
-                .GroupBy(a => a.BuyTransactionId)
-                .Select(g => new { BuyId = g.Key, Qty = g.Sum(a => a.AllocatedQuantity) })
-                .ToDictionaryAsync(x => x.BuyId, x => x.Qty, cancellationToken)
-            : new Dictionary<int, decimal>();
-
-        var remaining = quantity;
-        var allocs = new List<FifoPreviewAllocationDto>();
-
-        foreach (var buy in buys)
-        {
-            if (remaining <= 0) break;
-
-            var consumed  = alreadyAllocated.GetValueOrDefault(buy.Id, 0m);
-            var available = buy.Quantity - consumed;
-            if (available <= 0) continue;
-
-            var toAllocate = Math.Min(available, remaining);
-            allocs.Add(new FifoPreviewAllocationDto
-            {
-                BuyTransactionId  = buy.Id,
-                BuyDate           = buy.PurchaseDate,
-                BuyPrice          = buy.PurchasePrice,
-                AllocatedQuantity = toAllocate,
-                ProfitEur         = (sellPrice - buy.PurchasePrice) * toAllocate
-            });
-            remaining -= toAllocate;
-        }
-
-        var totalAllocQty   = allocs.Sum(a => a.AllocatedQuantity);
-        var totalBuyCost    = allocs.Sum(a => a.AllocatedQuantity * a.BuyPrice);
-        var weightedBuyPrice = totalAllocQty > 0 ? totalBuyCost / totalAllocQty : 0m;
-        var totalProfit     = allocs.Sum(a => a.ProfitEur);
-
-        decimal? taxRate = null;
-        if (holding.SecurityType != null)
-        {
-            var taxRateRecord = await _context.AssetTaxRates
-                .FindAsync(new object[] { holding.SecurityType }, cancellationToken);
-            taxRate = taxRateRecord?.ExitTaxPercent;
-        }
-
-        return new FifoPreviewDto
-        {
-            IsFeasible        = remaining <= 0,
-            RequestedQuantity = quantity,
-            AvailableQuantity = holding.Quantity,
-            Allocations       = allocs,
-            WeightedAvgBuyPrice = weightedBuyPrice,
-            TotalProfit       = totalProfit,
-            ExitTaxRate       = taxRate,
-            ExitTaxDue        = taxRate.HasValue && totalProfit > 0
-                                    ? totalProfit * (taxRate.Value / 100m)
-                                    : (decimal?)null
         };
     }
 

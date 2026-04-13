@@ -252,42 +252,6 @@ public class HoldingsController : ControllerBase
         }
     }
 
-    // ── FIFO Preview ──────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Returns a dry-run FIFO allocation for a potential sell — no data is written.
-    /// </summary>
-    /// <param name="holdingId">The holding to sell from.</param>
-    /// <param name="quantity">Number of units to sell.</param>
-    /// <param name="sellPrice">Price per unit at which you intend to sell.</param>
-    [HttpGet("{holdingId}/fifo-preview")]
-    public async Task<ActionResult<FifoPreviewDto>> GetFifoPreview(
-        int holdingId,
-        [FromQuery] decimal quantity,
-        [FromQuery] decimal sellPrice,
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            if (quantity <= 0)
-                return BadRequest(new { message = "Quantity must be positive." });
-            if (sellPrice <= 0)
-                return BadRequest(new { message = "Sell price must be positive." });
-
-            var preview = await _holdingsService.GetFifoPreviewAsync(GetUserId(), holdingId, quantity, sellPrice, cancellationToken);
-            return Ok(preview);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return StatusCode(403, new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error generating FIFO preview for holding {HoldingId}", holdingId);
-            return StatusCode(500, new { message = "Error generating FIFO preview" });
-        }
-    }
-
     // ── Asset Tax Rates ───────────────────────────────────────────────────────
 
     /// <summary>Returns all Exit Tax rates by security type.</summary>
