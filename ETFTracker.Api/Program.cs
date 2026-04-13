@@ -143,6 +143,9 @@ app.UseAuthorization();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
+// Public liveness endpoint for container health checks.
+app.MapGet("/healthz", () => Results.Ok(new { status = "ok" }));
+
 app.MapControllers();
 
 // Fallback to index.html for SPA routing

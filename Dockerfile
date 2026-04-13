@@ -79,9 +79,9 @@ ENV DOTNET_EnableDiagnosticTools=false
 # - ExternalApis__EodhApi__ApiKey (EODH API key for price data)
 # - Frontend__BaseUrl (Frontend base URL for post-auth redirects)
 
-# Health check
+# Health check (must be public, no auth)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:10000/api/holdings || exit 1
+  CMD curl -f http://localhost:10000/healthz || exit 1
 
 # Start the application
 ENTRYPOINT ["./ETFTracker.Api"]
