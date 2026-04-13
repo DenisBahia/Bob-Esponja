@@ -1157,45 +1157,4 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     });
   }
 
-  exportTaxSummaryCsv(): void {
-    if (!this.taxSummary?.entries?.length) return;
-
-    const headers = ['Ticker', 'Asset Name', 'Security Type', 'Sell Date', 'Qty Sold',
-                     'Sell Price (EUR)', 'Avg Buy Price (EUR)', 'Taxable Profit (EUR)',
-                     'Exit Tax %', 'Exit Tax Due (EUR)'];
-
-    const rows = this.taxSummary.entries.map(e => [
-      e.ticker,
-      e.etfName ?? '',
-      e.securityType ?? '',
-      this.formatDate(e.sellDate),
-      e.quantitySold.toFixed(4),
-      e.sellPrice.toFixed(2),
-      e.weightedBuyPrice.toFixed(2),
-      e.taxableProfit.toFixed(2),
-      e.exitTaxPercent !== null ? `${e.exitTaxPercent}%` : '',
-      e.exitTaxDue !== null ? e.exitTaxDue.toFixed(2) : '',
-    ]);
-
-    // Totals row
-    rows.push([
-      'TOTAL', '', '', '', '',
-      '', '',
-      this.taxSummary.totalTaxableProfit.toFixed(2),
-      '',
-      this.taxSummary.totalExitTaxDue.toFixed(2),
-    ]);
-
-    const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
-    const csv = [headers.map(escape).join(','), ...rows.map(r => r.map(escape).join(','))].join('\n');
-
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `tax-summary-${this.selectedTaxYear}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
 }

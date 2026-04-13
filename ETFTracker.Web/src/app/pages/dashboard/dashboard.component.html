@@ -648,12 +648,6 @@
           <option *ngFor="let y of taxYears" [value]="y">{{ y }}</option>
         </select>
         <span class="tax-year-hint">Irish tax year = calendar year (Jan 1 – Dec 31)</span>
-        <button class="btn-export-csv"
-                *ngIf="taxSummary && taxSummary.entries.length > 0"
-                (click)="exportTaxSummaryCsv()"
-                title="Download as CSV for tax filing">
-          ⬇ Export CSV
-        </button>
       </div>
 
       <div *ngIf="taxSummaryLoading" class="tax-summary-loading">Loading…</div>
