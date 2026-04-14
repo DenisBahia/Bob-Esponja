@@ -10,13 +10,20 @@ namespace ETFTracker.Api.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Column already exists as price_source, no rename needed
+            migrationBuilder.AddColumn<string>(
+                name: "price_source",
+                table: "holdings",
+                type: "character varying(50)",
+                maxLength: 50,
+                nullable: true);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            // No action needed
+            migrationBuilder.DropColumn(
+                name: "price_source",
+                table: "holdings");
         }
     }
 }
