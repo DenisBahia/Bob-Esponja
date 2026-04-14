@@ -1,3 +1,5 @@
+  CMD curl -f http://localhost:10000/healthz || exit 1
+ENV ASPNETCORE_URLS=http://+:10000
 # Multi-stage build for Investments Tracker
 # Stage 1: Build .NET Backend
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS backend-build
@@ -54,13 +56,14 @@ COPY --from=frontend-build /app/dist/etftracker.web/browser ./wwwroot
 RUN chown -R appuser:appuser /app
 
 # Switch to non-root user
-USER appuser
-
 # Expose default ASP.NET port (Railway may inject PORT at runtime)
 EXPOSE 8080
-
+# Expose port
+EXPOSE 10000
+EXPOSE 10000
 # Set environment variables for production
 ENV ASPNETCORE_ENVIRONMENT=Production
+ENV ASPNETCORE_URLS=http://+:10000
 ENV DOTNET_EnableDiagnosticTools=false
 
 # Configure secrets management for production
@@ -77,10 +80,10 @@ ENV DOTNET_EnableDiagnosticTools=false
 # - OAuth__Google__RedirectUri (Google redirect URI - set this to https://yourdomain.com/signin-google)
 # - ExternalApis__EodhApi__ApiKey (EODH API key for price data)
 # - Frontend__BaseUrl (Frontend base URL for post-auth redirects)
-
+  CMD sh -c 'curl -f "http://localhost:${PORT:-8080}/healthz" || exit 1'
 # Health check (must be public, no auth)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD sh -c 'curl -f "http://localhost:${PORT:-8080}/healthz" || exit 1'
+  CMD curl -f http://localhost:10000/healthz || exit 1
 
 # Start the application
 ENTRYPOINT ["./ETFTracker.Api"]
