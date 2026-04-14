@@ -56,12 +56,11 @@ RUN chown -R appuser:appuser /app
 # Switch to non-root user
 USER appuser
 
-# Expose port
-EXPOSE 10000
+# Expose default ASP.NET port (Railway may inject PORT at runtime)
+EXPOSE 8080
 
 # Set environment variables for production
 ENV ASPNETCORE_ENVIRONMENT=Production
-ENV ASPNETCORE_URLS=http://+:10000
 ENV DOTNET_EnableDiagnosticTools=false
 
 # Configure secrets management for production
@@ -81,7 +80,7 @@ ENV DOTNET_EnableDiagnosticTools=false
 
 # Health check (must be public, no auth)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:10000/healthz || exit 1
+  CMD sh -c 'curl -f "http://localhost:${PORT:-8080}/healthz" || exit 1'
 
 # Start the application
 ENTRYPOINT ["./ETFTracker.Api"]
