@@ -91,6 +91,24 @@ public class HoldingsService : IHoldingsService
             .OrderBy(h => h.Ticker)
             .ToListAsync(cancellationToken);
 
+        // Pre-load sell data for all holdings in one go
+        var holdingIds = dbHoldings.Select(h => h.Id).ToList();
+
+        // Total tax paid per holding
+        var taxByHolding = await _context.SellRecords
+            .Where(sr => holdingIds.Contains(sr.HoldingId))
+            .GroupBy(sr => sr.HoldingId)
+            .Select(g => new { HoldingId = g.Key, TotalTax = g.Sum(sr => sr.CgtPaid) })
+            .ToDictionaryAsync(x => x.HoldingId, x => x.TotalTax, cancellationToken);
+
+        // Total consumed quantity per buy transaction id
+        var txnIds = dbHoldings.SelectMany(h => h.Transactions.Select(t => t.Id)).ToList();
+        var consumedByTxn = await _context.SellLotAllocations
+            .Where(sla => txnIds.Contains(sla.BuyTransactionId))
+            .GroupBy(sla => sla.BuyTransactionId)
+            .Select(g => new { TxnId = g.Key, Consumed = g.Sum(sla => sla.QuantityConsumed) })
+            .ToDictionaryAsync(x => x.TxnId, x => x.Consumed, cancellationToken);
+
         var holdingDtos = new List<HoldingDto>();
 
         foreach (var holding in dbHoldings)
@@ -99,15 +117,21 @@ public class HoldingsService : IHoldingsService
             var priceUnavailable = !priceResult.Price.HasValue;
             var displayPrice = priceResult.Price ?? 0;
             var totalValue = holding.Quantity * displayPrice;
-            var totalInvested = holding.Quantity * holding.AverageCost;
-            
+
             // Update holding with price source
             if (priceResult.Source != null)
             {
                 holding.PriceSource = priceResult.Source;
                 _context.Holdings.Update(holding);
             }
-            
+
+            // Compute available quantity from FIFO remainder
+            decimal availableQty = holding.Transactions.Sum(t =>
+            {
+                var consumed = consumedByTxn.TryGetValue(t.Id, out var c) ? c : 0m;
+                return Math.Max(0m, t.Quantity - consumed);
+            });
+
             var holdingDto = new HoldingDto
             {
                 Id = holding.Id,
@@ -119,6 +143,8 @@ public class HoldingsService : IHoldingsService
                 TotalValue = totalValue,
                 PriceUnavailable = priceUnavailable,
                 PriceSource = priceResult.Source,
+                TotalTaxPaid = taxByHolding.TryGetValue(holding.Id, out var tax) ? tax : 0m,
+                AvailableQuantity = availableQty,
                 DailyMetrics = await CalculatePeriodMetricsAsync(holding.Ticker, holding.Quantity, 1, cancellationToken),
                 WeeklyMetrics = await CalculatePeriodMetricsAsync(holding.Ticker, holding.Quantity, 7, cancellationToken),
                 MonthlyMetrics = await CalculatePeriodMetricsAsync(holding.Ticker, holding.Quantity, 30, cancellationToken),
@@ -127,7 +153,7 @@ public class HoldingsService : IHoldingsService
 
             holdingDtos.Add(holdingDto);
         }
-        
+
         await _context.SaveChangesAsync(cancellationToken);
         return holdingDtos;
     }
@@ -314,6 +340,13 @@ public class HoldingsService : IHoldingsService
 
             if (txn == null || txn.Holding?.UserId != userId)
                 throw new UnauthorizedAccessException("Transaction not found or access denied.");
+
+            // Prevent deletion of a buy that has been (partially) sold
+            var hasAllocations = await _context.SellLotAllocations
+                .AnyAsync(sla => sla.BuyTransactionId == transactionId, cancellationToken);
+            if (hasAllocations)
+                throw new InvalidOperationException(
+                    "Cannot delete this buy — it has been (partially) sold. Delete the sell record first.");
 
             var holdingId = txn.HoldingId;
             _context.Transactions.Remove(txn);

@@ -303,3 +303,74 @@
     }
   }
 }
+
+// ── History tab bar ──────────────────────────────────────────────────────────
+.history-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  padding: 0 1.5rem;
+}
+
+.history-tab-btn {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0.75rem 1.25rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: -1px;
+  transition: color 0.15s, border-color 0.15s;
+
+  &.active {
+    color: #4f8ef7;
+    border-bottom-color: #4f8ef7;
+  }
+
+  &:hover:not(.active) {
+    color: var(--text-secondary);
+  }
+}
+
+// ── Sell row colouring ───────────────────────────────────────────────────────
+.sell-row {
+  &.positive { border-left-color: var(--positive); }
+  &.negative { border-left-color: var(--negative); }
+
+  .gain { color: #14d990; }
+  .loss { color: #f05252; }
+}
+
+// ── FIFO lot breakdown (nested table) ────────────────────────────────────────
+.lot-breakdown-row td {
+  background: #0a1322;
+  padding: 0 !important;
+}
+
+.lot-breakdown-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+
+  thead th {
+    background: #0e1a2e;
+    color: #8da0bf;
+    padding: 6px 10px;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  tbody td {
+    padding: 6px 10px;
+    color: var(--text-secondary);
+    border-bottom: 1px solid rgba(31, 46, 74, 0.6);
+  }
+
+  .gain { color: #14d990; }
+  .loss { color: #f05252; }
+}
+
+

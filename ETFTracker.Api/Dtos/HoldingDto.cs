@@ -24,6 +24,10 @@ public class HoldingDto
     public PeriodMetrics WeeklyMetrics { get; set; } = new();
     public PeriodMetrics MonthlyMetrics { get; set; } = new();
     public PeriodMetrics YtdMetrics { get; set; } = new();
+
+    // Sell / CGT summary
+    public decimal TotalTaxPaid { get; set; }
+    public decimal AvailableQuantity { get; set; }
 }
 
 public class DashboardHeaderDto

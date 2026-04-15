@@ -1,11 +1,21 @@
 <div class="modal-overlay" (click)="onClose()">
   <div class="modal-content" (click)="$event.stopPropagation()">
     <div class="modal-header">
-      <h2>Buy History</h2>
+      <h2>Transaction History</h2>
       <button class="close-btn" (click)="onClose()">×</button>
     </div>
 
-    <div *ngIf="loading" class="loading">
+    <!-- Tab bar -->
+    <div class="history-tabs">
+      <button class="history-tab-btn" [class.active]="activeTab === 'buys'" (click)="setTab('buys')">
+        🛒 Buys
+      </button>
+      <button class="history-tab-btn" [class.active]="activeTab === 'sells'" (click)="setTab('sells')">
+        💰 Sells
+      </button>
+    </div>
+
+    <div *ngIf="loading && activeTab === 'buys'" class="loading">
       <p>Loading history....</p>
     </div>
 
@@ -13,7 +23,8 @@
       {{ error }}
     </div>
 
-    <div *ngIf="!loading && !error" class="history-content">
+    <!-- ══════════════ BUYS TAB ══════════════ -->
+    <div *ngIf="activeTab === 'buys' && !loading && !error" class="history-content">
       <div *ngIf="transactions.length === 0" class="no-data">
         <p>No transactions found.</p>
       </div>
@@ -81,8 +92,74 @@
                 </ng-template>
               </td>
             </ng-template>
-
           </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ══════════════ SELLS TAB ══════════════ -->
+    <div *ngIf="activeTab === 'sells'" class="history-content">
+      <div *ngIf="sellsLoading" class="loading"><p>Loading sell history…</p></div>
+
+      <div *ngIf="!sellsLoading && sellRecords.length === 0" class="no-data">
+        <p>No sells recorded yet.</p>
+      </div>
+
+      <table *ngIf="!sellsLoading && sellRecords.length > 0" class="history-table">
+        <thead>
+          <tr>
+            <th>Sell Date</th>
+            <th>Quantity</th>
+            <th>Sell Price</th>
+            <th>Proceeds</th>
+            <th>Total Profit</th>
+            <th>Tax Paid</th>
+            <th>Tax Rate</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <ng-container *ngFor="let record of sellRecords">
+            <tr class="sell-row"
+                [ngClass]="{'positive': record.totalProfit > 0, 'negative': record.totalProfit <= 0}"
+                (click)="toggleSellExpand(record.id)" style="cursor:pointer">
+              <td>{{ formatDate(record.sellDate) }}</td>
+              <td class="quantity">{{ formatQuantity(record.quantity) }}</td>
+              <td class="price">{{ formatCurrency(record.sellPrice) }}</td>
+              <td class="price">{{ formatCurrency(record.quantity * record.sellPrice) }}</td>
+              <td class="price" [ngClass]="record.totalProfit >= 0 ? 'gain' : 'loss'">{{ formatCurrency(record.totalProfit) }}</td>
+              <td class="price" [title]="getSellTaxPaidLabel(record)">{{ formatCurrency(record.cgtPaid) }}</td>
+              <td class="price" [title]="getSellTaxPaidLabel(record)">{{ record.taxRateUsed.toFixed(1) }}%</td>
+              <td class="action-col">{{ expandedSellId === record.id ? '▲' : '▼' }}</td>
+            </tr>
+            <!-- Expandable FIFO lot breakdown -->
+            <tr *ngIf="expandedSellId === record.id" class="lot-breakdown-row">
+              <td colspan="8">
+                <table class="lot-breakdown-table">
+                  <thead>
+                    <tr>
+                      <th>Buy Date</th>
+                      <th>Qty Consumed</th>
+                      <th>Original Cost/Unit</th>
+                      <th>{{ getLotCostBasisLabel(record) }}</th>
+                      <th *ngIf="record.isIrishInvestor">Deemed Disposal Date</th>
+                      <th>Profit on Lot</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let lot of record.lots">
+                      <td>{{ formatDate(lot.buyDate) }}</td>
+                      <td class="quantity">{{ formatQuantity(lot.quantityConsumed) }}</td>
+                      <td class="price">{{ formatCurrency(lot.originalCostPerUnit) }}</td>
+                      <td class="price">{{ formatCurrency(lot.adjustedCostPerUnit) }}</td>
+                      <td *ngIf="record.isIrishInvestor">{{ lot.deemedDisposalDate ? formatDate(lot.deemedDisposalDate) : '—' }}</td>
+                      <td class="price" [ngClass]="lot.profitOnLot >= 0 ? 'gain' : 'loss'">{{ formatCurrency(lot.profitOnLot) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          </ng-container>
         </tbody>
       </table>
     </div>

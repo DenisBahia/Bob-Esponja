@@ -1,7 +1,7 @@
 import { ChangeDetectorRef, Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, TransactionDto, UpdateTransactionDto } from '../../services/api.service';
+import { ApiService, TransactionDto, UpdateTransactionDto, SellRecordDto } from '../../services/api.service';
 import { SharingContextService } from '../../services/sharing-context.service';
 
 @Component({
@@ -17,6 +17,14 @@ export class BuyHistoryModalComponent implements OnInit {
   /** Fires whenever a transaction is deleted so the parent can refresh its data. */
   @Output() changed = new EventEmitter<void>();
 
+  // ── Tab ──────────────────────────────────────────────────────────────────────
+  activeTab: 'buys' | 'sells' = 'buys';
+  sellsLoaded = false;
+  sellsLoading = false;
+  sellRecords: SellRecordDto[] = [];
+  expandedSellId: number | null = null;
+
+  // ── Buys tab ─────────────────────────────────────────────────────────────────
   transactions: TransactionDto[] = [];
   loading = true;
   error: string | null = null;
@@ -24,7 +32,6 @@ export class BuyHistoryModalComponent implements OnInit {
   confirmDeleteId: number | null = null;
   deletingIds: Set<number> = new Set();
 
-  // Edit state
   editingId: number | null = null;
   editForm: UpdateTransactionDto = { quantity: 0, purchasePrice: 0, purchaseDate: '' };
   savingEdit = false;
@@ -37,6 +44,45 @@ export class BuyHistoryModalComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadHistory();
+  }
+
+  setTab(tab: 'buys' | 'sells'): void {
+    this.activeTab = tab;
+    if (tab === 'sells' && !this.sellsLoaded) {
+      this.loadSells();
+    }
+    this.cdr.markForCheck();
+  }
+
+  private loadSells(): void {
+    this.sellsLoading = true;
+    this.apiService.getSellHistory(this.holdingId).subscribe({
+      next: (data) => {
+        this.sellRecords = data;
+        this.sellsLoaded = true;
+        this.sellsLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error loading sell history:', err);
+        this.sellsLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  toggleSellExpand(id: number): void {
+    this.expandedSellId = this.expandedSellId === id ? null : id;
+    this.cdr.markForCheck();
+  }
+
+  getSellTaxPaidLabel(record?: SellRecordDto): string {
+    if (!record) return 'Tax Paid';
+    return record.isIrishInvestor ? 'Exit Tax Paid' : 'CGT Paid';
+  }
+
+  getLotCostBasisLabel(record: SellRecordDto): string {
+    return record.isIrishInvestor ? 'Adjusted Cost/Unit' : 'Cost Basis/Unit';
   }
 
   private loadHistory(): void {
@@ -59,12 +105,12 @@ export class BuyHistoryModalComponent implements OnInit {
   }
 
   startEdit(t: TransactionDto): void {
-    this.confirmDeleteId = null;  // cancel any pending delete
+    this.confirmDeleteId = null;
     this.editingId = t.id;
     this.editForm = {
       quantity: t.quantity,
       purchasePrice: t.purchasePrice,
-      purchaseDate: t.purchaseDate.slice(0, 10), // YYYY-MM-DD for <input type="date">
+      purchaseDate: t.purchaseDate.slice(0, 10),
     };
     this.cdr.detectChanges();
   }
@@ -96,7 +142,7 @@ export class BuyHistoryModalComponent implements OnInit {
   }
 
   requestDelete(id: number): void {
-    this.editingId = null;  // cancel any active edit
+    this.editingId = null;
     this.confirmDeleteId = id;
     this.cdr.detectChanges();
   }
@@ -122,7 +168,7 @@ export class BuyHistoryModalComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error deleting transaction:', err);
-        this.error = 'Failed to delete transaction. Please try again.';
+        this.error = err?.error?.message ?? 'Failed to delete transaction. Please try again.';
         const next = new Set(this.deletingIds);
         next.delete(id);
         this.deletingIds = next;
@@ -133,19 +179,15 @@ export class BuyHistoryModalComponent implements OnInit {
 
   formatCurrency(value: number): string {
     return new Intl.NumberFormat('de-IE', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+      style: 'currency', currency: 'EUR',
+      minimumFractionDigits: 2, maximumFractionDigits: 2
     }).format(value);
   }
 
   formatDate(dateString: string): string {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('de-IE', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
+      year: 'numeric', month: '2-digit', day: '2-digit'
     }).format(date);
   }
 

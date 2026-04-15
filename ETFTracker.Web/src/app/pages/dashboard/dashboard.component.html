@@ -180,15 +180,18 @@
                   <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='avgCost'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='avgCost'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('avgCost')">Avg Cost</th>
                   <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='currentPrice'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='currentPrice'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('currentPrice')">Current Price</th>
                   <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='totalValue'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='totalValue'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('totalValue')">Total Value</th>
-                  <th colspan="4">Gain/Loss</th>
+                  <th colspan="5">Gain/Loss</th>
+                  <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='taxPaid'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='taxPaid'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('taxPaid')">Tax Paid</th>
                   <th>Actions</th>
                 </tr>
                 <tr class="periods-header">
                   <th colspan="6"></th>
+                  <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='totalGainLoss'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='totalGainLoss'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('totalGainLoss')">Total</th>
                   <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='daily'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='daily'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('daily')">Daily</th>
                   <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='weekly'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='weekly'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('weekly')">Weekly</th>
                   <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='monthly'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='monthly'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('monthly')">Monthly</th>
                   <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='ytd'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='ytd'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('ytd')">YTD</th>
+                  <th></th>
                   <th></th>
                 </tr>
               </thead>
@@ -200,6 +203,16 @@
                   <td class="price">{{ formatCurrency(holding.averageCost) }}</td>
                   <td class="price">{{ formatCurrency(holding.currentPrice) }}</td>
                   <td class="total-value"><strong>{{ formatCurrency(holding.totalValue) }}</strong></td>
+
+                  <!-- Total -->
+                  <td [ngClass]="getMetricsClass(getHoldingTotalGainLoss(holding))">
+                    <div class="gain-loss">
+                      <div>{{ formatCurrency(getHoldingTotalGainLoss(holding)) }}</div>
+                      <div class="percent">
+                        {{ getHoldingTotalGainLossPercent(holding) !== null ? formatPercent(getHoldingTotalGainLossPercent(holding)!) : '—' }}
+                      </div>
+                    </div>
+                  </td>
 
                   <!-- Daily -->
                   <td [ngClass]="getMetricsClass(holding.dailyMetrics.gainLossEur)">
@@ -233,8 +246,13 @@
                     </div>
                   </td>
 
+                  <!-- Tax Paid -->
+                  <td class="price">{{ formatCurrency(holding.totalTaxPaid) }}</td>
+
                   <td class="actions">
                     <button class="btn-link" (click)="onBuyHistoryClick(holding.id)">History</button>
+                    <button class="btn-link btn-sell" (click)="onSellClick(holding)"
+                            *ngIf="!sharingCtx.isReadOnly() && holding.availableQuantity > 0">Sell</button>
                   </td>
                 </tr>
               </tbody>
@@ -741,6 +759,15 @@
     (closed)="onHistoryModalClosed()"
     (changed)="onHistoryChanged()">
   </app-buy-history-modal>
+
+  <app-sell-modal
+    *ngIf="showSellModal && selectedSellHolding"
+    [holding]="selectedSellHolding"
+    [isIrishInvestor]="isIrishInvestor"
+    [projectionSettings]="projectionSettings"
+    (sold)="onSellConfirmed()"
+    (cancelled)="onSellModalClosed()">
+  </app-sell-modal>
 
   <app-share-profile-modal
     *ngIf="showShareModal"

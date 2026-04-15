@@ -17,17 +17,20 @@ public class HoldingsController : ControllerBase
     private readonly IHoldingsService _holdingsService;
     private readonly IPriceService _priceService;
     private readonly ISharingContextService _sharingContext;
+    private readonly ISellService _sellService;
     private readonly ILogger<HoldingsController> _logger;
 
     public HoldingsController(
         IHoldingsService holdingsService,
         IPriceService priceService,
         ISharingContextService sharingContext,
+        ISellService sellService,
         ILogger<HoldingsController> logger)
     {
         _holdingsService = holdingsService;
         _priceService    = priceService;
         _sharingContext  = sharingContext;
+        _sellService     = sellService;
         _logger          = logger;
     }
 
@@ -246,6 +249,84 @@ public class HoldingsController : ControllerBase
         {
             _logger.LogError(ex, $"Error updating transaction {transactionId}");
             return StatusCode(500, new { message = "Error updating transaction" });
+        }
+    }
+
+    /// <summary>Preview a sell — computes FIFO CGT breakdown without persisting anything.</summary>
+    [HttpPost("{holdingId}/sell/preview")]
+    public async Task<ActionResult<SellPreviewDto>> PreviewSell(int holdingId, [FromBody] SellRequestDto dto, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (_sharingContext.IsReadOnly())
+                return StatusCode(403, new { message = "This profile is shared as read-only." });
+
+            var result = await _sellService.PreviewSellAsync(
+                holdingId, GetUserId(), dto.Quantity, dto.SellPrice,
+                dto.SellDate, dto.IsIrishInvestor, dto.TaxRate, cancellationToken);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(403, new { message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error previewing sell for holding {HoldingId}", holdingId);
+            return StatusCode(500, new { message = "Error previewing sell" });
+        }
+    }
+
+    /// <summary>Confirm a sell — persists the FIFO CGT records and updates holding quantity/cost.</summary>
+    [HttpPost("{holdingId}/sell/confirm")]
+    public async Task<ActionResult<SellRecordDto>> ConfirmSell(int holdingId, [FromBody] SellRequestDto dto, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (_sharingContext.IsReadOnly())
+                return StatusCode(403, new { message = "This profile is shared as read-only." });
+
+            var result = await _sellService.ConfirmSellAsync(
+                holdingId, GetUserId(), dto.Quantity, dto.SellPrice,
+                dto.SellDate, dto.IsIrishInvestor, dto.TaxRate, cancellationToken);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(403, new { message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error confirming sell for holding {HoldingId}", holdingId);
+            return StatusCode(500, new { message = "Error confirming sell" });
+        }
+    }
+
+    /// <summary>Get sell history for a holding.</summary>
+    [HttpGet("{holdingId}/sell-history")]
+    public async Task<ActionResult<List<SellRecordDto>>> GetSellHistory(int holdingId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var result = await _sellService.GetSellHistoryAsync(holdingId, GetUserId(), cancellationToken);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(403, new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting sell history for holding {HoldingId}", holdingId);
+            return StatusCode(500, new { message = "Error retrieving sell history" });
         }
     }
 }

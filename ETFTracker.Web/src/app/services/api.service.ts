@@ -23,6 +23,8 @@ export interface HoldingDto {
   weeklyMetrics: PeriodMetrics;
   monthlyMetrics: PeriodMetrics;
   ytdMetrics: PeriodMetrics;
+  totalTaxPaid: number;
+  availableQuantity: number;
 }
 
 export interface DashboardHeaderDto {
@@ -167,6 +169,49 @@ export interface TickerSearchResult {
   typeDisp: string | null;
 }
 
+// ── Sell / CGT ────────────────────────────────────────────────────────────────
+
+export interface SellRequestDto {
+  quantity: number;
+  sellPrice: number;
+  sellDate: string;       // "YYYY-MM-DD"
+  isIrishInvestor: boolean;
+  taxRate: number;
+}
+
+export interface SellLotBreakdownDto {
+  buyTransactionId: number;
+  buyDate: string;
+  quantityConsumed: number;
+  originalCostPerUnit: number;
+  adjustedCostPerUnit: number;
+  deemedDisposalDate: string | null;
+  deemedDisposalPricePerUnit: number | null;
+  profitOnLot: number;
+}
+
+export interface SellPreviewDto {
+  availableQuantity: number;
+  totalProfit: number;
+  cgtDue: number;
+  taxRateUsed: number;
+  lots: SellLotBreakdownDto[];
+}
+
+export interface SellRecordDto {
+  id: number;
+  holdingId: number;
+  sellDate: string;
+  sellPrice: number;
+  quantity: number;
+  totalProfit: number;
+  cgtPaid: number;
+  taxRateUsed: number;
+  isIrishInvestor: boolean;
+  createdAt: string;
+  lots: SellLotBreakdownDto[];
+}
+
 // ── Sharing ───────────────────────────────────────────────────────────────────
 
 export interface CreateShareDto {
@@ -308,5 +353,19 @@ export class ApiService {
 
   upsertGoal(dto: UpsertGoalRequestDto): Observable<UserGoalDto> {
     return this.http.put<UserGoalDto>(`${this.apiUrl}/goal`, dto);
+  }
+
+  // ── Sell / CGT ─────────────────────────────────────────────────────────────
+
+  previewSell(holdingId: number, dto: SellRequestDto): Observable<SellPreviewDto> {
+    return this.http.post<SellPreviewDto>(`${this.apiUrl}/holdings/${holdingId}/sell/preview`, dto);
+  }
+
+  confirmSell(holdingId: number, dto: SellRequestDto): Observable<SellRecordDto> {
+    return this.http.post<SellRecordDto>(`${this.apiUrl}/holdings/${holdingId}/sell/confirm`, dto);
+  }
+
+  getSellHistory(holdingId: number): Observable<SellRecordDto[]> {
+    return this.http.get<SellRecordDto[]>(`${this.apiUrl}/holdings/${holdingId}/sell-history`);
   }
 }

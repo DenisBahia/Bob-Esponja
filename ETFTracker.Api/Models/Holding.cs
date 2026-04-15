@@ -19,5 +19,6 @@ public class Holding
     // Navigation
     public User? User { get; set; }
     public ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
+    public ICollection<SellRecord> SellRecords { get; set; } = new List<SellRecord>();
 }
 

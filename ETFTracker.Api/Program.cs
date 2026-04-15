@@ -29,6 +29,7 @@ builder.Services.AddScoped<IProjectionService, ProjectionService>();
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<ISharingContextService, SharingContextService>();
 builder.Services.AddScoped<IGoalService, GoalService>();
+builder.Services.AddScoped<ISellService, SellService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient<PriceService>();
 

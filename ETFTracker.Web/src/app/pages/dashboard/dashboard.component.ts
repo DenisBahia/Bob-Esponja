@@ -5,6 +5,7 @@ import { ApiService, DashboardDto, HoldingDto, ProjectionResultDto, ProjectionSe
 import { AuthService, CurrentUser } from '../../services/auth.service';
 import { AddTransactionModalComponent } from '../../components/add-transaction-modal/add-transaction-modal.component';
 import { BuyHistoryModalComponent } from '../../components/buy-history-modal/buy-history-modal.component';
+import { SellModalComponent } from '../../components/sell-modal/sell-modal.component';
 import { ShareProfileModalComponent } from '../../components/share-profile-modal/share-profile-modal.component';
 import { SharingContextService } from '../../services/sharing-context.service';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -39,7 +40,7 @@ const DARK_SCALE_DEFAULTS = {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, AddTransactionModalComponent, BuyHistoryModalComponent, ShareProfileModalComponent],
+  imports: [CommonModule, FormsModule, AddTransactionModalComponent, BuyHistoryModalComponent, SellModalComponent, ShareProfileModalComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -54,6 +55,10 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   showBuyHistoryModal = false;
   selectedHoldingId: number | null = null;
   showShareModal = false;
+
+  // Sell modal
+  showSellModal = false;
+  selectedSellHolding: HoldingDto | null = null;
 
   @ViewChild('allocationChart') allocationChartRef!: ElementRef<HTMLCanvasElement>;
   private pieChart: Chart | null = null;
@@ -178,10 +183,12 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
         case 'avgCost':      av = a.averageCost;                             bv = b.averageCost; break;
         case 'currentPrice': av = a.currentPrice;                            bv = b.currentPrice; break;
         case 'totalValue':   av = a.totalValue;                              bv = b.totalValue; break;
+        case 'totalGainLoss': av = this.getHoldingTotalGainLoss(a);          bv = this.getHoldingTotalGainLoss(b); break;
         case 'daily':        av = a.dailyMetrics.gainLossEur;                bv = b.dailyMetrics.gainLossEur; break;
         case 'weekly':       av = a.weeklyMetrics.gainLossEur;               bv = b.weeklyMetrics.gainLossEur; break;
         case 'monthly':      av = a.monthlyMetrics.gainLossEur;              bv = b.monthlyMetrics.gainLossEur; break;
         case 'ytd':          av = a.ytdMetrics.gainLossEur;                  bv = b.ytdMetrics.gainLossEur; break;
+        case 'taxPaid':      av = a.totalTaxPaid;                            bv = b.totalTaxPaid; break;
         default: return 0;
       }
       if (av < bv) return -dir;
@@ -1739,6 +1746,21 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     return value.toFixed(4);
   }
 
+  getHoldingTotalCost(holding: HoldingDto): number {
+    return holding.quantity * holding.averageCost;
+  }
+
+  getHoldingTotalGainLoss(holding: HoldingDto): number {
+    return holding.totalValue - this.getHoldingTotalCost(holding);
+  }
+
+  getHoldingTotalGainLossPercent(holding: HoldingDto): number | null {
+    const totalCost = this.getHoldingTotalCost(holding);
+    if (totalCost <= 0) return null;
+
+    return (this.getHoldingTotalGainLoss(holding) / totalCost) * 100;
+  }
+
   getMetricsClass(gainLossEur: number): string {
     return gainLossEur >= 0 ? 'positive' : 'negative';
   }
@@ -1770,6 +1792,25 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     // A transaction was deleted — reload portfolio data so holdings & metrics stay in sync
     this.loadDashboard();
     this.loadProjection();
+  }
+
+  onSellClick(holding: HoldingDto): void {
+    this.selectedSellHolding = holding;
+    this.showSellModal = true;
+    this.cdr.markForCheck();
+  }
+
+  onSellModalClosed(): void {
+    this.showSellModal = false;
+    this.selectedSellHolding = null;
+    this.cdr.markForCheck();
+  }
+
+  onSellConfirmed(): void {
+    this.showSellModal = false;
+    this.selectedSellHolding = null;
+    this.loadDashboard();
+    this.cdr.markForCheck();
   }
 
 

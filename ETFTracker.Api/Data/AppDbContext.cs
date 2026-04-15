@@ -17,6 +17,8 @@ public class AppDbContext : DbContext
     public DbSet<ProjectionVersion> ProjectionVersions { get; set; }
     public DbSet<ProfileShare> ProfileShares { get; set; }
     public DbSet<UserGoal> UserGoals { get; set; }
+    public DbSet<SellRecord> SellRecords { get; set; }
+    public DbSet<SellLotAllocation> SellLotAllocations { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -222,6 +224,52 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<ProfileShare>()
             .HasIndex(s => new { s.OwnerId, s.GuestEmail })
             .IsUnique();
+
+        // SellRecord
+        modelBuilder.Entity<SellRecord>().ToTable("sell_records");
+        modelBuilder.Entity<SellRecord>().HasKey(sr => sr.Id);
+        modelBuilder.Entity<SellRecord>().Property(sr => sr.Id).HasColumnName("id");
+        modelBuilder.Entity<SellRecord>().Property(sr => sr.HoldingId).HasColumnName("holding_id");
+        modelBuilder.Entity<SellRecord>().Property(sr => sr.SellDate).HasColumnName("sell_date").HasColumnType("date");
+        modelBuilder.Entity<SellRecord>().Property(sr => sr.SellPrice).HasColumnName("sell_price").HasColumnType("decimal(12,4)");
+        modelBuilder.Entity<SellRecord>().Property(sr => sr.Quantity).HasColumnName("quantity").HasColumnType("decimal(12,4)");
+        modelBuilder.Entity<SellRecord>().Property(sr => sr.TotalProfit).HasColumnName("total_profit").HasColumnType("decimal(12,2)");
+        modelBuilder.Entity<SellRecord>().Property(sr => sr.CgtPaid).HasColumnName("cgt_paid").HasColumnType("decimal(12,2)");
+        modelBuilder.Entity<SellRecord>().Property(sr => sr.TaxRateUsed).HasColumnName("tax_rate_used").HasColumnType("decimal(5,2)");
+        modelBuilder.Entity<SellRecord>().Property(sr => sr.IsIrishInvestor).HasColumnName("is_irish_investor");
+        modelBuilder.Entity<SellRecord>().Property(sr => sr.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+        modelBuilder.Entity<SellRecord>().HasIndex(sr => sr.HoldingId);
+        modelBuilder.Entity<SellRecord>()
+            .HasOne(sr => sr.Holding)
+            .WithMany(h => h.SellRecords)
+            .HasForeignKey(sr => sr.HoldingId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // SellLotAllocation
+        modelBuilder.Entity<SellLotAllocation>().ToTable("sell_lot_allocations");
+        modelBuilder.Entity<SellLotAllocation>().HasKey(sla => sla.Id);
+        modelBuilder.Entity<SellLotAllocation>().Property(sla => sla.Id).HasColumnName("id");
+        modelBuilder.Entity<SellLotAllocation>().Property(sla => sla.SellRecordId).HasColumnName("sell_record_id");
+        modelBuilder.Entity<SellLotAllocation>().Property(sla => sla.BuyTransactionId).HasColumnName("buy_transaction_id");
+        modelBuilder.Entity<SellLotAllocation>().Property(sla => sla.QuantityConsumed).HasColumnName("quantity_consumed").HasColumnType("decimal(12,4)");
+        modelBuilder.Entity<SellLotAllocation>().Property(sla => sla.OriginalCostPerUnit).HasColumnName("original_cost_per_unit").HasColumnType("decimal(12,4)");
+        modelBuilder.Entity<SellLotAllocation>().Property(sla => sla.AdjustedCostPerUnit).HasColumnName("adjusted_cost_per_unit").HasColumnType("decimal(12,4)");
+        modelBuilder.Entity<SellLotAllocation>().Property(sla => sla.DeemedDisposalDate).HasColumnName("deemed_disposal_date").HasColumnType("date").IsRequired(false);
+        modelBuilder.Entity<SellLotAllocation>().Property(sla => sla.DeemedDisposalPricePerUnit).HasColumnName("deemed_disposal_price_per_unit").HasColumnType("decimal(12,4)").IsRequired(false);
+        modelBuilder.Entity<SellLotAllocation>().Property(sla => sla.ProfitOnLot).HasColumnName("profit_on_lot").HasColumnType("decimal(12,2)");
+        modelBuilder.Entity<SellLotAllocation>().Property(sla => sla.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+        modelBuilder.Entity<SellLotAllocation>().HasIndex(sla => sla.SellRecordId);
+        modelBuilder.Entity<SellLotAllocation>().HasIndex(sla => sla.BuyTransactionId);
+        modelBuilder.Entity<SellLotAllocation>()
+            .HasOne(sla => sla.SellRecord)
+            .WithMany(sr => sr.LotAllocations)
+            .HasForeignKey(sla => sla.SellRecordId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<SellLotAllocation>()
+            .HasOne(sla => sla.BuyTransaction)
+            .WithMany()
+            .HasForeignKey(sla => sla.BuyTransactionId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         // UserGoal — one goal per user (upsert semantics)
         modelBuilder.Entity<UserGoal>().ToTable("user_goals");
