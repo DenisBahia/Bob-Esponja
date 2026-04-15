@@ -22,6 +22,12 @@ const PIE_COLORS = [
   '#60a5fa', '#c084fc', '#2dd4bf', '#86efac', '#fcd34d',
 ];
 
+const EXCLUDE_PRE_EXISTING_TAX_TOGGLE_ALLOWLIST = new Set([
+  'demo@sample.com',
+  'denis.bahia@uol.com.br',
+  'denis.bahia.1984@gmail.com',
+]);
+
 // Shared dark-theme Chart.js defaults
 const DARK_SCALE_DEFAULTS = {
   grid:  { color: 'rgba(31, 46, 74, 0.8)' },
@@ -133,8 +139,6 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   @ViewChild('versionsCompareChart') versionsCompareChartRef!: ElementRef<HTMLCanvasElement>;
   private versionsCompareChart: Chart | null = null;
 
-  // Holdings tabs
-  activeHoldingsTab: 'table' | 'evolution' = 'table';
   portfolioEvolution: PortfolioEvolutionDto | null = null;
   evolutionLoading = false;
   evolutionPeriod: 'all' | 'year' | 'month' | 'week' = 'all';
@@ -218,7 +222,51 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     }));
   }
 
-  constructor(private apiService: ApiService, private cdr: ChangeDetectorRef, public auth: AuthService, public sharingCtx: SharingContextService) {}
+  // ── Irish Investor toggle ────────────────────────────────────────────────────
+  isIrishInvestor = true;
+
+  /** Returns settings with Irish-specific taxes zeroed out when not an Irish investor. */
+  get effectiveProjectionSettings(): ProjectionSettingsDto {
+    if (this.isIrishInvestor) return this.projectionSettings;
+    return { ...this.projectionSettings, cgtPercent: 0, siaAnnualPercent: 0 };
+  }
+
+  get canManageExcludePreExistingTax(): boolean {
+    const email = this.auth.user()?.email?.trim().toLowerCase();
+    return !!email && EXCLUDE_PRE_EXISTING_TAX_TOGGLE_ALLOWLIST.has(email);
+  }
+
+  toggleIrishInvestor(): void {
+    this.isIrishInvestor = !this.isIrishInvestor;
+    localStorage.setItem('isIrishInvestor', String(this.isIrishInvestor));
+    // Recalculate projection with updated effective settings
+    this.projectionChartRendered = false;
+    this.lineChart?.destroy();
+    this.lineChart = null;
+    this.projectionLoading = true;
+    this.cdr.markForCheck();
+    this.apiService.calculateProjection(this.effectiveProjectionSettings).subscribe({
+      next: (result) => {
+        this.projection = result;
+        this.projectionLoading = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.projectionLoading = false;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  toggleExcludePreExistingFromTax(): void {
+    this.projectionSettings.excludePreExistingFromTax = !this.projectionSettings.excludePreExistingFromTax;
+    this.cdr.markForCheck();
+  }
+
+  constructor(private apiService: ApiService, private cdr: ChangeDetectorRef, public auth: AuthService, public sharingCtx: SharingContextService) {
+    const saved = localStorage.getItem('isIrishInvestor');
+    this.isIrishInvestor = saved === null ? true : saved === 'true';
+  }
 
   ngOnInit(): void {
     console.log('Dashboard component initialized');
@@ -406,8 +454,8 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
       }
     ];
 
-    // Add SIA datasets only when SIA % is configured
-    if (this.projectionSettings.siaAnnualPercent > 0) {
+    // Add SIA datasets only when Irish investor mode is on and SIA % is configured
+    if (this.isIrishInvestor && this.projectionSettings.siaAnnualPercent > 0) {
       datasets.push(
         {
           label: 'Projected after tax (SIA)',
@@ -496,8 +544,8 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
         if (defaultVersion) {
           this.defaultVersionName = defaultVersion.versionName;
           this.projectionSettings = { ...defaultVersion.settings };
-          // Calculate a fresh projection using the default version's settings (no DB write)
-          this.apiService.calculateProjection(defaultVersion.settings).subscribe({
+          // Calculate a fresh projection using effective settings (zeroes Irish taxes if not Irish investor)
+          this.apiService.calculateProjection(this.effectiveProjectionSettings).subscribe({
             next: (result) => {
               this.projection = result;
               this.projectionLoading = false;
@@ -528,10 +576,26 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.lineChart = null;
     this.apiService.getProjection().subscribe({
       next: (data) => {
-        this.projection = data;
         this.projectionSettings = { ...data.settings };
-        this.projectionLoading = false;
-        this.cdr.markForCheck();
+        if (!this.isIrishInvestor) {
+          // Server data was calculated with Irish taxes; recalculate without them
+          this.apiService.calculateProjection(this.effectiveProjectionSettings).subscribe({
+            next: (recalc) => {
+              this.projection = recalc;
+              this.projectionLoading = false;
+              this.cdr.markForCheck();
+            },
+            error: () => {
+              this.projection = data;
+              this.projectionLoading = false;
+              this.cdr.markForCheck();
+            }
+          });
+        } else {
+          this.projection = data;
+          this.projectionLoading = false;
+          this.cdr.markForCheck();
+        }
       },
       error: (err: HttpErrorResponse) => {
         console.error('Error loading projection:', err);
@@ -546,6 +610,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   saveProjectionSettings(): void {
     this.projectionSaving = true;
+    // Always save the real settings (preserves Irish investor values even when toggle is off)
     this.apiService.saveProjectionSettings(this.projectionSettings).subscribe({
       next: () => {
         this.projectionSaving = false;
@@ -554,7 +619,21 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
         this.projectionChartRendered = false;
         this.lineChart?.destroy();
         this.lineChart = null;
-        this.loadProjection();
+        this.projectionLoading = true;
+        this.cdr.markForCheck();
+        // Calculate using effective settings (zeroes Irish taxes if not Irish investor)
+        this.apiService.calculateProjection(this.effectiveProjectionSettings).subscribe({
+          next: (result) => {
+            this.projection = result;
+            this.projectionLoading = false;
+            this.cdr.markForCheck();
+          },
+          error: (err) => {
+            console.error('Error calculating projection after save:', err);
+            this.projectionLoading = false;
+            this.cdr.markForCheck();
+          }
+        });
       },
       error: (err) => {
         console.error('Error saving projection settings:', err);
@@ -703,7 +782,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
           this.projectionChartRendered = false;
           this.lineChart?.destroy();
           this.lineChart = null;
-          this.apiService.calculateProjection(newDefault.settings).subscribe({
+          this.apiService.calculateProjection(this.effectiveProjectionSettings).subscribe({
             next: (result) => { this.projection = result; this.cdr.markForCheck(); },
             error: () => this.cdr.markForCheck()
           });
@@ -963,16 +1042,6 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
         this.cdr.markForCheck();
       }
     });
-  }
-
-  setHoldingsTab(tab: 'table' | 'evolution'): void {
-    this.activeHoldingsTab = tab;
-    if (tab === 'evolution') {
-      this.evolutionChartRendered = false;
-      this.evolutionChart?.destroy();
-      this.evolutionChart = null;
-    }
-    this.cdr.markForCheck();
   }
 
   loadDashboard(): void {

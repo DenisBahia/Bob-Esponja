@@ -10,20 +10,17 @@ namespace ETFTracker.Api.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
-                name: "price_source",
-                table: "holdings",
-                type: "character varying(50)",
-                maxLength: 50,
-                nullable: true);
+            migrationBuilder.Sql(
+                @"ALTER TABLE holdings
+ADD COLUMN IF NOT EXISTS price_source character varying(50);");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "price_source",
-                table: "holdings");
+            // No-op: this migration is a duplicate of an earlier migration that already
+            // introduced holdings.price_source, so rolling back only this later migration
+            // must not remove the column.
         }
     }
 }

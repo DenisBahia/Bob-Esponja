@@ -253,33 +253,73 @@
       }
 
       .btn-logout {
+        // ...existing code...
+      }
+
+      // ── Irish Investor Toggle ──────────────────────────────────────────────
+      .irish-investor-toggle {
         flex-shrink: 0;
         display: flex;
         align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem 1rem;
-        background: var(--accent);
-        color: #fff;
-        border: none;
+        gap: 0.45rem;
+        padding: 0.4rem 0.75rem;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 8px;
-        font-size: 0.85rem;
-        font-weight: 600;
         cursor: pointer;
         transition: all 0.2s;
-        white-space: nowrap;
+        user-select: none;
 
-        .logout-icon {
-          font-size: 1rem;
+        .irish-toggle-label {
+          font-size: 0.78rem;
+          font-weight: 600;
+          color: #8da0bf;
+          white-space: nowrap;
+          transition: color 0.2s;
+        }
+
+        .irish-toggle-track {
+          position: relative;
+          width: 30px;
+          height: 16px;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 16px;
+          transition: background 0.2s;
+          flex-shrink: 0;
+
+          .irish-toggle-thumb {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #8da0bf;
+            transition: transform 0.2s, background 0.2s;
+          }
+        }
+
+        &.active {
+          background: rgba(20, 217, 144, 0.08);
+          border-color: rgba(20, 217, 144, 0.3);
+
+          .irish-toggle-label {
+            color: #14d990;
+          }
+
+          .irish-toggle-track {
+            background: rgba(20, 217, 144, 0.25);
+
+            .irish-toggle-thumb {
+              transform: translateX(14px);
+              background: #14d990;
+            }
+          }
         }
 
         &:hover {
-          background: var(--accent-hover);
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(79, 142, 247, 0.3);
-        }
-
-        &:active {
-          transform: translateY(0);
+          background: rgba(20, 217, 144, 0.12);
+          border-color: rgba(20, 217, 144, 0.4);
         }
       }
     }
@@ -318,6 +358,10 @@
         .logout-text {
           display: none;
         }
+      }
+
+      .irish-investor-toggle .irish-toggle-label {
+        display: none;
       }
     }
   }
@@ -637,6 +681,76 @@ th.sortable {
                 height: 16px;
                 accent-color: var(--accent);
                 cursor: pointer;
+              }
+            }
+
+            .setting-toggle {
+              display: inline-flex;
+              align-items: center;
+              gap: 0.75rem;
+              padding: 0.45rem 0.7rem;
+              border: 1px solid var(--border-light);
+              border-radius: 999px;
+              background: rgba(255, 255, 255, 0.03);
+              color: var(--text-secondary);
+              cursor: pointer;
+              transition: all 0.18s ease;
+
+              .setting-toggle-label {
+                font-size: 0.82rem;
+                font-weight: 500;
+                color: inherit;
+                text-transform: none;
+                letter-spacing: normal;
+                white-space: nowrap;
+              }
+
+              .setting-toggle-track {
+                position: relative;
+                width: 34px;
+                height: 18px;
+                border-radius: 999px;
+                background: rgba(255, 255, 255, 0.12);
+                transition: background 0.18s ease;
+                flex-shrink: 0;
+
+                .setting-toggle-thumb {
+                  position: absolute;
+                  top: 2px;
+                  left: 2px;
+                  width: 14px;
+                  height: 14px;
+                  border-radius: 50%;
+                  background: #8da0bf;
+                  transition: transform 0.18s ease, background 0.18s ease;
+                }
+              }
+
+              &:hover {
+                border-color: rgba(79, 142, 247, 0.45);
+                background: rgba(79, 142, 247, 0.08);
+                color: var(--text-primary);
+              }
+
+              &:focus-visible {
+                outline: none;
+                box-shadow: 0 0 0 3px var(--accent-glow);
+                border-color: var(--accent);
+              }
+
+              &.active {
+                border-color: rgba(20, 217, 144, 0.35);
+                background: rgba(20, 217, 144, 0.08);
+                color: var(--text-primary);
+
+                .setting-toggle-track {
+                  background: rgba(20, 217, 144, 0.24);
+
+                  .setting-toggle-thumb {
+                    transform: translateX(16px);
+                    background: #14d990;
+                  }
+                }
               }
             }
           }
@@ -1252,6 +1366,131 @@ th.sortable {
             }
           }
         }
+      }
+    }
+
+    .empty-state-card {
+      @extend %card;
+      padding: 1.5rem;
+      text-align: center;
+      background: linear-gradient(135deg, rgba(79, 142, 247, 0.06) 0%, rgba(124, 92, 252, 0.06) 100%);
+      border-color: rgba(79, 142, 247, 0.22);
+
+      .empty-state-title {
+        margin: 0 0 0.35rem;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--text-primary);
+      }
+
+      .empty-state-text {
+        margin: 0;
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+      }
+
+      .btn {
+        margin-top: 1rem;
+        padding: 0.55rem 1.35rem;
+        border: none;
+        border-radius: 7px;
+        font-size: 0.88rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.18s;
+
+        &.btn-primary {
+          background: var(--accent);
+          color: #fff;
+
+          &:hover {
+            background: var(--accent-hover);
+          }
+        }
+      }
+    }
+
+    // ── PORTFOLIO EVOLUTION SECTION ───────────────────────────────────────
+    .evolution-section {
+      margin-bottom: 2rem;
+
+      h2 {
+        @extend %section-heading;
+      }
+
+      .evolution-chart-wrapper {
+        height: 400px;
+        position: relative;
+        @extend %card;
+        padding: 1.25rem;
+      }
+
+      .evolution-loading {
+        text-align: center;
+        padding: 2rem;
+        color: var(--text-muted);
+        font-size: 0.9rem;
+      }
+
+      .evolution-legend {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+        padding: 0 0.25rem;
+        font-size: 0.82rem;
+        color: var(--text-secondary);
+
+        .legend-dot {
+          display: inline-block;
+          width: 11px;
+          height: 11px;
+          border-radius: 50%;
+          flex-shrink: 0;
+
+          &.buy-dot  { background: var(--negative); border: 2px solid #c0392b; }
+          &.value-dot { background: var(--accent); margin-left: 1rem; }
+        }
+
+        .legend-label { margin-right: 0.5rem; }
+      }
+
+      .evolution-period-nav {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+
+        .period-btn {
+          padding: 0.35rem 0.9rem;
+          border-radius: 999px;
+          border: 1px solid var(--border);
+          background: transparent;
+          color: var(--text-secondary);
+          font-size: 0.82rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.18s;
+
+          &:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+          }
+
+          &.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+            font-weight: 600;
+          }
+        }
+      }
+
+      .evolution-no-data {
+        text-align: center;
+        padding: 2rem;
+        color: var(--text-muted);
+        font-size: 0.9rem;
       }
     }
 

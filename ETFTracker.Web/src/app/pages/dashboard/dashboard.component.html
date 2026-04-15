@@ -34,6 +34,16 @@
             <span>🔗</span>
             <span class="share-text">Sharing</span>
           </button>
+          <!-- Irish Investor toggle -->
+          <div class="irish-investor-toggle"
+               [class.active]="isIrishInvestor"
+               (click)="toggleIrishInvestor()"
+               title="Toggle Irish investor mode — enables Deemed Disposal, Exit Tax, and SIA tax calculations">
+            <span class="irish-toggle-label">🍀 Irish</span>
+            <span class="irish-toggle-track">
+              <span class="irish-toggle-thumb"></span>
+            </span>
+          </div>
           <button class="btn-logout" (click)="auth.logout()" title="Sign out">
             <span class="logout-icon">🚪</span>
             <span class="logout-text">Sign out</span>
@@ -148,19 +158,14 @@
           <div *ngIf="sharingCtx.isReadOnly()" class="readonly-notice">🔒 Read-only view — you cannot add transactions</div>
         </div>
 
-        <!-- Tab navigation -->
-        <div class="holdings-tab-nav">
-          <button class="tab-btn" [class.active]="activeHoldingsTab === 'table'" (click)="setHoldingsTab('table')">
-            📋 Holdings Table
-          </button>
-          <button class="tab-btn" [class.active]="activeHoldingsTab === 'evolution'" (click)="setHoldingsTab('evolution')">
-            📈 Portfolio Evolution
-          </button>
-        </div>
+        <div class="tab-panel">
+          <div class="empty-state-card" *ngIf="dashboard.holdings.length === 0">
+            <p class="empty-state-title">No assets yet.</p>
+            <p class="empty-state-text">Start your portfolio by adding your first asset buy.</p>
+            <button class="btn btn-primary" (click)="onAddTransactionClick()" *ngIf="!sharingCtx.isReadOnly()">+ Add First Buy</button>
+          </div>
 
-        <!-- Tab: Holdings Table -->
-        <div class="tab-panel" *ngIf="activeHoldingsTab === 'table'">
-          <div class="table-wrapper">
+          <div class="table-wrapper" *ngIf="dashboard.holdings.length > 0">
             <table class="holdings-table">
               <thead>
                 <tr>
@@ -231,40 +236,45 @@
             </table>
           </div>
         </div>
+      </div>
 
-        <!-- Tab: Portfolio Evolution Chart -->
-        <div class="tab-panel" *ngIf="activeHoldingsTab === 'evolution'">
-          <div *ngIf="evolutionLoading" class="evolution-loading">
-            <p>Loading portfolio evolution…</p>
-          </div>
-          <ng-container *ngIf="portfolioEvolution && !evolutionLoading">
-            <!-- Period filter -->
-            <div class="evolution-period-nav">
-              <button class="period-btn" [class.active]="evolutionPeriod === 'all'" (click)="setEvolutionPeriod('all')">Whole Period</button>
-              <button class="period-btn" [class.active]="evolutionPeriod === 'year'" (click)="setEvolutionPeriod('year')">Current Year</button>
-              <button class="period-btn" [class.active]="evolutionPeriod === 'month'" (click)="setEvolutionPeriod('month')">Current Month</button>
-              <button class="period-btn" [class.active]="evolutionPeriod === 'week'" (click)="setEvolutionPeriod('week')">Current Week</button>
-            </div>
-            <div class="evolution-chart-wrapper" *ngIf="filteredEvolutionPoints.length > 0">
-              <canvas #evolutionChart></canvas>
-            </div>
-            <div class="evolution-no-data" *ngIf="filteredEvolutionPoints.length === 0">
-              <p>No data available for the selected period.</p>
-            </div>
-            <div class="evolution-legend">
-              <span class="legend-dot buy-dot"></span>
-              <span class="legend-label">Buy recorded on this day</span>
-              <span class="legend-dot value-dot"></span>
-              <span class="legend-label">Portfolio value</span>
-            </div>
-          </ng-container>
+      <div class="evolution-section">
+        <h2>Portfolio Evolution</h2>
+        <div *ngIf="evolutionLoading" class="evolution-loading">
+          <p>Loading portfolio evolution…</p>
         </div>
+        <ng-container *ngIf="portfolioEvolution && !evolutionLoading">
+          <!-- Period filter -->
+          <div class="evolution-period-nav">
+            <button class="period-btn" [class.active]="evolutionPeriod === 'all'" (click)="setEvolutionPeriod('all')">Whole Period</button>
+            <button class="period-btn" [class.active]="evolutionPeriod === 'year'" (click)="setEvolutionPeriod('year')">Current Year</button>
+            <button class="period-btn" [class.active]="evolutionPeriod === 'month'" (click)="setEvolutionPeriod('month')">Current Month</button>
+            <button class="period-btn" [class.active]="evolutionPeriod === 'week'" (click)="setEvolutionPeriod('week')">Current Week</button>
+          </div>
+          <div class="evolution-chart-wrapper" *ngIf="filteredEvolutionPoints.length > 0">
+            <canvas #evolutionChart></canvas>
+          </div>
+          <div class="evolution-no-data" *ngIf="filteredEvolutionPoints.length === 0">
+            <p>No data available for the selected period.</p>
+          </div>
+          <div class="evolution-legend">
+            <span class="legend-dot buy-dot"></span>
+            <span class="legend-label">Buy recorded on this day</span>
+            <span class="legend-dot value-dot"></span>
+            <span class="legend-label">Portfolio value</span>
+          </div>
+        </ng-container>
       </div>
 
       <!-- Allocation Pie Chart -->
       <div class="allocation-section">
         <h2>Portfolio Allocation</h2>
-        <div class="allocation-content">
+        <div class="empty-state-card" *ngIf="allocationSlices.length === 0">
+          <p class="empty-state-title">No allocation yet.</p>
+          <p class="empty-state-text">Add your first asset buy to see your portfolio allocation.</p>
+          <button class="btn btn-primary" (click)="onAddTransactionClick()" *ngIf="!sharingCtx.isReadOnly()">+ Add First Buy</button>
+        </div>
+        <div class="allocation-content" *ngIf="allocationSlices.length > 0">
           <div class="pie-wrapper">
             <canvas #allocationChart></canvas>
           </div>
@@ -344,36 +354,42 @@
                  [(ngModel)]="projectionSettings.inflationPercent" />
         </div>
 
-        <!-- Tax Section: Deemed Disposal / Exit Tax -->
+        <!-- Tax Section: Deemed Disposal / Exit Tax (CGT for non-Irish investors) -->
         <div class="tax-section">
-          <div class="tax-section-header">Deemed Disposal / Exit Tax</div>
+          <div class="tax-section-header">{{ isIrishInvestor ? 'Deemed Disposal / Exit Tax' : 'CGT' }}</div>
           <div class="tax-section-fields">
-            <div class="param-group">
+            <div class="param-group" *ngIf="isIrishInvestor">
               <label for="cgt">Deemed Disposal %</label>
               <input id="cgt" type="number" step="0.1" min="0" max="100"
                      [(ngModel)]="projectionSettings.cgtPercent" />
             </div>
 
             <div class="param-group">
-              <label for="exitTax">Exit Tax %</label>
+              <label for="exitTax">{{ isIrishInvestor ? 'Exit Tax %' : 'CGT %' }}</label>
               <input id="exitTax" type="number" step="0.1" min="0" max="100"
                      [(ngModel)]="projectionSettings.exitTaxPercent" />
             </div>
 
-            <div class="param-group checkbox-group">
-              <label class="checkbox-label" for="excludePreExisting">
-                <input id="excludePreExisting" type="checkbox"
-                       [(ngModel)]="projectionSettings.excludePreExistingFromTax" />
-                Exclude buys before 01/01/2026 from tax
-              </label>
+            <div class="param-group checkbox-group" *ngIf="canManageExcludePreExistingTax">
+              <button type="button"
+                      class="setting-toggle"
+                      [class.active]="projectionSettings.excludePreExistingFromTax"
+                      (click)="toggleExcludePreExistingFromTax()"
+                      aria-label="Exclude buys before 01/01/2026 from tax"
+                      [attr.aria-pressed]="projectionSettings.excludePreExistingFromTax">
+                <span class="setting-toggle-label">Exclude buys before 01/01/2026 from tax</span>
+                <span class="setting-toggle-track">
+                  <span class="setting-toggle-thumb"></span>
+                </span>
+              </button>
             </div>
           </div>
         </div>
 
         <div class="tax-section-separator"></div>
 
-        <!-- Tax Section: SIA (Alternative) -->
-        <div class="tax-section">
+        <!-- Tax Section: SIA (Alternative) — Irish investors only -->
+        <div class="tax-section" *ngIf="isIrishInvestor">
           <div class="tax-section-header">
             SIA Tax (Alternative)
             <span class="sia-tooltip" title="Replaces Deemed Disposal &amp; Exit Tax — charged yearly on total portfolio value, not just profits.">ℹ️</span>
@@ -453,7 +469,7 @@
           <p>Calculating projection…</p>
         </div>
         <div class="projection-table-wrapper" *ngIf="projection && !projectionLoading">
-          <div class="table-controls" *ngIf="projectionSettings.siaAnnualPercent > 0">
+          <div class="table-controls" *ngIf="isIrishInvestor && projectionSettings.siaAnnualPercent > 0">
             <label class="checkbox-label show-sia-checkbox" for="showSiaNumbers">
               <input id="showSiaNumbers" type="checkbox" [(ngModel)]="showSiaNumbers" />
               Show SIA numbers
@@ -488,7 +504,9 @@
                 <td class="value-col inflation-col">{{ formatCurrency(point.inflationCorrectedAmount) }}</td>
                 <td class="value-col tax-col" [ngClass]="(point.taxPaid + point.exitTaxPaid) > 0 ? 'tax-due' : ''">
                   {{ (point.taxPaid + point.exitTaxPaid) > 0 ? formatCurrency(point.taxPaid + point.exitTaxPaid) : '—' }}
-                  <span *ngIf="point.exitTaxPaid > 0" class="exit-tax-badge" title="Includes exit tax of {{ formatCurrency(point.exitTaxPaid) }}">ET</span>
+                  <span *ngIf="point.exitTaxPaid > 0" class="exit-tax-badge"
+                        [title]="isIrishInvestor ? ('Includes exit tax of ' + formatCurrency(point.exitTaxPaid)) : ('Includes CGT of ' + formatCurrency(point.exitTaxPaid))">
+                    {{ isIrishInvestor ? 'ET' : 'CGT' }}</span>
                 </td>
                 <td class="value-col after-tax-col">{{ formatCurrency(point.afterTaxTotalAmount) }}</td>
                 <td class="value-col after-tax-inflation-col">{{ formatCurrency(point.afterTaxInflationCorrectedAmount) }}</td>
