@@ -145,10 +145,16 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   goalLoading = false;
   goalSaving = false;
   goalSavingAsId: number | null = null;   // version id currently being saved as goal
+  goalSubTab: 'yearly' | 'monthly' = 'yearly';
+  goalVersionSettings: ProjectionSettingsDto | null = null;
 
   @ViewChild('goalChart') goalChartRef!: ElementRef<HTMLCanvasElement>;
   private goalChart: Chart | null = null;
   private goalChartRendered = false;
+
+  @ViewChild('goalMonthlyChart') goalMonthlyChartRef!: ElementRef<HTMLCanvasElement>;
+  private goalMonthlyChart: Chart | null = null;
+  private goalMonthlyChartRendered = false;
 
   portfolioEvolution: PortfolioEvolutionDto | null = null;
   evolutionLoading = false;
@@ -306,10 +312,13 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.projectionChartRendered = false;
     this.evolutionChartRendered = false;
     this.goalChartRendered = false;
+    this.goalMonthlyChartRendered = false;
+    this.goalVersionSettings = null;
     this.pieChart?.destroy(); this.pieChart = null;
     this.lineChart?.destroy(); this.lineChart = null;
     this.evolutionChart?.destroy(); this.evolutionChart = null;
     this.goalChart?.destroy(); this.goalChart = null;
+    this.goalMonthlyChart?.destroy(); this.goalMonthlyChart = null;
     this.cdr.detectChanges();
     this.loadDashboard();
     this.initProjection();
@@ -325,6 +334,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.defaultVersionName = null;
     this.userGoal = null;
     this.goalDataPoints = [];
+    this.goalVersionSettings = null;
     this.loading = true;
     this.projectionLoading = true;
     this.projectionVersions = [];
@@ -332,10 +342,12 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.projectionChartRendered = false;
     this.evolutionChartRendered = false;
     this.goalChartRendered = false;
+    this.goalMonthlyChartRendered = false;
     this.pieChart?.destroy(); this.pieChart = null;
     this.lineChart?.destroy(); this.lineChart = null;
     this.evolutionChart?.destroy(); this.evolutionChart = null;
     this.goalChart?.destroy(); this.goalChart = null;
+    this.goalMonthlyChart?.destroy(); this.goalMonthlyChart = null;
     this.cdr.detectChanges();
     this.loadDashboard();
     this.initProjection();
@@ -367,11 +379,23 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     if (
       this.activeMainSection === 'goal' &&
       !this.goalChartRendered &&
+      this.goalSubTab === 'yearly' &&
       this.goalDataPoints.length > 0 &&
       this.goalChartRef?.nativeElement
     ) {
       this.goalChartRendered = true;
       this.renderGoalChart();
+    }
+    if (
+      this.activeMainSection === 'goal' &&
+      this.goalSubTab === 'monthly' &&
+      !this.goalMonthlyChartRendered &&
+      this.goalVersionSettings !== null &&
+      this.goalDataPoints.length > 0 &&
+      this.goalMonthlyChartRef?.nativeElement
+    ) {
+      this.goalMonthlyChartRendered = true;
+      this.renderMonthlyGoalChart();
     }
   }
 
@@ -381,6 +405,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.evolutionChart?.destroy();
     this.versionsCompareChart?.destroy();
     this.goalChart?.destroy();
+    this.goalMonthlyChart?.destroy();
   }
 
   private renderPieChart(): void {
@@ -708,6 +733,8 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.versionsCompareChart = null;
     this.goalChart?.destroy();
     this.goalChart = null;
+    this.goalMonthlyChart?.destroy();
+    this.goalMonthlyChart = null;
 
     if (section === 'goal' && !this.userGoal && !this.goalLoading) {
       this.loadGoal();
@@ -888,9 +915,28 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
         this.goalDataPoints = goal.dataPoints.map(p => ({ ...p }));
         this.goalLoading = false;
         this.goalChartRendered = false;
+        this.goalMonthlyChartRendered = false;
         this.goalChart?.destroy();
         this.goalChart = null;
+        this.goalMonthlyChart?.destroy();
+        this.goalMonthlyChart = null;
         this.cdr.markForCheck();
+        // Fetch source version settings for the monthly breakdown chart
+        if (goal.sourceVersionId) {
+          this.apiService.getProjectionVersionDetail(goal.sourceVersionId).subscribe({
+            next: (detail) => {
+              this.goalVersionSettings = detail.settings;
+              this.goalMonthlyChartRendered = false;
+              this.cdr.markForCheck();
+            },
+            error: () => {
+              this.goalVersionSettings = null;
+              this.cdr.markForCheck();
+            }
+          });
+        } else {
+          this.goalVersionSettings = null;
+        }
       },
       error: (err) => {
         // 404 = no goal set yet; any other error is logged
@@ -921,10 +967,14 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
       next: (goal) => {
         this.userGoal = goal;
         this.goalDataPoints = goal.dataPoints.map(p => ({ ...p }));
+        this.goalVersionSettings = version.settings;
         this.goalSavingAsId = null;
         this.goalChartRendered = false;
+        this.goalMonthlyChartRendered = false;
         this.goalChart?.destroy();
         this.goalChart = null;
+        this.goalMonthlyChart?.destroy();
+        this.goalMonthlyChart = null;
         this.cdr.markForCheck();
       },
       error: (err) => {
@@ -980,6 +1030,17 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     const ctx = this.goalChartRef.nativeElement.getContext('2d');
     if (!ctx) return;
 
+    const currentYear     = new Date().getFullYear();
+    const actualValues    = this.computeActualYearlyPositions();
+    // Solid orange: past years (actual end-of-year) + current year (projected year-end)
+    const actualSolidData: (number | null)[] = this.goalDataPoints.map((p, i) =>
+      p.year <= currentYear ? actualValues[i] : null
+    );
+    // Dashed orange: bridges current year into future forecast
+    const actualDashedData: (number | null)[] = this.goalDataPoints.map((p, i) =>
+      p.year >= currentYear ? actualValues[i] : null
+    );
+
     this.goalChart = new Chart(ctx, {
       type: 'line',
       data: {
@@ -995,7 +1056,32 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
             pointRadius: 5,
             pointHoverRadius: 7,
             pointBackgroundColor: '#14d990',
-          }
+          },
+          {
+            label: 'Actual / Estimated Position',
+            data: actualSolidData,
+            borderColor: '#f89b29',
+            backgroundColor: 'rgba(248, 155, 41, 0.07)',
+            fill: false,
+            tension: 0.35,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            pointBackgroundColor: '#f89b29',
+            spanGaps: false,
+          } as any,
+          {
+            label: 'Position Forecast',
+            data: actualDashedData,
+            borderColor: 'rgba(248, 155, 41, 0.55)',
+            backgroundColor: 'rgba(248, 155, 41, 0.03)',
+            fill: false,
+            tension: 0.35,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            pointBackgroundColor: 'rgba(248, 155, 41, 0.55)',
+            borderDash: [5, 4],
+            spanGaps: false,
+          } as any,
         ],
       },
       options: {
@@ -1037,8 +1123,360 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     });
   }
 
+  setGoalSubTab(tab: 'yearly' | 'monthly'): void {
+    if (this.goalSubTab === tab) return;
+    this.goalSubTab = tab;
+    if (tab === 'yearly') {
+      this.goalChartRendered = false;
+      this.goalChart?.destroy();
+      this.goalChart = null;
+    } else {
+      this.goalMonthlyChartRendered = false;
+      this.goalMonthlyChart?.destroy();
+      this.goalMonthlyChart = null;
+    }
+    this.cdr.markForCheck();
+  }
+
+  private computeMonthlyGoalTargets(): { month: number; label: string; value: number; isFuture: boolean }[] | null {
+    if (!this.goalDataPoints.length || !this.goalVersionSettings) return null;
+
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth() + 1; // 1-based
+
+    const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const sortedPoints = [...this.goalDataPoints].sort((a, b) => a.year - b.year);
+    const firstGoalYear = sortedPoints[0].year;
+
+    const currentYearPoint = sortedPoints.find(p => p.year === currentYear);
+    if (!currentYearPoint) return null;
+
+    const settings = this.goalVersionSettings;
+    const mg = Math.pow(1 + settings.yearlyReturnPercent / 100, 1 / 12); // monthly growth factor
+
+    // Year index in the goal array (0 = first goal year) drives the annual buy increase
+    const yearIndex = sortedPoints.findIndex(p => p.year === currentYear);
+    const annualIncreaseFactor = Math.pow(1 + settings.annualBuyIncreasePercent / 100, yearIndex);
+    const monthlyBuy = settings.monthlyBuyAmount * annualIncreaseFactor;
+
+    const decTarget = currentYearPoint.targetValue;
+    const values: number[] = new Array(12);
+
+    if (currentYear === firstGoalYear) {
+      // Case A: BACKWARD from Dec anchor
+      values[11] = decTarget;
+      for (let m = 10; m >= 0; m--) {
+        values[m] = values[m + 1] / mg - monthlyBuy;
+      }
+    } else {
+      // Case B: FORWARD from previous year's Dec target
+      const prevYearPoint = sortedPoints.find(p => p.year === currentYear - 1);
+      if (!prevYearPoint) return null;
+      values[0] = (prevYearPoint.targetValue + monthlyBuy) * mg;
+      for (let m = 1; m < 11; m++) {
+        values[m] = (values[m - 1] + monthlyBuy) * mg;
+      }
+      // Snap December to exact goal target
+      values[11] = decTarget;
+    }
+
+    return values.map((v, i) => ({
+      month: i + 1,
+      label: MONTH_LABELS[i],
+      value: Math.round(v),
+      isFuture: (i + 1) > currentMonth,
+    }));
+  }
+
+  // ── Actual position helpers ──────────────────────────────────────────────────
+
+  /**
+   * Maps each goal-year to its actual end-of-year portfolio value (past years)
+   * or a projected year-end estimate (current / future years).
+   * Past  → last `totalValue` data point found in portfolioEvolution for that year.
+   * Now   → projects current live holdings forward to December using goal settings.
+   * Future→ continues compounding month-by-month from the current-year estimate.
+   */
+  private computeActualYearlyPositions(): (number | null)[] {
+    const today = new Date();
+    const currentYear  = today.getFullYear();
+    const currentMonth = today.getMonth() + 1; // 1-based
+
+    const sortedPoints = [...this.goalDataPoints].sort((a, b) => a.year - b.year);
+    const valueByYear  = new Map<number, number | null>();
+    let prevEstimate: number | null = null;
+
+    for (let i = 0; i < sortedPoints.length; i++) {
+      const year = sortedPoints[i].year;
+
+      if (year < currentYear) {
+        // Use last data point of that calendar year from portfolio evolution
+        const pts = (this.portfolioEvolution?.dataPoints ?? [])
+          .filter(p => p.date.startsWith(`${year}-`));
+        if (pts.length > 0) {
+          prevEstimate = pts[pts.length - 1].totalValue;
+          valueByYear.set(year, prevEstimate);
+        } else {
+          valueByYear.set(year, null);
+        }
+
+      } else if (year === currentYear) {
+        if (!this.goalVersionSettings || !this.dashboard) {
+          valueByYear.set(year, null);
+          prevEstimate = null;
+        } else {
+          const s  = this.goalVersionSettings;
+          const mg = Math.pow(1 + s.yearlyReturnPercent / 100, 1 / 12);
+          const mb = s.monthlyBuyAmount * Math.pow(1 + s.annualBuyIncreasePercent / 100, i);
+          const mm = String(currentMonth).padStart(2, '0');
+          const buyThisMonth = (this.portfolioEvolution?.dataPoints ?? [])
+            .some(p => p.date.startsWith(`${currentYear}-${mm}-`) && p.hasBuy);
+
+          // Start from live holdings; add planned buy if it hasn't happened yet
+          let value = this.dashboard.header.totalHoldingsAmount + (buyThisMonth ? 0 : mb);
+          // Project remaining full months to December
+          for (let m = currentMonth + 1; m <= 12; m++) {
+            value = (value + mb) * mg;
+          }
+          prevEstimate = value;
+          valueByYear.set(year, Math.round(value));
+        }
+
+      } else {
+        // Future year — compound forward 12 months from previous year-end estimate
+        if (!this.goalVersionSettings || prevEstimate === null) {
+          valueByYear.set(year, null);
+          prevEstimate = null;
+        } else {
+          const s  = this.goalVersionSettings;
+          const mg = Math.pow(1 + s.yearlyReturnPercent / 100, 1 / 12);
+          const mb = s.monthlyBuyAmount * Math.pow(1 + s.annualBuyIncreasePercent / 100, i);
+          let value: number = prevEstimate;
+          for (let m = 0; m < 12; m++) {
+            value = (value + mb) * mg;
+          }
+          prevEstimate = value;
+          valueByYear.set(year, Math.round(value));
+        }
+      }
+    }
+
+    // Return values in the original goalDataPoints order (same order as chart labels)
+    return this.goalDataPoints.map(p => valueByYear.get(p.year) ?? null);
+  }
+
+  /**
+   * Returns actual (past) and forecast (current + future) monthly portfolio values
+   * for the current calendar year.
+   * Past months   → last daily snapshot from portfolio evolution for that month.
+   * Current month → live holdings total, plus the planned monthly buy if it hasn't happened yet.
+   * Future months → iterative (prev + monthlyBuy) × monthlyGrowthFactor.
+   */
+  private computeActualMonthlyPositions(): { value: number | null; type: 'actual' | 'current' | 'forecast'; pendingBuyAmount?: number }[] {
+    const today        = new Date();
+    const currentYear  = today.getFullYear();
+    const currentMonth = today.getMonth() + 1; // 1-based
+
+    const s = this.goalVersionSettings;
+    const sortedGoalPoints = [...this.goalDataPoints].sort((a, b) => a.year - b.year);
+    const yearIndex = sortedGoalPoints.findIndex(p => p.year === currentYear);
+    const mg = s ? Math.pow(1 + s.yearlyReturnPercent / 100, 1 / 12) : 1;
+    const mb = s
+      ? s.monthlyBuyAmount * Math.pow(1 + s.annualBuyIncreasePercent / 100, yearIndex >= 0 ? yearIndex : 0)
+      : 0;
+
+    const result: { value: number | null; type: 'actual' | 'current' | 'forecast'; pendingBuyAmount?: number }[] = [];
+    let prevValue: number | null = null;
+
+    for (let m = 1; m <= 12; m++) {
+      const mm = String(m).padStart(2, '0');
+
+      if (m < currentMonth) {
+        // Actual past month — take last data point of that month
+        const pts = (this.portfolioEvolution?.dataPoints ?? [])
+          .filter(p => p.date.startsWith(`${currentYear}-${mm}-`));
+        if (pts.length > 0) {
+          prevValue = pts[pts.length - 1].totalValue;
+          result.push({ value: prevValue, type: 'actual' });
+        } else {
+          result.push({ value: null, type: 'actual' });
+        }
+
+      } else if (m === currentMonth) {
+        if (!this.dashboard) {
+          result.push({ value: null, type: 'current' });
+          prevValue = null;
+        } else {
+          const buyThisMonth = (this.portfolioEvolution?.dataPoints ?? [])
+            .some(p => p.date.startsWith(`${currentYear}-${mm}-`) && p.hasBuy);
+          const value = this.dashboard.header.totalHoldingsAmount + (buyThisMonth ? 0 : mb);
+          prevValue = value;
+          result.push({ value, type: 'current', pendingBuyAmount: (!buyThisMonth && mb > 0) ? mb : undefined });
+        }
+
+      } else {
+        // Future month — extrapolate from previous month
+        if (!s || prevValue === null) {
+          result.push({ value: null, type: 'forecast' });
+        } else {
+          const value: number = (prevValue + mb) * mg;
+          prevValue   = value;
+          result.push({ value: Math.round(value), type: 'forecast' });
+        }
+      }
+    }
+
+    return result;
+  }
+
+  private renderMonthlyGoalChart(): void {
+    this.goalMonthlyChart?.destroy();
+
+    const monthlyData = this.computeMonthlyGoalTargets();
+    if (!monthlyData) return;
+
+    const ctx = this.goalMonthlyChartRef?.nativeElement?.getContext('2d');
+    if (!ctx) return;
+
+    const currentMonth = new Date().getMonth() + 1;
+
+    // Past/current months — solid line; current month bridged into both datasets
+    const pastValues: (number | null)[] = monthlyData.map((p, i) =>
+      (!p.isFuture) ? p.value : null
+    );
+    // Future months — dashed; bridge starts at current month point
+    const futureValues: (number | null)[] = monthlyData.map((p, i) =>
+      (i + 1 === currentMonth || p.isFuture) ? p.value : null
+    );
+
+    const pointRadii = monthlyData.map((p, i) =>
+      (!p.isFuture) ? (i + 1 === currentMonth ? 9 : 5) : 0
+    );
+    const pointColors = monthlyData.map((_, i) =>
+      i + 1 === currentMonth ? '#f89b29' : '#14d990'
+    );
+
+    // ── Actual position data ─────────────────────────────────────────────────
+    const actualMonthly    = this.computeActualMonthlyPositions();
+    const actualSolidData: (number | null)[] = actualMonthly.map(p =>
+      (p.type === 'actual' || p.type === 'current') ? p.value : null
+    );
+    const actualDashedData: (number | null)[] = actualMonthly.map(p =>
+      (p.type === 'current' || p.type === 'forecast') ? p.value : null
+    );
+    const actualPointRadii = actualMonthly.map(p =>
+      p.type === 'current' ? 9 : p.type === 'actual' ? 5 : 0
+    );
+    const actualPointColors = actualMonthly.map(p =>
+      p.type === 'current' ? '#f05252' : '#f89b29'
+    );
+    // Detect whether the current month's value includes a planned buy not yet executed
+    const pendingBuy = actualMonthly[currentMonth - 1]?.pendingBuyAmount;
+
+    this.goalMonthlyChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: monthlyData.map(p => p.label),
+        datasets: [
+          {
+            label: `${new Date().getFullYear()} Monthly Target`,
+            data: pastValues,
+            borderColor: '#14d990',
+            backgroundColor: 'rgba(20, 217, 144, 0.10)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: pointRadii,
+            pointHoverRadius: 7,
+            pointBackgroundColor: pointColors,
+            spanGaps: false,
+          } as any,
+          {
+            label: 'Forecast (future months)',
+            data: futureValues,
+            borderColor: 'rgba(20, 217, 144, 0.4)',
+            backgroundColor: 'rgba(20, 217, 144, 0.03)',
+            fill: false,
+            tension: 0.3,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            pointBackgroundColor: 'rgba(20, 217, 144, 0.4)',
+            borderDash: [5, 4],
+            spanGaps: false,
+          } as any,
+          {
+            label: pendingBuy ? `Actual Position (+ ${this.formatCurrency(pendingBuy)} planned buy)` : 'Actual Position',
+            data: actualSolidData,
+            borderColor: '#f89b29',
+            backgroundColor: 'rgba(248, 155, 41, 0.07)',
+            fill: false,
+            tension: 0.3,
+            pointRadius: actualPointRadii,
+            pointHoverRadius: 7,
+            pointBackgroundColor: actualPointColors,
+            spanGaps: false,
+          } as any,
+          {
+            label: 'Position Forecast',
+            data: actualDashedData,
+            borderColor: 'rgba(248, 155, 41, 0.45)',
+            backgroundColor: 'rgba(248, 155, 41, 0.03)',
+            fill: false,
+            tension: 0.3,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            pointBackgroundColor: 'rgba(248, 155, 41, 0.45)',
+            borderDash: [5, 4],
+            spanGaps: false,
+          } as any,
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            ...DARK_SCALE_DEFAULTS,
+            title: { display: true, text: 'Month', font: { weight: 'bold' }, color: '#8da0bf' }
+          },
+          y: {
+            ...DARK_SCALE_DEFAULTS,
+            title: { display: true, text: 'Target Value (€)', font: { weight: 'bold' }, color: '#8da0bf' },
+            ticks: {
+              color: '#8da0bf',
+              callback: (value) => `€${Number(value).toLocaleString('de-IE', { maximumFractionDigits: 0 })}`
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: { usePointStyle: true, padding: 20, color: '#8da0bf' }
+          },
+          tooltip: {
+            backgroundColor: '#172040',
+            borderColor: '#1f2e4a',
+            borderWidth: 1,
+            titleColor: '#e4eaf5',
+            bodyColor: '#8da0bf',
+            callbacks: {
+              label: (tooltipCtx) => {
+                const base = ` ${tooltipCtx.dataset.label}: ${this.formatCurrency(tooltipCtx.parsed.y as number)}`;
+                // Dataset index 2 = "Actual Position"; warn when the planned buy is included
+                if (pendingBuy && tooltipCtx.datasetIndex === 2 && tooltipCtx.dataIndex === currentMonth - 1) {
+                  return [base, `   ⚠ includes ${this.formatCurrency(pendingBuy)} planned buy (not yet executed)`];
+                }
+                return base;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
   private renderVersionsCompareChart(): void {
-    this.versionsCompareChart?.destroy();
     if (this.selectedVersionIds.size === 0) return;
 
     const ctx = this.versionsCompareChartRef?.nativeElement?.getContext('2d');
@@ -1234,6 +1672,16 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
       next: (data) => {
         this.portfolioEvolution = data;
         this.evolutionLoading = false;
+        // If the goal section is already visible, force the charts to re-render
+        // now that portfolio evolution data (needed for the actual position overlay) is ready.
+        if (this.activeMainSection === 'goal' && this.goalDataPoints.length > 0) {
+          this.goalChartRendered = false;
+          this.goalChart?.destroy();
+          this.goalChart = null;
+          this.goalMonthlyChartRendered = false;
+          this.goalMonthlyChart?.destroy();
+          this.goalMonthlyChart = null;
+        }
         this.cdr.markForCheck();
       },
       error: (err) => {

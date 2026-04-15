@@ -329,19 +329,40 @@
         </p>
       </div>
 
-      <!-- Goal chart + editable table -->
+      <!-- Goal tabs + table -->
       <ng-container *ngIf="!goalLoading && userGoal">
         <p class="goal-source-hint" *ngIf="userGoal.sourceVersionId">
           Seeded from version #{{ userGoal.sourceVersionId }} — last saved {{ userGoal.savedAt | date:'dd/MM/yyyy HH:mm' }}.
           You can edit the target values below; the chart updates live.
         </p>
 
-        <!-- Chart -->
-        <div class="goal-chart-wrapper">
+        <!-- Inner tab bar -->
+        <div class="goal-sub-tabs">
+          <button class="goal-sub-tab-btn" [class.active]="goalSubTab === 'yearly'" (click)="setGoalSubTab('yearly')">
+            📈 Yearly Overview
+          </button>
+          <button class="goal-sub-tab-btn" [class.active]="goalSubTab === 'monthly'" (click)="setGoalSubTab('monthly')">
+            📅 {{ currentYear }}
+          </button>
+        </div>
+
+        <!-- Tab 1: Yearly chart -->
+        <div *ngIf="goalSubTab === 'yearly'" class="goal-chart-wrapper">
           <canvas #goalChart></canvas>
         </div>
 
-        <!-- Editable table -->
+        <!-- Tab 2: Monthly chart -->
+        <ng-container *ngIf="goalSubTab === 'monthly'">
+          <div *ngIf="!userGoal.sourceVersionId" class="goal-monthly-notice">
+            ℹ️ Monthly breakdown requires a version-linked goal. Go to
+            <strong>📈 Projections → 🗂️ Versions</strong> and click <strong>🎯</strong> on any version.
+          </div>
+          <div *ngIf="userGoal.sourceVersionId" class="goal-chart-wrapper">
+            <canvas #goalMonthlyChart></canvas>
+          </div>
+        </ng-container>
+
+        <!-- Editable table (always visible, below tab component) -->
         <div class="goal-table-wrapper">
           <table class="goal-table">
             <thead>
