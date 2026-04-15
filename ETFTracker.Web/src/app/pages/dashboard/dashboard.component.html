@@ -70,6 +70,11 @@
         📂 Actual Portfolio
       </button>
       <button class="main-menu-btn"
+              [class.active]="activeMainSection === 'goal'"
+              (click)="setMainSection('goal')">
+        🎯 My Goal
+      </button>
+      <button class="main-menu-btn"
               [class.active]="activeMainSection === 'projections'"
               (click)="setMainSection('projections')">
         📈 Projections
@@ -244,20 +249,26 @@
           <p>Loading portfolio evolution…</p>
         </div>
         <ng-container *ngIf="portfolioEvolution && !evolutionLoading">
+          <div class="empty-state-card" *ngIf="dashboard.holdings.length === 0">
+            <p class="empty-state-title">No evolution data yet.</p>
+            <p class="empty-state-text">Add your first asset buy to start tracking portfolio evolution.</p>
+            <button class="btn btn-primary" (click)="onAddTransactionClick()" *ngIf="!sharingCtx.isReadOnly()">+ Add First Buy</button>
+          </div>
+
           <!-- Period filter -->
-          <div class="evolution-period-nav">
+          <div class="evolution-period-nav" *ngIf="dashboard.holdings.length > 0">
             <button class="period-btn" [class.active]="evolutionPeriod === 'all'" (click)="setEvolutionPeriod('all')">Whole Period</button>
             <button class="period-btn" [class.active]="evolutionPeriod === 'year'" (click)="setEvolutionPeriod('year')">Current Year</button>
             <button class="period-btn" [class.active]="evolutionPeriod === 'month'" (click)="setEvolutionPeriod('month')">Current Month</button>
             <button class="period-btn" [class.active]="evolutionPeriod === 'week'" (click)="setEvolutionPeriod('week')">Current Week</button>
           </div>
-          <div class="evolution-chart-wrapper" *ngIf="filteredEvolutionPoints.length > 0">
+          <div class="evolution-chart-wrapper" *ngIf="dashboard.holdings.length > 0 && filteredEvolutionPoints.length > 0">
             <canvas #evolutionChart></canvas>
           </div>
-          <div class="evolution-no-data" *ngIf="filteredEvolutionPoints.length === 0">
+          <div class="evolution-no-data" *ngIf="dashboard.holdings.length > 0 && filteredEvolutionPoints.length === 0">
             <p>No data available for the selected period.</p>
           </div>
-          <div class="evolution-legend">
+          <div class="evolution-legend" *ngIf="dashboard.holdings.length > 0">
             <span class="legend-dot buy-dot"></span>
             <span class="legend-label">Buy recorded on this day</span>
             <span class="legend-dot value-dot"></span>
@@ -293,6 +304,76 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- ── My Goal section ───────────────────────────────────────────────── -->
+    <div *ngIf="activeMainSection === 'goal'" class="goal-section">
+      <h2>🎯 My Goal</h2>
+
+      <!-- Info notice -->
+      <div class="goal-info-notice">
+        ℹ️ Goal values represent <strong>gross projected portfolio value</strong> — they do <strong>not</strong> account for taxes (CGT, Exit Tax, SIA) or inflation. Use the <strong>📈 Projections</strong> tab for tax- and inflation-adjusted figures.
+      </div>
+
+      <!-- Loading -->
+      <div *ngIf="goalLoading" class="goal-loading">
+        <p>Loading goal…</p>
+      </div>
+
+      <!-- No goal saved yet -->
+      <div *ngIf="!goalLoading && !userGoal" class="goal-empty-state">
+        <p class="goal-empty-title">No goal saved yet.</p>
+        <p class="goal-empty-hint">
+          Go to <strong>📈 Projections → 🗂️ Versions</strong> and click the
+          <strong>🎯</strong> button on any version to save it as your goal.
+        </p>
+      </div>
+
+      <!-- Goal chart + editable table -->
+      <ng-container *ngIf="!goalLoading && userGoal">
+        <p class="goal-source-hint" *ngIf="userGoal.sourceVersionId">
+          Seeded from version #{{ userGoal.sourceVersionId }} — last saved {{ userGoal.savedAt | date:'dd/MM/yyyy HH:mm' }}.
+          You can edit the target values below; the chart updates live.
+        </p>
+
+        <!-- Chart -->
+        <div class="goal-chart-wrapper">
+          <canvas #goalChart></canvas>
+        </div>
+
+        <!-- Editable table -->
+        <div class="goal-table-wrapper">
+          <table class="goal-table">
+            <thead>
+              <tr>
+                <th>Year</th>
+                <th>Target Value (€)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let point of goalDataPoints; let i = index; trackBy: trackGoalPoint">
+                <td class="goal-year-col">{{ point.year }}</td>
+                <td class="goal-value-col">
+                  <input
+                    class="goal-value-input"
+                    type="number"
+                    min="0"
+                    step="1000"
+                    [value]="point.targetValue"
+                    (input)="onGoalValueChange(i, $any($event.target).value)" />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Save edits button -->
+        <div class="goal-save-row" *ngIf="!sharingCtx.isReadOnly()">
+          <button class="btn btn-primary" (click)="saveGoalEdits()" [disabled]="goalSaving">
+            {{ goalSaving ? 'Saving…' : '💾 Save changes' }}
+          </button>
+        </div>
+      </ng-container>
     </div>
 
     <div *ngIf="activeMainSection === 'projections'">
@@ -576,6 +657,12 @@
                   <td class="version-stat-col">{{ v.settings.siaAnnualPercent > 0 ? v.settings.siaAnnualPercent + '%' : '—' }}</td>
                   <td class="version-delete-col">
                     <ng-container *ngIf="!sharingCtx.isReadOnly()">
+                      <button class="btn-save-as-goal"
+                              (click)="saveAsGoal(v)"
+                              [disabled]="goalSavingAsId === v.id"
+                              title="Save this version as my goal">
+                        {{ goalSavingAsId === v.id ? '…' : '🎯' }}
+                      </button>
                       <button class="btn-set-default"
                               *ngIf="!v.isDefault"
                               (click)="setDefaultVersion(v.id)"

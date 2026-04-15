@@ -16,6 +16,7 @@ public class AppDbContext : DbContext
     public DbSet<ProjectionSettings> ProjectionSettings { get; set; }
     public DbSet<ProjectionVersion> ProjectionVersions { get; set; }
     public DbSet<ProfileShare> ProfileShares { get; set; }
+    public DbSet<UserGoal> UserGoals { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -221,5 +222,20 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<ProfileShare>()
             .HasIndex(s => new { s.OwnerId, s.GuestEmail })
             .IsUnique();
+
+        // UserGoal — one goal per user (upsert semantics)
+        modelBuilder.Entity<UserGoal>().ToTable("user_goals");
+        modelBuilder.Entity<UserGoal>().HasKey(g => g.Id);
+        modelBuilder.Entity<UserGoal>().Property(g => g.Id).HasColumnName("id");
+        modelBuilder.Entity<UserGoal>().Property(g => g.UserId).HasColumnName("user_id");
+        modelBuilder.Entity<UserGoal>().Property(g => g.SourceVersionId).HasColumnName("source_version_id").IsRequired(false);
+        modelBuilder.Entity<UserGoal>().Property(g => g.SavedAt).HasColumnName("saved_at");
+        modelBuilder.Entity<UserGoal>().Property(g => g.GoalPointsJson).HasColumnName("goal_points_json").HasColumnType("text");
+        modelBuilder.Entity<UserGoal>().HasIndex(g => g.UserId).IsUnique();
+        modelBuilder.Entity<UserGoal>()
+            .HasOne(g => g.User)
+            .WithMany()
+            .HasForeignKey(g => g.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

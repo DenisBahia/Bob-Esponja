@@ -253,7 +253,30 @@
       }
 
       .btn-logout {
-        // ...existing code...
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.45rem 0.9rem;
+        background: rgba(240, 82, 82, 0.08);
+        color: #f05252;
+        border: 1px solid rgba(240, 82, 82, 0.22);
+        border-radius: 8px;
+        font-size: 0.83rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+
+        .logout-icon { font-size: 0.95rem; }
+        .logout-text { display: inline; }
+
+        &:hover {
+          background: rgba(240, 82, 82, 0.18);
+          border-color: rgba(240, 82, 82, 0.5);
+          color: #ff6b6b;
+          transform: translateY(-1px);
+        }
       }
 
       // ── Irish Investor Toggle ──────────────────────────────────────────────
@@ -1907,3 +1930,213 @@ th.sortable {
     }
   }
 }
+
+// ── Global button primitives (usable outside .dashboard-content nesting) ─────
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1.35rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+  letter-spacing: 0.02em;
+  font-family: inherit;
+
+  &.btn-primary {
+    background: var(--accent, #4f8ef7);
+    color: #fff;
+    box-shadow: 0 0 0 0 rgba(79, 142, 247, 0.35);
+
+    &:hover:not(:disabled) {
+      background: var(--accent-hover, #3a7de0);
+      box-shadow: 0 0 0 4px rgba(79, 142, 247, 0.22);
+      transform: translateY(-1px);
+    }
+
+    &:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+  }
+
+  &.btn-secondary {
+    background: transparent;
+    border: 1px solid var(--accent, #4f8ef7);
+    color: var(--accent, #4f8ef7);
+
+    &:hover:not(:disabled) {
+      background: rgba(79, 142, 247, 0.10);
+      transform: translateY(-1px);
+    }
+
+    &:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+  }
+}
+
+// ── MY GOAL SECTION ──────────────────────────────────────────────────────────
+
+.goal-section {
+  padding: 1.5rem 0;
+
+  h2 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #e4eaf5;
+    margin: 0 0 1.25rem;
+  }
+}
+
+.goal-info-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+  background: rgba(248, 155, 41, 0.07);
+  border: 1px solid rgba(248, 155, 41, 0.25);
+  border-left: 3px solid #f89b29;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #c9a96e;
+  line-height: 1.5;
+
+  strong { color: #f89b29; font-weight: 600; }
+}
+
+.goal-loading {
+  color: #8da0bf;
+  font-size: 0.95rem;
+  padding: 1rem 0;
+}
+
+.goal-empty-state {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(79, 142, 247, 0.25);
+  border-radius: 12px;
+  padding: 2.5rem 2rem;
+  text-align: center;
+
+  .goal-empty-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #c9d6ea;
+    margin: 0 0 0.6rem;
+  }
+
+  .goal-empty-hint {
+    font-size: 0.9rem;
+    color: #8da0bf;
+    margin: 0;
+    strong { color: #4f8ef7; }
+  }
+}
+
+.goal-source-hint {
+  font-size: 0.85rem;
+  color: #8da0bf;
+  margin: 0 0 1.25rem;
+  strong { color: #4f8ef7; }
+}
+
+.goal-chart-wrapper {
+  position: relative;
+  height: 360px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(79, 142, 247, 0.12);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1.75rem;
+
+  canvas { width: 100% !important; height: 100% !important; }
+}
+
+.goal-table-wrapper {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid rgba(79, 142, 247, 0.12);
+  margin-bottom: 1.25rem;
+}
+
+.goal-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+
+  thead tr {
+    background: rgba(255, 255, 255, 0.04);
+
+    th {
+      padding: 0.7rem 1.1rem;
+      text-align: left;
+      font-weight: 600;
+      color: #8da0bf;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid rgba(79, 142, 247, 0.12);
+    }
+  }
+
+  tbody tr {
+    border-bottom: 1px solid rgba(79, 142, 247, 0.07);
+    transition: background 0.15s;
+
+    &:last-child { border-bottom: none; }
+    &:hover { background: rgba(79, 142, 247, 0.05); }
+  }
+
+  .goal-year-col {
+    padding: 0.6rem 1.1rem;
+    font-weight: 700;
+    color: #c9d6ea;
+    width: 6rem;
+  }
+
+  .goal-value-col {
+    padding: 0.4rem 1.1rem;
+  }
+}
+
+.goal-value-input {
+  width: 14rem;
+  padding: 0.45rem 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(79, 142, 247, 0.25);
+  border-radius: 7px;
+  color: #e4eaf5;
+  font-size: 0.9rem;
+  font-family: inherit;
+  transition: border-color 0.15s, background 0.15s;
+
+  &:focus {
+    outline: none;
+    border-color: rgba(79, 142, 247, 0.6);
+    background: rgba(79, 142, 247, 0.08);
+  }
+
+  &::-webkit-inner-spin-button,
+  &::-webkit-outer-spin-button { opacity: 0.4; }
+}
+
+.goal-save-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
+// "Save as goal" button in the versions table
+.btn-save-as-goal {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 6px;
+  transition: background 0.15s;
+  line-height: 1;
+
+  &:hover:not(:disabled) { background: rgba(20, 217, 144, 0.15); }
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+}
+

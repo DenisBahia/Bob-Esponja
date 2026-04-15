@@ -127,6 +127,25 @@ export interface SaveVersionRequestDto {
   settings: ProjectionSettingsDto;
 }
 
+// ── Goal ──────────────────────────────────────────────────────────────────────
+
+export interface GoalDataPointDto {
+  year: number;
+  targetValue: number;
+}
+
+export interface UserGoalDto {
+  id: number;
+  sourceVersionId: number | null;
+  savedAt: string;
+  dataPoints: GoalDataPointDto[];
+}
+
+export interface UpsertGoalRequestDto {
+  sourceVersionId?: number | null;
+  dataPoints: GoalDataPointDto[];
+}
+
 export interface PortfolioEvolutionDataPointDto {
   date: string;       // "yyyy-MM-dd"
   totalValue: number;
@@ -279,5 +298,15 @@ export class ApiService {
 
   getSharedWithMe(): Observable<SharedWithMeDto[]> {
     return this.http.get<SharedWithMeDto[]>(`${this.apiUrl}/sharing/shared-with-me`);
+  }
+
+  // ── Goal ──────────────────────────────────────────────────────────────────
+
+  getGoal(): Observable<UserGoalDto> {
+    return this.http.get<UserGoalDto>(`${this.apiUrl}/goal`);
+  }
+
+  upsertGoal(dto: UpsertGoalRequestDto): Observable<UserGoalDto> {
+    return this.http.put<UserGoalDto>(`${this.apiUrl}/goal`, dto);
   }
 }

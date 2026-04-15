@@ -443,6 +443,40 @@ namespace ETFTracker.Api.Migrations
                     b.ToTable("users", (string)null);
                 });
 
+            modelBuilder.Entity("ETFTracker.Api.Models.UserGoal", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("GoalPointsJson")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("goal_points_json");
+
+                    b.Property<DateTime>("SavedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("saved_at");
+
+                    b.Property<int?>("SourceVersionId")
+                        .HasColumnType("integer")
+                        .HasColumnName("source_version_id");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("user_goals", (string)null);
+                });
+
             modelBuilder.Entity("ETFTracker.Api.Models.Holding", b =>
                 {
                     b.HasOne("ETFTracker.Api.Models.User", "User")
@@ -503,6 +537,17 @@ namespace ETFTracker.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Holding");
+                });
+
+            modelBuilder.Entity("ETFTracker.Api.Models.UserGoal", b =>
+                {
+                    b.HasOne("ETFTracker.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("ETFTracker.Api.Models.Holding", b =>

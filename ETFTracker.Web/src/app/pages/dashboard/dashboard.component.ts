@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, AfterViewChecked, ChangeDetectionStrategy, ChangeDetectorRef, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, DashboardDto, HoldingDto, ProjectionResultDto, ProjectionSettingsDto, PortfolioEvolutionDto, ProjectionVersionSummaryDto, ProjectionVersionDetailDto, ProjectionDataPointDto, SaveVersionRequestDto } from '../../services/api.service';
+import { ApiService, DashboardDto, HoldingDto, ProjectionResultDto, ProjectionSettingsDto, PortfolioEvolutionDto, ProjectionVersionSummaryDto, ProjectionVersionDetailDto, ProjectionDataPointDto, SaveVersionRequestDto, UserGoalDto, GoalDataPointDto, UpsertGoalRequestDto } from '../../services/api.service';
 import { AuthService, CurrentUser } from '../../services/auth.service';
 import { AddTransactionModalComponent } from '../../components/add-transaction-modal/add-transaction-modal.component';
 import { BuyHistoryModalComponent } from '../../components/buy-history-modal/buy-history-modal.component';
@@ -45,7 +45,7 @@ const DARK_SCALE_DEFAULTS = {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
-  activeMainSection: 'portfolio' | 'projections' = 'portfolio';
+  activeMainSection: 'portfolio' | 'goal' | 'projections' = 'portfolio';
   dashboard: DashboardDto | null = null;
   loading = true;
   error: string | null = null;
@@ -138,6 +138,17 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   @ViewChild('versionsCompareChart') versionsCompareChartRef!: ElementRef<HTMLCanvasElement>;
   private versionsCompareChart: Chart | null = null;
+
+  // ── My Goal ─────────────────────────────────────────────────────────────────
+  userGoal: UserGoalDto | null = null;
+  goalDataPoints: GoalDataPointDto[] = [];
+  goalLoading = false;
+  goalSaving = false;
+  goalSavingAsId: number | null = null;   // version id currently being saved as goal
+
+  @ViewChild('goalChart') goalChartRef!: ElementRef<HTMLCanvasElement>;
+  private goalChart: Chart | null = null;
+  private goalChartRendered = false;
 
   portfolioEvolution: PortfolioEvolutionDto | null = null;
   evolutionLoading = false;
@@ -286,15 +297,19 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.projection = null;
     this.portfolioEvolution = null;
     this.defaultVersionName = null;
+    this.userGoal = null;
+    this.goalDataPoints = [];
     this.loading = true;
     this.projectionLoading = true;
     this.projectionVersions = [];
     this.chartRendered = false;
     this.projectionChartRendered = false;
     this.evolutionChartRendered = false;
+    this.goalChartRendered = false;
     this.pieChart?.destroy(); this.pieChart = null;
     this.lineChart?.destroy(); this.lineChart = null;
     this.evolutionChart?.destroy(); this.evolutionChart = null;
+    this.goalChart?.destroy(); this.goalChart = null;
     this.cdr.detectChanges();
     this.loadDashboard();
     this.initProjection();
@@ -308,15 +323,19 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.projection = null;
     this.portfolioEvolution = null;
     this.defaultVersionName = null;
+    this.userGoal = null;
+    this.goalDataPoints = [];
     this.loading = true;
     this.projectionLoading = true;
     this.projectionVersions = [];
     this.chartRendered = false;
     this.projectionChartRendered = false;
     this.evolutionChartRendered = false;
+    this.goalChartRendered = false;
     this.pieChart?.destroy(); this.pieChart = null;
     this.lineChart?.destroy(); this.lineChart = null;
     this.evolutionChart?.destroy(); this.evolutionChart = null;
+    this.goalChart?.destroy(); this.goalChart = null;
     this.cdr.detectChanges();
     this.loadDashboard();
     this.initProjection();
@@ -345,6 +364,15 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
       this.versionsCompareChartRendered = true;
       this.renderVersionsCompareChart();
     }
+    if (
+      this.activeMainSection === 'goal' &&
+      !this.goalChartRendered &&
+      this.goalDataPoints.length > 0 &&
+      this.goalChartRef?.nativeElement
+    ) {
+      this.goalChartRendered = true;
+      this.renderGoalChart();
+    }
   }
 
   ngOnDestroy(): void {
@@ -352,6 +380,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.lineChart?.destroy();
     this.evolutionChart?.destroy();
     this.versionsCompareChart?.destroy();
+    this.goalChart?.destroy();
   }
 
   private renderPieChart(): void {
@@ -657,7 +686,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.cdr.markForCheck();
   }
 
-  setMainSection(section: 'portfolio' | 'projections'): void {
+  setMainSection(section: 'portfolio' | 'goal' | 'projections'): void {
     if (this.activeMainSection === section) return;
 
     this.activeMainSection = section;
@@ -667,6 +696,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.projectionChartRendered = false;
     this.evolutionChartRendered = false;
     this.versionsCompareChartRendered = false;
+    this.goalChartRendered = false;
 
     this.pieChart?.destroy();
     this.pieChart = null;
@@ -676,6 +706,12 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.evolutionChart = null;
     this.versionsCompareChart?.destroy();
     this.versionsCompareChart = null;
+    this.goalChart?.destroy();
+    this.goalChart = null;
+
+    if (section === 'goal' && !this.userGoal && !this.goalLoading) {
+      this.loadGoal();
+    }
 
     this.cdr.markForCheck();
   }
@@ -835,6 +871,170 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.versionsCompareChart?.destroy();
     this.versionsCompareChart = null;
     this.cdr.markForCheck();
+  }
+
+  // ── My Goal methods ─────────────────────────────────────────────────────────
+
+  trackGoalPoint(_index: number, point: GoalDataPointDto): number {
+    return point.year;
+  }
+
+  loadGoal(): void {
+    this.goalLoading = true;
+    this.cdr.markForCheck();
+    this.apiService.getGoal().subscribe({
+      next: (goal) => {
+        this.userGoal = goal;
+        this.goalDataPoints = goal.dataPoints.map(p => ({ ...p }));
+        this.goalLoading = false;
+        this.goalChartRendered = false;
+        this.goalChart?.destroy();
+        this.goalChart = null;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        // 404 = no goal set yet; any other error is logged
+        if (err.status !== 404) {
+          console.error('Error loading goal:', err);
+        }
+        this.goalLoading = false;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  saveAsGoal(version: ProjectionVersionSummaryDto): void {
+    this.goalSavingAsId = version.id;
+    this.cdr.markForCheck();
+
+    const dataPoints: GoalDataPointDto[] = (version.dataPoints ?? []).map(p => ({
+      year: p.year,
+      targetValue: p.totalAmount,
+    }));
+
+    const request: UpsertGoalRequestDto = {
+      sourceVersionId: version.id,
+      dataPoints,
+    };
+
+    this.apiService.upsertGoal(request).subscribe({
+      next: (goal) => {
+        this.userGoal = goal;
+        this.goalDataPoints = goal.dataPoints.map(p => ({ ...p }));
+        this.goalSavingAsId = null;
+        this.goalChartRendered = false;
+        this.goalChart?.destroy();
+        this.goalChart = null;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('Error saving goal:', err);
+        this.goalSavingAsId = null;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  onGoalValueChange(index: number, rawValue: string): void {
+    const parsed = parseFloat(rawValue);
+    if (!isNaN(parsed) && parsed >= 0) {
+      // Mutate in place — avoids object-reference change that makes *ngFor
+      // destroy + recreate the input element (and lose focus).
+      this.goalDataPoints[index].targetValue = parsed;
+    }
+  }
+
+  saveGoalEdits(): void {
+    if (!this.userGoal) return;
+    this.goalSaving = true;
+    this.cdr.markForCheck();
+
+    const request: UpsertGoalRequestDto = {
+      sourceVersionId: this.userGoal.sourceVersionId,
+      dataPoints: this.goalDataPoints,
+    };
+
+    this.apiService.upsertGoal(request).subscribe({
+      next: (goal) => {
+        this.userGoal = goal;
+        this.goalDataPoints = goal.dataPoints.map(p => ({ ...p }));
+        this.goalSaving = false;
+        // Refresh chart with the newly saved values
+        this.goalChartRendered = false;
+        this.goalChart?.destroy();
+        this.goalChart = null;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('Error saving goal edits:', err);
+        this.goalSaving = false;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  private renderGoalChart(): void {
+    this.goalChart?.destroy();
+    if (!this.goalDataPoints.length) return;
+
+    const ctx = this.goalChartRef.nativeElement.getContext('2d');
+    if (!ctx) return;
+
+    this.goalChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: this.goalDataPoints.map(p => p.year.toString()),
+        datasets: [
+          {
+            label: 'Projected Portfolio Value (Goal)',
+            data: this.goalDataPoints.map(p => p.targetValue),
+            borderColor: '#14d990',
+            backgroundColor: 'rgba(20, 217, 144, 0.10)',
+            fill: true,
+            tension: 0.35,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            pointBackgroundColor: '#14d990',
+          }
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            ...DARK_SCALE_DEFAULTS,
+            title: { display: true, text: 'Year', font: { weight: 'bold' }, color: '#8da0bf' }
+          },
+          y: {
+            ...DARK_SCALE_DEFAULTS,
+            title: { display: true, text: 'Target Value (€)', font: { weight: 'bold' }, color: '#8da0bf' },
+            ticks: {
+              color: '#8da0bf',
+              callback: (value) => `€${Number(value).toLocaleString('de-IE', { maximumFractionDigits: 0 })}`
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: { usePointStyle: true, padding: 20, color: '#8da0bf' }
+          },
+          tooltip: {
+            backgroundColor: '#172040',
+            borderColor: '#1f2e4a',
+            borderWidth: 1,
+            titleColor: '#e4eaf5',
+            bodyColor: '#8da0bf',
+            callbacks: {
+              label: (tooltipCtx) =>
+                ` ${tooltipCtx.dataset.label}: ${this.formatCurrency(tooltipCtx.parsed.y as number)}`
+            }
+          }
+        }
+      }
+    });
   }
 
   private renderVersionsCompareChart(): void {
