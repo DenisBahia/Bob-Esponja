@@ -8,9 +8,10 @@
       <span class="lp-nav__brand-name">Investments Tracker</span>
     </div>
     <div class="lp-nav__links">
-      <a href="#features" (click)="scrollTo('features', $event)">Features</a>
-      <a href="#preview"  (click)="scrollTo('preview', $event)">Preview</a>
-      <a href="#how"      (click)="scrollTo('how', $event)">How it works</a>
+      <a href="#features"  (click)="scrollTo('features', $event)">Features</a>
+      <a href="#irish-tax" (click)="scrollTo('irish-tax', $event)">Irish Tax</a>
+      <a href="#preview"   (click)="scrollTo('preview', $event)">Preview</a>
+      <a href="#how"       (click)="scrollTo('how', $event)">How it works</a>
     </div>
     <button class="lp-btn lp-btn--outline" (click)="navigateToLogin()">
       Sign In &rarr;
@@ -73,19 +74,19 @@
   <div class="hero__content">
     <div class="hero__badge reveal">
       <span class="hero__badge-pulse"></span>
-      Free to use &nbsp;·&nbsp; No ads &nbsp;·&nbsp; Privacy-first
+      Free to use &nbsp;&middot;&nbsp; No ads &nbsp;&middot;&nbsp; Privacy-first &nbsp;&middot;&nbsp; Irish tax built-in
     </div>
 
     <h1 class="hero__headline reveal">
-      Your investment portfolio,<br>
-      <span class="hero__accent">crystal clear.</span>
+      The investment tracker<br>
+      <span class="hero__accent">Irish investors deserve.</span>
     </h1>
 
     <p class="hero__sub reveal">
-      Track your holdings in real time with price-source transparency, project your future wealth
-      with compound-interest modelling, analyse per-purchase performance with color-coded transaction
-      history, compare Irish tax methods including SIA annual tax, and stay ahead of after-tax outcomes —
-      all in one beautifully designed dashboard.
+      Finally, a portfolio tracker that understands the complexity of Irish investment taxation &mdash;
+      38% Exit Tax, 8-year Deemed Disposal, and the upcoming SIA regime arriving in 2027.
+      Track holdings in real time, project your after-tax wealth decades ahead, and compare tax regimes
+      side by side. Also perfect for global investors with CGT calculations and inflation-adjusted returns.
     </p>
 
     <div class="hero__cta reveal">
@@ -102,23 +103,28 @@
     <!-- Quick stats strip -->
     <div class="hero__stats reveal">
       <div class="hero__stat">
-        <span class="hero__stat-val">Real‑time</span>
+        <span class="hero__stat-val">38%</span>
+        <span class="hero__stat-lbl">Exit Tax calculated</span>
+      </div>
+      <span class="hero__stat-sep"></span>
+      <div class="hero__stat">
+        <span class="hero__stat-val">8-yr rule</span>
+        <span class="hero__stat-lbl">Deemed Disposal modelled</span>
+      </div>
+      <span class="hero__stat-sep"></span>
+      <div class="hero__stat">
+        <span class="hero__stat-val">SIA 2027</span>
+        <span class="hero__stat-lbl">New regime comparison</span>
+      </div>
+      <span class="hero__stat-sep"></span>
+      <div class="hero__stat">
+        <span class="hero__stat-val">Real-time</span>
         <span class="hero__stat-lbl">Price updates</span>
       </div>
       <span class="hero__stat-sep"></span>
       <div class="hero__stat">
         <span class="hero__stat-val">30+ yrs</span>
         <span class="hero__stat-lbl">Projection horizon</span>
-      </div>
-      <span class="hero__stat-sep"></span>
-      <div class="hero__stat">
-        <span class="hero__stat-val">Irish tax</span>
-        <span class="hero__stat-lbl">Exit Tax or SIA ready</span>
-      </div>
-      <span class="hero__stat-sep"></span>
-      <div class="hero__stat">
-        <span class="hero__stat-val">GitHub / Google</span>
-        <span class="hero__stat-lbl">Instant sign-in</span>
       </div>
     </div>
   </div>
@@ -131,6 +137,21 @@
 </section>
 
 <!-- ═══════════════════════════════════════════
+     SIA ANNOUNCEMENT BANNER
+══════════════════════════════════════════════ -->
+<div class="sia-banner">
+  <div class="container sia-banner__inner">
+    <span class="sia-banner__flag">&#x1F1EE;&#x1F1EA;</span>
+    <div class="sia-banner__text">
+      <strong>Ireland&rsquo;s new SIA investment account arrives in 2027.</strong>
+      A flat annual rate on your total portfolio &mdash; replacing the dreaded Deemed Disposal &amp; Exit Tax complexity.
+      Investments Tracker already lets you compare both regimes side by side.
+    </div>
+    <button class="lp-btn lp-btn--sia" (click)="scrollTo('irish-tax', $event)">See comparison &rarr;</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
      FEATURES GRID
 ══════════════════════════════════════════════ -->
 <section class="features" id="features">
@@ -138,7 +159,7 @@
     <div class="section-header reveal">
       <span class="section-tag">Features</span>
       <h2>Everything you need to invest smarter</h2>
-      <p>Built for long-term investors who want clarity, not complexity. Track ETFs, stocks, mutual funds, cryptocurrencies, and more.</p>
+      <p>Built for long-term investors who want clarity, not complexity. Irish tax rules baked in. Global CGT support included. Works for ETFs, stocks, funds, crypto and more.</p>
     </div>
 
     <div class="features__grid">
@@ -186,8 +207,17 @@
         <div class="feature-card__icon feature-card__icon--red">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         </div>
-        <h3>Irish Tax Aware</h3>
-        <p>Built-in Exit Tax, the 8-year Deemed Disposal rule, and SIA annual tax as an alternative yearly charge on the full portfolio value.</p>
+        <h3>Irish Tax Engine</h3>
+        <p>38% Exit Tax &amp; the 8-year Deemed Disposal rule are fully modelled. Get year-by-year breakdowns of every tax event &mdash; no spreadsheet required.</p>
+      </div>
+
+      <div class="feature-card feature-card--highlighted reveal" style="--delay:0.3s">
+        <div class="feature-card__badge">Coming 2027</div>
+        <div class="feature-card__icon feature-card__icon--emerald">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 1 18"/><polyline points="15 7 22 7 22 14"/></svg>
+        </div>
+        <h3>SIA vs Exit Tax Comparison</h3>
+        <p>Ireland&rsquo;s new Savings &amp; Investment Account simplifies tax to a flat annual rate on total holdings. Compare both regimes on the same chart and see which saves you more over time.</p>
       </div>
 
       <div class="feature-card reveal" style="--delay:0.1s">
@@ -510,8 +540,8 @@
         </svg>
       </div>
 
-      <!-- ── Slide 2: Sharing ── -->
-      <div class="preview__slide" [class.active]="activeSlide === 2">
+      <!-- ── Slide 4: Portfolio Sharing ── -->
+      <div class="preview__slide" [class.active]="activeSlide === 4">
         <svg viewBox="0 0 900 520" xmlns="http://www.w3.org/2000/svg" class="preview__svg">
           <rect width="900" height="520" fill="#080c14"/>
           <rect width="900" height="46" fill="#111d35"/>
@@ -579,6 +609,99 @@
           <text x="661" y="81" fill="#8da0bf" font-family="Inter,sans-serif" font-size="12">✕</text>
         </svg>
       </div>
+      <!-- ── Slide 2: Irish Tax Comparison ── -->
+      <div class="preview__slide" [class.active]="activeSlide === 2">
+        <svg viewBox="0 0 900 520" xmlns="http://www.w3.org/2000/svg" class="preview__svg">
+          <rect width="900" height="520" fill="#080c14"/>
+          <rect width="900" height="46" fill="#111d35"/>
+          <line x1="0" y1="46" x2="900" y2="46" stroke="#1f2e4a" stroke-width="1"/>
+          <text x="18" y="28" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="13" font-weight="700">Investments Tracker</text>
+
+          <!-- Section title -->
+          <text x="18" y="68" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="14" font-weight="700">Irish Tax Comparison: Deemed Disposal + Exit Tax vs SIA</text>
+
+          <!-- LEFT CARD: Current regime -->
+          <rect x="18" y="78" width="410" height="390" rx="10" fill="#111d35" stroke="#f05252" stroke-width="1.5"/>
+          <rect x="18" y="78" width="410" height="44" rx="10" fill="rgba(240,82,82,0.15)"/>
+          <rect x="18" y="102" width="410" height="20" fill="rgba(240,82,82,0.15)"/>
+          <text x="36" y="106" fill="#f05252" font-family="Inter,sans-serif" font-size="12" font-weight="800">Current Irish Regime</text>
+          <text x="36" y="135" fill="#8da0bf" font-family="Inter,sans-serif" font-size="9">Deemed Disposal (8-yr rule) + 38% Exit Tax</text>
+
+          <!-- Current regime rows -->
+          <line x1="18" y1="148" x2="428" y2="148" stroke="#1f2e4a" stroke-width="1"/>
+          <text x="36" y="168" fill="#8da0bf" font-family="Inter,sans-serif" font-size="9">PORTFOLIO VALUE AT YEAR 8</text>
+          <text x="36" y="184" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="13" font-weight="700">87,240</text>
+          <line x1="18" y1="194" x2="428" y2="194" stroke="#1f2e4a" stroke-width="0.5"/>
+
+          <text x="36" y="212" fill="#8da0bf" font-family="Inter,sans-serif" font-size="9">DEEMED DISPOSAL TRIGGERED</text>
+          <rect x="300" y="200" width="110" height="20" rx="4" fill="rgba(240,82,82,0.15)" stroke="rgba(240,82,82,0.4)" stroke-width="1"/>
+          <text x="312" y="214" fill="#f05252" font-family="Inter,sans-serif" font-size="9" font-weight="700">Year 8 rule fires</text>
+          <line x1="18" y1="228" x2="428" y2="228" stroke="#1f2e4a" stroke-width="0.5"/>
+
+          <text x="36" y="246" fill="#8da0bf" font-family="Inter,sans-serif" font-size="9">UNREALISED GAIN TAXED</text>
+          <text x="36" y="262" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="12">+35,240</text>
+          <line x1="18" y1="272" x2="428" y2="272" stroke="#1f2e4a" stroke-width="0.5"/>
+
+          <text x="36" y="290" fill="#8da0bf" font-family="Inter,sans-serif" font-size="9">EXIT TAX @ 38% (even if you haven't sold)</text>
+          <text x="36" y="306" fill="#f05252" font-family="Inter,sans-serif" font-size="13" font-weight="700">-13,391</text>
+          <line x1="18" y1="316" x2="428" y2="316" stroke="#1f2e4a" stroke-width="0.5"/>
+
+          <text x="36" y="334" fill="#8da0bf" font-family="Inter,sans-serif" font-size="9">AFTER-TAX PORTFOLIO VALUE</text>
+          <text x="36" y="350" fill="#14d990" font-family="Inter,sans-serif" font-size="14" font-weight="700">73,849</text>
+          <line x1="18" y1="360" x2="428" y2="360" stroke="#1f2e4a" stroke-width="0.5"/>
+
+          <!-- Pain points -->
+          <text x="36" y="382" fill="#f05252" font-family="Inter,sans-serif" font-size="9">x  Tax due even when you haven't sold anything</text>
+          <text x="36" y="398" fill="#f05252" font-family="Inter,sans-serif" font-size="9">x  No loss offsetting allowed</text>
+          <text x="36" y="414" fill="#f05252" font-family="Inter,sans-serif" font-size="9">x  Complex 8-year tracking per lot required</text>
+          <text x="36" y="430" fill="#f05252" font-family="Inter,sans-serif" font-size="9">x  Repeats every 8 years indefinitely</text>
+          <text x="36" y="446" fill="#f05252" font-family="Inter,sans-serif" font-size="9">x  38% rate (not 33% CGT)</text>
+
+          <!-- VS badge -->
+          <circle cx="450" cy="273" r="26" fill="#080c14" stroke="#1f2e4a" stroke-width="1.5"/>
+          <text x="441" y="278" fill="#8da0bf" font-family="Inter,sans-serif" font-size="12" font-weight="800">VS</text>
+
+          <!-- RIGHT CARD: SIA regime -->
+          <rect x="472" y="78" width="410" height="390" rx="10" fill="#111d35" stroke="#2ec4b6" stroke-width="1.5"/>
+          <rect x="472" y="78" width="410" height="44" rx="10" fill="rgba(46,196,182,0.1)"/>
+          <rect x="472" y="102" width="410" height="20" fill="rgba(46,196,182,0.1)"/>
+          <text x="490" y="106" fill="#2ec4b6" font-family="Inter,sans-serif" font-size="12" font-weight="800">SIA Account (from 2027)</text>
+          <rect x="800" y="92" width="64" height="18" rx="5" fill="rgba(46,196,182,0.15)" stroke="rgba(46,196,182,0.4)" stroke-width="1"/>
+          <text x="810" y="104" fill="#2ec4b6" font-family="Inter,sans-serif" font-size="8" font-weight="700">Coming 2027</text>
+          <text x="490" y="135" fill="#8da0bf" font-family="Inter,sans-serif" font-size="9">Simple annual flat rate on total portfolio value</text>
+
+          <!-- SIA rows -->
+          <line x1="472" y1="148" x2="882" y2="148" stroke="#1f2e4a" stroke-width="1"/>
+          <text x="490" y="168" fill="#8da0bf" font-family="Inter,sans-serif" font-size="9">PORTFOLIO VALUE AT YEAR 8</text>
+          <text x="490" y="184" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="13" font-weight="700">87,240</text>
+          <line x1="472" y1="194" x2="882" y2="194" stroke="#1f2e4a" stroke-width="0.5"/>
+
+          <text x="490" y="212" fill="#8da0bf" font-family="Inter,sans-serif" font-size="9">TAX TRIGGER</text>
+          <rect x="694" y="200" width="160" height="20" rx="4" fill="rgba(46,196,182,0.1)" stroke="rgba(46,196,182,0.3)" stroke-width="1"/>
+          <text x="704" y="214" fill="#2ec4b6" font-family="Inter,sans-serif" font-size="9" font-weight="700">Annual (no 8-yr surprise)</text>
+          <line x1="472" y1="228" x2="882" y2="228" stroke="#1f2e4a" stroke-width="0.5"/>
+
+          <text x="490" y="246" fill="#8da0bf" font-family="Inter,sans-serif" font-size="9">TAX BASE</text>
+          <text x="490" y="262" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="12">Total portfolio value (flat rate)</text>
+          <line x1="472" y1="272" x2="882" y2="272" stroke="#1f2e4a" stroke-width="0.5"/>
+
+          <text x="490" y="290" fill="#8da0bf" font-family="Inter,sans-serif" font-size="9">ANNUAL SIA TAX (estimated ~0.6%)</text>
+          <text x="490" y="306" fill="#2ec4b6" font-family="Inter,sans-serif" font-size="13" font-weight="700">~523 / yr</text>
+          <line x1="472" y1="316" x2="882" y2="316" stroke="#1f2e4a" stroke-width="0.5"/>
+
+          <text x="490" y="334" fill="#8da0bf" font-family="Inter,sans-serif" font-size="9">AFTER-TAX PORTFOLIO VALUE</text>
+          <text x="490" y="350" fill="#14d990" font-family="Inter,sans-serif" font-size="14" font-weight="700">Depends on rate</text>
+          <line x1="472" y1="360" x2="882" y2="360" stroke="#1f2e4a" stroke-width="0.5"/>
+
+          <!-- Benefits -->
+          <text x="490" y="382" fill="#14d990" font-family="Inter,sans-serif" font-size="9">v  Predictable annual amount</text>
+          <text x="490" y="398" fill="#14d990" font-family="Inter,sans-serif" font-size="9">v  No surprise tax bills when holding</text>
+          <text x="490" y="414" fill="#14d990" font-family="Inter,sans-serif" font-size="9">v  Simpler rate structure</text>
+          <text x="490" y="430" fill="#14d990" font-family="Inter,sans-serif" font-size="9">v  No 8-year lot tracking required</text>
+          <text x="490" y="446" fill="#14d990" font-family="Inter,sans-serif" font-size="9">v  Model it now inside Investments Tracker</text>
+        </svg>
+      </div>
+
       <!-- ── Slide 3: Buy History ── -->
       <div class="preview__slide" [class.active]="activeSlide === 3">
         <svg viewBox="0 0 900 520" xmlns="http://www.w3.org/2000/svg" class="preview__svg">
@@ -686,6 +809,120 @@
           <text x="52" y="448" fill="#4d6080" font-family="Inter,sans-serif" font-size="8.5">🟢 Green border = profitable purchase  ·  🔴 Red border = purchase currently at a loss</text>
         </svg>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     IRISH TAX PROBLEM SECTION
+══════════════════════════════════════════════ -->
+<section class="tax-problem" id="irish-tax">
+  <div class="container">
+    <div class="section-header reveal">
+      <span class="section-tag section-tag--ireland">&#x1F1EE;&#x1F1EA; Irish Investors</span>
+      <h2>Ireland has some of the most complex<br>investment tax rules in the world.</h2>
+      <p>38% Exit Tax. Deemed Disposal every 8 years. Tax on unrealised gains. No loss offsetting. Investments Tracker was built to tame all of it &mdash; and to prepare you for SIA when it arrives in 2027.</p>
+    </div>
+
+    <!-- Problem/Solution comparison cards -->
+    <div class="tax-compare reveal">
+      <!-- Current regime card -->
+      <div class="tax-compare__card tax-compare__card--problem">
+        <div class="tax-compare__card-header">
+          <span class="tax-compare__regime-badge tax-compare__regime-badge--current">Current Regime</span>
+          <h3>Deemed Disposal + Exit Tax</h3>
+          <p>The rules as they stand today</p>
+        </div>
+        <div class="tax-compare__card-body">
+          <div class="tax-compare__row">
+            <span class="tax-compare__label">Tax rate on gains</span>
+            <span class="tax-compare__value tax-compare__value--bad">38% Exit Tax</span>
+          </div>
+          <div class="tax-compare__row">
+            <span class="tax-compare__label">When tax is triggered</span>
+            <span class="tax-compare__value tax-compare__value--bad">Every 8 years (even if you didn&rsquo;t sell)</span>
+          </div>
+          <div class="tax-compare__row">
+            <span class="tax-compare__label">What is taxed</span>
+            <span class="tax-compare__value">Unrealised gains at the 8-year mark</span>
+          </div>
+          <div class="tax-compare__row">
+            <span class="tax-compare__label">Loss offsetting</span>
+            <span class="tax-compare__value tax-compare__value--bad">Not allowed</span>
+          </div>
+          <div class="tax-compare__row">
+            <span class="tax-compare__label">Complexity</span>
+            <span class="tax-compare__value tax-compare__value--bad">Very high &mdash; per-lot tracking required</span>
+          </div>
+          <div class="tax-compare__row">
+            <span class="tax-compare__label">Predictability</span>
+            <span class="tax-compare__value tax-compare__value--bad">Low &mdash; surprise bill every 8 years</span>
+          </div>
+          <div class="tax-compare__row">
+            <span class="tax-compare__label">Applies to</span>
+            <span class="tax-compare__value">ETFs, funds, offshore investments</span>
+          </div>
+        </div>
+        <div class="tax-compare__card-footer tax-compare__card-footer--bad">
+          Investments Tracker models every Deemed Disposal event automatically
+        </div>
+      </div>
+
+      <div class="tax-compare__vs">
+        <span>VS</span>
+        <div class="tax-compare__arrow">&#x2192;</div>
+        <span class="tax-compare__year">2027</span>
+      </div>
+
+      <!-- SIA card -->
+      <div class="tax-compare__card tax-compare__card--solution">
+        <div class="tax-compare__card-header">
+          <span class="tax-compare__regime-badge tax-compare__regime-badge--sia">SIA &mdash; 2027</span>
+          <h3>Savings &amp; Investment Account</h3>
+          <p>Ireland&rsquo;s simplified investment regime</p>
+        </div>
+        <div class="tax-compare__card-body">
+          <div class="tax-compare__row">
+            <span class="tax-compare__label">Tax rate</span>
+            <span class="tax-compare__value tax-compare__value--good">Flat annual % on portfolio value</span>
+          </div>
+          <div class="tax-compare__row">
+            <span class="tax-compare__label">When tax is triggered</span>
+            <span class="tax-compare__value tax-compare__value--good">Once per year &mdash; predictable &amp; simple</span>
+          </div>
+          <div class="tax-compare__row">
+            <span class="tax-compare__label">What is taxed</span>
+            <span class="tax-compare__value">Total portfolio value (flat rate)</span>
+          </div>
+          <div class="tax-compare__row">
+            <span class="tax-compare__label">Loss offsetting</span>
+            <span class="tax-compare__value tax-compare__value--good">N/A &mdash; flat rate structure</span>
+          </div>
+          <div class="tax-compare__row">
+            <span class="tax-compare__label">Complexity</span>
+            <span class="tax-compare__value tax-compare__value--good">Very low &mdash; just one number per year</span>
+          </div>
+          <div class="tax-compare__row">
+            <span class="tax-compare__label">Predictability</span>
+            <span class="tax-compare__value tax-compare__value--good">High &mdash; easy to budget for annually</span>
+          </div>
+          <div class="tax-compare__row">
+            <span class="tax-compare__label">Applies to</span>
+            <span class="tax-compare__value">All qualifying investments in the SIA wrapper</span>
+          </div>
+        </div>
+        <div class="tax-compare__card-footer tax-compare__card-footer--good">
+          Model SIA now and compare with the current regime in Investments Tracker
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom callout -->
+    <div class="tax-cta reveal">
+      <div class="tax-cta__text">
+        <strong>Already inside the app:</strong> run a 20-year projection and toggle between Exit Tax + Deemed Disposal and SIA mode on the same chart. See exactly how much the new regime could save you &mdash; or cost you &mdash; over decades.
+      </div>
+      <button class="lp-btn lp-btn--primary" (click)="navigateToLogin()">Compare tax regimes now &rarr;</button>
     </div>
   </div>
 </section>
@@ -889,6 +1126,49 @@
 </section>
 
 <!-- ═══════════════════════════════════════════
+     FOR INVESTORS EVERYWHERE
+══════════════════════════════════════════════ -->
+<section class="global-investors">
+  <div class="container">
+    <div class="section-header reveal">
+      <span class="section-tag">For Everyone</span>
+      <h2>Not Irish? You&rsquo;ll still love it.</h2>
+      <p>Powerful CGT calculations, inflation-adjusted returns and multi-asset tracking make this the ideal tool for any long-term investor, anywhere in the world.</p>
+    </div>
+    <div class="global-grid">
+      <div class="global-card reveal">
+        <div class="global-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        </div>
+        <h3>CGT Calculations</h3>
+        <p>Capital Gains Tax is calculated automatically for non-Irish investors. FIFO lot matching, allowable costs and net gain at your local CGT rate. Know your tax position before you sell.</p>
+      </div>
+      <div class="global-card reveal" style="--delay:0.1s">
+        <div class="global-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        </div>
+        <h3>Inflation-Adjusted Returns</h3>
+        <p>Your money&rsquo;s purchasing power erodes over time. Every projection shows both nominal and inflation-adjusted &ldquo;real&rdquo; values so you know your true wealth trajectory, not just the headline number.</p>
+      </div>
+      <div class="global-card reveal" style="--delay:0.2s">
+        <div class="global-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        </div>
+        <h3>Multi-Asset, Multi-Currency</h3>
+        <p>Track ETFs, stocks, index funds, bonds and crypto. Prices fetched in real time from Eodhd and Yahoo Finance. Works for any exchange-listed ticker worldwide.</p>
+      </div>
+      <div class="global-card reveal" style="--delay:0.3s">
+        <div class="global-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        </div>
+        <h3>Scenario Planning</h3>
+        <p>Save multiple projection versions &mdash; bullish, bearish, base-case &mdash; and compare them side by side on a single chart. Make informed decisions with data, not gut feeling.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
      HOW IT WORKS
 ══════════════════════════════════════════════ -->
 <section class="how" id="how">
@@ -941,7 +1221,8 @@
   <div class="container">
     <div class="cta-section__inner reveal">
       <h2>Ready to take control of your investments?</h2>
-      <p>Free to use. No credit card. No setup. Just sign in and start tracking.</p>
+      <p>Free to use. No credit card. No setup. Sign in with GitHub or Google and start tracking in seconds.</p>
+      <p class="cta-section__tagline">Irish investors: finally see your real after-tax wealth &mdash; and what SIA could mean for you in 2027.</p>
 
       <div class="cta-section__btns">
         <button class="lp-btn lp-btn--github" (click)="navigateToLogin()">
@@ -978,11 +1259,12 @@
       <span>Investments Tracker</span>
     </div>
     <p class="lp-footer__copy">
-      Built for Irish investors. Free to use, forever.
+      Built for Irish investors &amp; global long-term investors. Free to use, forever.
     </p>
     <div class="lp-footer__links">
-      <a href="#features" (click)="scrollTo('features', $event)">Features</a>
-      <a href="#how" (click)="scrollTo('how', $event)">How it works</a>
+      <a href="#features"  (click)="scrollTo('features', $event)">Features</a>
+      <a href="#irish-tax" (click)="scrollTo('irish-tax', $event)">Irish Tax</a>
+      <a href="#how"       (click)="scrollTo('how', $event)">How it works</a>
       <a (click)="navigateToLogin()" style="cursor:pointer">Sign In</a>
     </div>
   </div>

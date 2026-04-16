@@ -17,8 +17,9 @@ export class LandingComponent implements OnInit, OnDestroy {
   readonly slides = [
     { label: 'Dashboard' },
     { label: 'Projections' },
-    { label: 'Portfolio Sharing' },
+    { label: '🇮🇪 Irish Tax' },
     { label: 'Buy History' },
+    { label: 'Portfolio Sharing' },
   ];
 
   private slideInterval: ReturnType<typeof setInterval> | null = null;
@@ -85,4 +86,3 @@ export class LandingComponent implements OnInit, OnDestroy {
     }
   }
 }
-
