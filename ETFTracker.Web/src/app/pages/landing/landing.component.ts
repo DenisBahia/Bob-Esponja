@@ -19,6 +19,7 @@ export class LandingComponent implements OnInit, OnDestroy {
     { label: 'Projections' },
     { label: '🧾 Tax Center' },
     { label: 'Buy History' },
+    { label: 'Sell History' },
     { label: 'Portfolio Sharing' },
   ];
 

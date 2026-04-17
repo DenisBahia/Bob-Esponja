@@ -264,7 +264,7 @@
     <div class="section-header reveal">
       <span class="section-tag">App Preview</span>
       <h2>See what's waiting for you</h2>
-      <p>A pixel-perfect dark dashboard built for focus — rich Irish tax projections, a dedicated tax summary center with pending/paid workflows, SIA-specific views, and color-coded buy history with per-purchase performance data.</p>
+      <p>A pixel-perfect dark dashboard built for focus — rich Irish tax projections, a dedicated tax summary center with pending/paid workflows, SIA-specific views, and color-coded buy/sell history with per-transaction performance data.</p>
     </div>
 
     <!-- Slide tabs -->
@@ -541,8 +541,8 @@
         </svg>
       </div>
 
-      <!-- ── Slide 4: Portfolio Sharing ── -->
-      <div class="preview__slide" [class.active]="activeSlide === 4">
+      <!-- ── Slide 5: Portfolio Sharing ── -->
+      <div class="preview__slide" [class.active]="activeSlide === 5">
         <svg viewBox="0 0 900 520" xmlns="http://www.w3.org/2000/svg" class="preview__svg">
           <rect width="900" height="520" fill="#080c14"/>
           <rect width="900" height="46" fill="#111d35"/>
@@ -808,6 +808,104 @@
           <text x="65" y="416" fill="#f89b29" font-family="Inter,sans-serif" font-size="9" font-weight="600">📊 Yahoo Finance · Live</text>
           <text x="182" y="416" fill="#4d6080" font-family="Inter,sans-serif" font-size="9">price source</text>
           <text x="52" y="448" fill="#4d6080" font-family="Inter,sans-serif" font-size="8.5">🟢 Green border = profitable purchase  ·  🔴 Red border = purchase currently at a loss</text>
+        </svg>
+      </div>
+
+      <!-- ── Slide 4: Sell History ── -->
+      <div class="preview__slide" [class.active]="activeSlide === 4">
+        <svg viewBox="0 0 900 520" xmlns="http://www.w3.org/2000/svg" class="preview__svg">
+          <rect width="900" height="520" fill="#080c14"/>
+          <rect width="900" height="46" fill="#111d35"/>
+          <line x1="0" y1="46" x2="900" y2="46" stroke="#1f2e4a" stroke-width="1"/>
+          <text x="18" y="28" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="13" font-weight="700">📊 Investments Tracker</text>
+
+          <!-- Blurred dashboard background -->
+          <rect width="900" height="520" fill="rgba(0,0,0,0.5)"/>
+
+          <!-- Sell History Modal -->
+          <rect x="30" y="52" width="840" height="448" rx="10" fill="#111d35" stroke="#243452" stroke-width="1.5"/>
+
+          <!-- Modal header bar -->
+          <rect x="30" y="52" width="840" height="44" rx="10" fill="#141f35"/>
+          <rect x="30" y="76" width="840" height="20" fill="#141f35"/>
+          <text x="56" y="80" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="12" font-weight="700">💸 Sell History — VWCE · Vanguard FTSE All-World UCITS ETF</text>
+          <circle cx="852" cy="74" r="12" fill="#1a2a45"/>
+          <text x="847" y="79" fill="#8da0bf" font-family="Inter,sans-serif" font-size="11">✕</text>
+          <line x1="30" y1="96" x2="870" y2="96" stroke="#1f2e4a" stroke-width="1"/>
+
+          <!-- Table headers -->
+          <rect x="30" y="96" width="840" height="28" fill="rgba(31,46,74,0.6)"/>
+          <text x="52" y="114" fill="#4d6080" font-family="Inter,sans-serif" font-size="8">DATE</text>
+          <text x="145" y="114" fill="#4d6080" font-family="Inter,sans-serif" font-size="8">QTY SOLD</text>
+          <text x="235" y="114" fill="#4d6080" font-family="Inter,sans-serif" font-size="8">SELL PRICE</text>
+          <text x="350" y="114" fill="#4d6080" font-family="Inter,sans-serif" font-size="8">PROCEEDS</text>
+          <text x="460" y="114" fill="#4d6080" font-family="Inter,sans-serif" font-size="8">COST BASIS (FIFO)</text>
+          <text x="610" y="114" fill="#4d6080" font-family="Inter,sans-serif" font-size="8">GAIN / LOSS (€)</text>
+          <text x="745" y="114" fill="#4d6080" font-family="Inter,sans-serif" font-size="8">TAX STATUS</text>
+          <line x1="30" y1="124" x2="870" y2="124" stroke="#1f2e4a" stroke-width="0.8"/>
+
+          <!-- Row 1: Positive realised gain -->
+          <rect x="30" y="124" width="840" height="44" fill="rgba(20,217,144,0.04)"/>
+          <line x1="33" y1="124" x2="33" y2="168" stroke="#28a745" stroke-width="3"/>
+          <text x="52" y="150" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">2025-03-18</text>
+          <text x="145" y="150" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">12</text>
+          <text x="235" y="150" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">€134.20</text>
+          <text x="350" y="150" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">€1,610.40</text>
+          <text x="460" y="150" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">€1,214.40</text>
+          <text x="610" y="150" fill="#14d990" font-family="Inter,sans-serif" font-size="10" font-weight="600">+€396.00</text>
+          <rect x="745" y="136" width="90" height="20" rx="5" fill="rgba(248,155,41,0.15)" stroke="rgba(248,155,41,0.4)" stroke-width="1"/>
+          <text x="756" y="150" fill="#f89b29" font-family="Inter,sans-serif" font-size="8.5" font-weight="600">Pending</text>
+          <line x1="30" y1="168" x2="870" y2="168" stroke="#1f2e4a" stroke-width="0.5"/>
+
+          <!-- Row 2: Positive realised gain -->
+          <line x1="33" y1="168" x2="33" y2="212" stroke="#28a745" stroke-width="3"/>
+          <text x="52" y="194" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">2025-06-27</text>
+          <text x="145" y="194" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">10</text>
+          <text x="235" y="194" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">€141.80</text>
+          <text x="350" y="194" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">€1,418.00</text>
+          <text x="460" y="194" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">€1,098.00</text>
+          <text x="610" y="194" fill="#14d990" font-family="Inter,sans-serif" font-size="10" font-weight="600">+€320.00</text>
+          <rect x="745" y="180" width="90" height="20" rx="5" fill="rgba(20,217,144,0.15)" stroke="rgba(20,217,144,0.35)" stroke-width="1"/>
+          <text x="760" y="194" fill="#14d990" font-family="Inter,sans-serif" font-size="8.5" font-weight="600">Paid</text>
+          <line x1="30" y1="212" x2="870" y2="212" stroke="#1f2e4a" stroke-width="0.5"/>
+
+          <!-- Row 3: Negative realised gain -->
+          <rect x="30" y="212" width="840" height="44" fill="rgba(240,82,82,0.04)"/>
+          <line x1="33" y1="212" x2="33" y2="256" stroke="#dc3545" stroke-width="3"/>
+          <text x="52" y="238" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">2025-09-05</text>
+          <text x="145" y="238" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">8</text>
+          <text x="235" y="238" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">€118.10</text>
+          <text x="350" y="238" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">€944.80</text>
+          <text x="460" y="238" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">€1,008.00</text>
+          <text x="610" y="238" fill="#f05252" font-family="Inter,sans-serif" font-size="10" font-weight="600">-€63.20</text>
+          <rect x="745" y="224" width="90" height="20" rx="5" fill="rgba(79,142,247,0.15)" stroke="rgba(79,142,247,0.35)" stroke-width="1"/>
+          <text x="754" y="238" fill="#4f8ef7" font-family="Inter,sans-serif" font-size="8.5" font-weight="600">No tax due</text>
+          <line x1="30" y1="256" x2="870" y2="256" stroke="#1f2e4a" stroke-width="0.5"/>
+
+          <!-- Row 4: Positive realised gain -->
+          <line x1="33" y1="256" x2="33" y2="300" stroke="#28a745" stroke-width="3"/>
+          <text x="52" y="282" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">2026-01-12</text>
+          <text x="145" y="282" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">14</text>
+          <text x="235" y="282" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">€147.30</text>
+          <text x="350" y="282" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">€2,062.20</text>
+          <text x="460" y="282" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">€1,533.00</text>
+          <text x="610" y="282" fill="#14d990" font-family="Inter,sans-serif" font-size="10" font-weight="600">+€529.20</text>
+          <rect x="745" y="268" width="90" height="20" rx="5" fill="rgba(248,155,41,0.15)" stroke="rgba(248,155,41,0.4)" stroke-width="1"/>
+          <text x="756" y="282" fill="#f89b29" font-family="Inter,sans-serif" font-size="8.5" font-weight="600">Pending</text>
+          <line x1="30" y1="300" x2="870" y2="300" stroke="#1f2e4a" stroke-width="0.5"/>
+
+          <!-- Totals row -->
+          <rect x="30" y="344" width="840" height="44" fill="rgba(79,142,247,0.07)"/>
+          <text x="52" y="370" fill="#8da0bf" font-family="Inter,sans-serif" font-size="9" font-weight="700">TOTAL — 44 shares sold</text>
+          <text x="350" y="370" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10" font-weight="700">€6,035.40 proceeds</text>
+          <text x="610" y="370" fill="#14d990" font-family="Inter,sans-serif" font-size="11" font-weight="700">+€1,182.00 realised</text>
+          <line x1="30" y1="388" x2="870" y2="388" stroke="#1f2e4a" stroke-width="1"/>
+
+          <!-- Footer: tax status legend -->
+          <rect x="52" y="400" width="166" height="24" rx="5" fill="rgba(240,82,82,0.15)" stroke="rgba(240,82,82,0.4)" stroke-width="1"/>
+          <text x="64" y="416" fill="#f05252" font-family="Inter,sans-serif" font-size="9" font-weight="600">🧾 Exit Tax @ 38% tracked</text>
+          <text x="230" y="416" fill="#4d6080" font-family="Inter,sans-serif" font-size="9">pending/paid workflow</text>
+          <text x="52" y="448" fill="#4d6080" font-family="Inter,sans-serif" font-size="8.5">🟢 Green border = realised gain  ·  🔴 Red border = realised loss  ·  Tax status is tracked per sell event</text>
         </svg>
       </div>
     </div>
