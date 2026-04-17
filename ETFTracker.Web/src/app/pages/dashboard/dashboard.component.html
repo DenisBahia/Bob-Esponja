@@ -181,7 +181,7 @@
                   <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='currentPrice'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='currentPrice'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('currentPrice')">Current Price</th>
                   <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='totalValue'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='totalValue'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('totalValue')">Total Value</th>
                   <th colspan="5">Gain/Loss</th>
-                  <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='taxPaid'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='taxPaid'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('taxPaid')">Tax Paid</th>
+                  <th>Taxes</th>
                   <th>Actions</th>
                 </tr>
                 <tr class="periods-header">
@@ -246,8 +246,15 @@
                     </div>
                   </td>
 
-                  <!-- Tax Paid -->
-                  <td class="price">{{ formatCurrency(holding.totalTaxPaid) }}</td>
+                  <!-- Taxes -->
+                  <td class="taxes-cell">
+                    <button class="btn-taxes"
+                            [class.btn-taxes--pending]="holding.totalTaxPending > 0"
+                            (click)="onTaxHistoryClick(holding)">
+                      <span *ngIf="holding.totalTaxPending > 0" class="taxes-dot"></span>
+                      {{ formatCurrency(holding.totalTaxPending + holding.totalTaxPaid) }}
+                    </button>
+                  </td>
 
                   <td class="actions">
                     <button class="btn-link" (click)="onBuyHistoryClick(holding.id)">History</button>
@@ -322,6 +329,114 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- ── Tax Summary Section ───────────────────────────────────────────── -->
+    <div *ngIf="activeMainSection === 'portfolio'" class="tax-summary-section">
+      <div class="tax-summary-header">
+        <div>
+          <h2>🧾 Tax Summary</h2>
+          <p class="tax-summary-sub">All taxable events — deemed disposals and sells — across your portfolio</p>
+        </div>
+        <div class="tax-summary-actions" *ngIf="!sharingCtx.isReadOnly() && taxSummary && taxSummary.totalPending > 0">
+          <button class="btn-mark-all"
+                  [disabled]="taxMarkingAllYear !== null"
+                  (click)="onMarkAllPaid(getTaxCurrentYear())">
+            {{ taxMarkingAllYear !== null ? 'Marking…' : 'Mark ' + getTaxCurrentYear() + ' as Paid' }}
+          </button>
+          <button class="btn-mark-all btn-mark-all--all"
+                  [disabled]="taxMarkingAllYear !== null"
+                  (click)="onMarkAllPaid()">
+            Mark All as Paid
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="taxSummaryLoading" class="tax-summary-loading">Loading tax events…</div>
+
+      <ng-container *ngIf="!taxSummaryLoading && taxSummary">
+        <!-- Summary cards -->
+        <div class="tax-overview-cards">
+          <div class="tax-ov-card tax-ov-card--pending">
+            <span class="tax-ov-label">Total Pending</span>
+            <span class="tax-ov-value">{{ formatCurrency(taxSummary.totalPending) }}</span>
+          </div>
+          <div class="tax-ov-card tax-ov-card--year">
+            <span class="tax-ov-label">Pending {{ getTaxCurrentYear() }}</span>
+            <span class="tax-ov-value">{{ formatCurrency(getTaxPendingCurrentYear()) }}</span>
+          </div>
+          <div class="tax-ov-card tax-ov-card--paid">
+            <span class="tax-ov-label">Total Paid</span>
+            <span class="tax-ov-value tax-ov-value--green">{{ formatCurrency(taxSummary.totalPaid) }}</span>
+          </div>
+          <div class="tax-ov-card" *ngIf="taxSummary.nextDeemedDisposalDate">
+            <span class="tax-ov-label">Next Deemed Disposal</span>
+            <span class="tax-ov-value tax-ov-value--accent">{{ taxSummary.nextDeemedDisposalDate }}</span>
+          </div>
+        </div>
+
+        <!-- Empty state -->
+        <div class="tax-empty" *ngIf="taxSummary.events.length === 0">
+          <p>No tax events recorded yet. Events appear automatically when sells are made or 8-year deemed disposal rules are triggered.</p>
+        </div>
+
+        <!-- Per-holding groups -->
+        <div class="tax-holding-group" *ngFor="let group of getTaxEventsByHolding()">
+          <div class="tax-holding-header">
+            <strong>{{ group.ticker }}</strong>
+            <span class="tax-holding-name" *ngIf="group.etfName">{{ group.etfName }}</span>
+            <span class="tax-holding-pending" *ngIf="getGroupPending(group.events) > 0">
+              {{ formatCurrency(getGroupPending(group.events)) }} pending
+            </span>
+          </div>
+          <div class="tax-events-table-wrap">
+            <table class="tax-events-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>Taxable Gain</th>
+                  <th>Rate</th>
+                  <th>Tax Due</th>
+                  <th>Status</th>
+                  <th *ngIf="!sharingCtx.isReadOnly()">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let event of group.events"
+                    [class.tax-row-pending]="event.status === 'Pending'"
+                    [class.tax-row-paid]="event.status === 'Paid'">
+                  <td>{{ event.eventDate }}</td>
+                  <td>
+                    <span class="te-type-badge" [class.te-type-badge--disposal]="event.eventType === 'DeemedDisposal'"
+                          [class.te-type-badge--sell]="event.eventType === 'Sell'">
+                      {{ formatTaxEventType(event.eventType) }}
+                    </span>
+                  </td>
+                  <td [class.gain-pos]="event.taxableGain >= 0" [class.gain-neg]="event.taxableGain < 0">
+                    {{ formatCurrency(event.taxableGain) }}
+                  </td>
+                  <td>{{ event.taxRateUsed }}%</td>
+                  <td class="te-tax-amt">{{ formatCurrency(event.taxAmount) }}</td>
+                  <td>
+                    <span class="te-status" [class.te-status--pending]="event.status === 'Pending'"
+                          [class.te-status--paid]="event.status === 'Paid'">
+                      {{ event.status }}
+                    </span>
+                  </td>
+                  <td *ngIf="!sharingCtx.isReadOnly()">
+                    <button class="btn-te-paid" *ngIf="event.status === 'Pending'"
+                            (click)="onMarkSinglePaid(event)">Mark Paid</button>
+                    <span class="te-paid-on" *ngIf="event.status === 'Paid' && event.paidAt">
+                      {{ event.paidAt | date:'dd MMM y' }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </ng-container>
     </div>
 
     <!-- ── My Goal section ───────────────────────────────────────────────── -->
@@ -749,6 +864,8 @@
   <!-- Modals -->
   <app-add-transaction-modal
     *ngIf="showAddTransactionModal"
+    [isIrishInvestor]="isIrishInvestor"
+    [taxRate]="isIrishInvestor ? projectionSettings.exitTaxPercent : projectionSettings.cgtPercent"
     (transactionAdded)="onTransactionAdded()"
     (cancelled)="onTransactionCancelled()">
   </app-add-transaction-modal>
@@ -775,5 +892,14 @@
     (startedViewingAs)="onStartedViewingAs()"
     (stoppedViewing)="stopViewingAs()">
   </app-share-profile-modal>
+
+  <!-- Tax History Modal (per holding) -->
+  <app-tax-history-modal
+    *ngIf="showTaxHistoryModal && selectedTaxHolding"
+    [holdingId]="selectedTaxHolding!.id"
+    [ticker]="selectedTaxHolding!.ticker"
+    (closed)="onTaxHistoryModalClosed()"
+    (taxPaid)="onTaxPaid()">
+  </app-tax-history-modal>
 </div>
 

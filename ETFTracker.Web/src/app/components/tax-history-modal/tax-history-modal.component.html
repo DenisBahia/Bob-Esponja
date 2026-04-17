@@ -1,0 +1,110 @@
+<div class="modal-overlay" (click)="close()">
+  <div class="modal-panel" (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="modal-header">
+      <div class="modal-title">
+        <span class="modal-icon">🧾</span>
+        <div>
+          <h2>Tax History — {{ ticker }}</h2>
+          <p class="modal-sub">All taxable events recorded for this holding</p>
+        </div>
+      </div>
+      <button class="modal-close" (click)="close()">✕</button>
+    </div>
+
+    <!-- Loading -->
+    <div class="modal-loading" *ngIf="loading">
+      <p>Loading tax events…</p>
+    </div>
+
+    <!-- Error -->
+    <div class="modal-error" *ngIf="error">{{ error }}</div>
+
+    <ng-container *ngIf="!loading && summary">
+
+      <!-- Summary cards -->
+      <div class="tax-summary-cards">
+        <div class="tax-card-sm tax-card-sm--pending">
+          <span class="card-label">Tax Pending</span>
+          <span class="card-value">{{ formatCurrency(summary.totalPending) }}</span>
+        </div>
+        <div class="tax-card-sm tax-card-sm--paid">
+          <span class="card-label">Tax Paid</span>
+          <span class="card-value">{{ formatCurrency(summary.totalPaid) }}</span>
+        </div>
+        <div class="tax-card-sm" *ngIf="summary.nextDeemedDisposalDate">
+          <span class="card-label">Next Deemed Disposal</span>
+          <span class="card-value card-value--date">{{ formatDate(summary.nextDeemedDisposalDate) }}</span>
+        </div>
+      </div>
+
+      <!-- Empty -->
+      <div class="empty-state" *ngIf="summary.events.length === 0">
+        <p>No tax events recorded for this holding yet.</p>
+        <p class="empty-hint">Events are created automatically when you sell or when the 8-year deemed disposal rule applies.</p>
+      </div>
+
+      <!-- Events table -->
+      <div class="events-table-wrap" *ngIf="summary.events.length > 0">
+        <table class="events-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Qty</th>
+              <th>Cost Basis/unit</th>
+              <th>Price/unit</th>
+              <th>Taxable Gain</th>
+              <th>Tax Rate</th>
+              <th>Tax Due</th>
+              <th>Status</th>
+              <th *ngIf="!sharingCtx.isReadOnly()">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let event of summary.events; trackBy: trackById"
+                [class.row-pending]="event.status === 'Pending'"
+                [class.row-paid]="event.status === 'Paid'">
+              <td>{{ formatDate(event.eventDate) }}</td>
+              <td>
+                <span class="type-badge" [class.type-badge--disposal]="event.eventType === 'DeemedDisposal'"
+                      [class.type-badge--sell]="event.eventType === 'Sell'">
+                  {{ formatEventType(event.eventType) }}
+                </span>
+              </td>
+              <td>{{ event.quantityAtEvent > 0 ? event.quantityAtEvent.toFixed(4) : '—' }}</td>
+              <td>{{ event.costBasisPerUnit > 0 ? formatCurrency(event.costBasisPerUnit) : '—' }}</td>
+              <td>{{ formatCurrency(event.pricePerUnitAtEvent) }}</td>
+              <td [class.positive]="event.taxableGain >= 0" [class.negative]="event.taxableGain < 0">
+                {{ formatCurrency(event.taxableGain) }}
+              </td>
+              <td>{{ event.taxRateUsed }}%</td>
+              <td class="tax-amount">{{ formatCurrency(event.taxAmount) }}</td>
+              <td>
+                <span class="status-badge" [class.status-badge--pending]="event.status === 'Pending'"
+                      [class.status-badge--paid]="event.status === 'Paid'">
+                  {{ event.status }}
+                </span>
+              </td>
+              <td *ngIf="!sharingCtx.isReadOnly()">
+                <button class="btn-mark-paid"
+                        *ngIf="event.status === 'Pending'"
+                        [disabled]="markingId === event.id"
+                        (click)="onMarkPaid(event)">
+                  {{ markingId === event.id ? '…' : 'Mark Paid' }}
+                </button>
+                <span class="paid-on" *ngIf="event.status === 'Paid' && event.paidAt">
+                  {{ formatDate(event.paidAt) }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </ng-container>
+
+  </div>
+</div>
+

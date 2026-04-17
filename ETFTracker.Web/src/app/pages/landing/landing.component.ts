@@ -17,7 +17,7 @@ export class LandingComponent implements OnInit, OnDestroy {
   readonly slides = [
     { label: 'Dashboard' },
     { label: 'Projections' },
-    { label: '🇮🇪 Irish Tax' },
+    { label: '🧾 Tax Center' },
     { label: 'Buy History' },
     { label: 'Portfolio Sharing' },
   ];

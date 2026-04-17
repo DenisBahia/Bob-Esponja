@@ -24,7 +24,9 @@ export interface HoldingDto {
   monthlyMetrics: PeriodMetrics;
   ytdMetrics: PeriodMetrics;
   totalTaxPaid: number;
+  totalTaxPending: number;
   availableQuantity: number;
+  nextDeemedDisposalDate: string | null;
 }
 
 export interface DashboardHeaderDto {
@@ -58,6 +60,8 @@ export interface CreateTransactionDto {
   quantity: number;
   purchasePrice: number;
   purchaseDate: string;
+  isIrishInvestor: boolean;
+  taxRate: number;
 }
 
 export interface UpdateTransactionDto {
@@ -210,6 +214,39 @@ export interface SellRecordDto {
   isIrishInvestor: boolean;
   createdAt: string;
   lots: SellLotBreakdownDto[];
+}
+
+// ── Tax Events ────────────────────────────────────────────────────────────────
+
+export interface TaxEventDto {
+  id: number;
+  holdingId: number;
+  ticker: string;
+  etfName: string | null;
+  buyTransactionId: number | null;
+  sellRecordId: number | null;
+  eventType: 'Sell' | 'DeemedDisposal';
+  eventDate: string;         // "YYYY-MM-DD"
+  quantityAtEvent: number;
+  costBasisPerUnit: number;
+  pricePerUnitAtEvent: number;
+  taxableGain: number;
+  taxAmount: number;
+  taxRateUsed: number;
+  status: 'Pending' | 'Paid';
+  paidAt: string | null;
+  createdAt: string;
+}
+
+export interface TaxSummaryDto {
+  totalPending: number;
+  totalPaid: number;
+  nextDeemedDisposalDate: string | null;
+  events: TaxEventDto[];
+}
+
+export interface MarkTaxEventPaidDto {
+  paidAt?: string | null;
 }
 
 // ── Sharing ───────────────────────────────────────────────────────────────────
@@ -367,5 +404,25 @@ export class ApiService {
 
   getSellHistory(holdingId: number): Observable<SellRecordDto[]> {
     return this.http.get<SellRecordDto[]>(`${this.apiUrl}/holdings/${holdingId}/sell-history`);
+  }
+
+  // ── Tax Events ────────────────────────────────────────────────────────────
+
+  getTaxEvents(holdingId?: number): Observable<TaxSummaryDto> {
+    const url = holdingId
+      ? `${this.apiUrl}/tax-events?holdingId=${holdingId}`
+      : `${this.apiUrl}/tax-events`;
+    return this.http.get<TaxSummaryDto>(url);
+  }
+
+  markTaxEventPaid(id: number, dto?: MarkTaxEventPaidDto): Observable<TaxEventDto> {
+    return this.http.put<TaxEventDto>(`${this.apiUrl}/tax-events/${id}/mark-paid`, dto ?? {});
+  }
+
+  markAllTaxEventsPaid(year?: number): Observable<{ marked: number }> {
+    const url = year
+      ? `${this.apiUrl}/tax-events/mark-all-paid?year=${year}`
+      : `${this.apiUrl}/tax-events/mark-all-paid`;
+    return this.http.put<{ marked: number }>(url, {});
   }
 }

@@ -27,7 +27,9 @@ public class HoldingDto
 
     // Sell / CGT summary
     public decimal TotalTaxPaid { get; set; }
+    public decimal TotalTaxPending { get; set; }
     public decimal AvailableQuantity { get; set; }
+    public DateOnly? NextDeemedDisposalDate { get; set; }
 }
 
 public class DashboardHeaderDto

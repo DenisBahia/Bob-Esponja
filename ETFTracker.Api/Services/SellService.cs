@@ -12,17 +12,43 @@ public interface ISellService
 
     Task<SellRecordDto> ConfirmSellAsync(int holdingId, int userId, decimal qty, decimal sellPrice,
         DateOnly sellDate, bool isIrishInvestor, decimal taxRate, CancellationToken ct = default);
-
     Task<List<SellRecordDto>> GetSellHistoryAsync(int holdingId, int userId, CancellationToken ct = default);
 }
 
 public class SellService : ISellService
 {
     private readonly AppDbContext _db;
+    private readonly ILogger<SellService> _logger;
 
-    public SellService(AppDbContext db, ILogger<SellService> _)
+    public SellService(AppDbContext db, ILogger<SellService> logger)
     {
         _db = db;
+        _logger = logger;
+    }
+
+    // ── TaxEvent helper ────────────────────────────────────────────────────────
+    private static TaxEvent BuildSellTaxEvent(int userId, int holdingId, int sellRecordId,
+        DateOnly sellDate, decimal sellPrice, decimal totalProfit, decimal cgtPaid, decimal taxRate)
+    {
+        // Weighted average basis = sellPrice - (totalProfit / totalQty) is implicit;
+        // we record the aggregate sell-level event (one row per sell, not per lot)
+        return new TaxEvent
+        {
+            UserId = userId,
+            HoldingId = holdingId,
+            SellRecordId = sellRecordId,
+            BuyTransactionId = null,
+            EventType = TaxEventType.Sell,
+            EventDate = sellDate,
+            QuantityAtEvent = 0,           // not relevant at aggregate level; see lots in sell_records
+            CostBasisPerUnit = 0,
+            PricePerUnitAtEvent = sellPrice,
+            TaxableGain = totalProfit,
+            TaxAmount = cgtPaid,
+            TaxRateUsed = taxRate,
+            Status = TaxEventStatus.Pending,
+            CreatedAt = new DateTime(DateTime.UtcNow.Ticks, DateTimeKind.Utc)
+        };
     }
 
     // ── Public API ─────────────────────────────────────────────────────────────
@@ -130,6 +156,21 @@ public class SellService : ISellService
             await _db.SaveChangesAsync(ct);
 
             await tx.CommitAsync(ct);
+
+            // Insert TaxEvent for this sell (outside the main tx so ID is available)
+            try
+            {
+                var taxEvent = BuildSellTaxEvent(
+                    userId, holdingId, sellRecord.Id,
+                    sellDate, sellPrice, totalProfit, cgtPaid, taxRate);
+                _db.TaxEvents.Add(taxEvent);
+                await _db.SaveChangesAsync(ct);
+            }
+            catch (Exception ex)
+            {
+                // Non-fatal: sell is committed, tax event can be recreated
+                _logger.LogWarning(ex, "Failed to create TaxEvent for sell record {SellRecordId}", sellRecord.Id);
+            }
 
             return new SellRecordDto
             {

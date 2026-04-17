@@ -1,12 +1,13 @@
 import { Component, OnInit, OnDestroy, AfterViewChecked, ChangeDetectionStrategy, ChangeDetectorRef, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, DashboardDto, HoldingDto, ProjectionResultDto, ProjectionSettingsDto, PortfolioEvolutionDto, ProjectionVersionSummaryDto, ProjectionVersionDetailDto, ProjectionDataPointDto, SaveVersionRequestDto, UserGoalDto, GoalDataPointDto, UpsertGoalRequestDto } from '../../services/api.service';
+import { ApiService, DashboardDto, HoldingDto, ProjectionResultDto, ProjectionSettingsDto, PortfolioEvolutionDto, ProjectionVersionSummaryDto, ProjectionVersionDetailDto, ProjectionDataPointDto, SaveVersionRequestDto, UserGoalDto, GoalDataPointDto, UpsertGoalRequestDto, TaxSummaryDto, TaxEventDto } from '../../services/api.service';
 import { AuthService, CurrentUser } from '../../services/auth.service';
 import { AddTransactionModalComponent } from '../../components/add-transaction-modal/add-transaction-modal.component';
 import { BuyHistoryModalComponent } from '../../components/buy-history-modal/buy-history-modal.component';
 import { SellModalComponent } from '../../components/sell-modal/sell-modal.component';
 import { ShareProfileModalComponent } from '../../components/share-profile-modal/share-profile-modal.component';
+import { TaxHistoryModalComponent } from '../../components/tax-history-modal/tax-history-modal.component';
 import { SharingContextService } from '../../services/sharing-context.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -40,7 +41,7 @@ const DARK_SCALE_DEFAULTS = {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, AddTransactionModalComponent, BuyHistoryModalComponent, SellModalComponent, ShareProfileModalComponent],
+  imports: [CommonModule, FormsModule, AddTransactionModalComponent, BuyHistoryModalComponent, SellModalComponent, ShareProfileModalComponent, TaxHistoryModalComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -59,6 +60,15 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   // Sell modal
   showSellModal = false;
   selectedSellHolding: HoldingDto | null = null;
+
+  // Tax history modal
+  showTaxHistoryModal = false;
+  selectedTaxHolding: HoldingDto | null = null;
+
+  // Tax summary (consolidated section)
+  taxSummary: TaxSummaryDto | null = null;
+  taxSummaryLoading = false;
+  taxMarkingAllYear: number | null = null;
 
   @ViewChild('allocationChart') allocationChartRef!: ElementRef<HTMLCanvasElement>;
   private pieChart: Chart | null = null;
@@ -297,6 +307,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.loadDashboard();
     this.initProjection();
     this.loadPortfolioEvolution();
+    this.loadTaxSummary();
   }
 
   onShareModalClosed(): void {
@@ -1769,9 +1780,16 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.showAddTransactionModal = true;
   }
 
+  private refreshPortfolioData(): void {
+    this.loadDashboard();
+    this.loadPortfolioEvolution();
+    this.loadProjection();
+    this.loadTaxSummary();
+  }
+
   onTransactionAdded(): void {
     this.showAddTransactionModal = false;
-    this.loadDashboard();
+    this.refreshPortfolioData();
   }
 
   onTransactionCancelled(): void {
@@ -1790,8 +1808,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   onHistoryChanged(): void {
     // A transaction was deleted — reload portfolio data so holdings & metrics stay in sync
-    this.loadDashboard();
-    this.loadProjection();
+    this.refreshPortfolioData();
   }
 
   onSellClick(holding: HoldingDto): void {
@@ -1809,8 +1826,98 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   onSellConfirmed(): void {
     this.showSellModal = false;
     this.selectedSellHolding = null;
-    this.loadDashboard();
+    this.refreshPortfolioData();
+    this.loadTaxSummary();
     this.cdr.markForCheck();
+  }
+
+  // ── Tax History Modal ──────────────────────────────────────────────────────
+
+  onTaxHistoryClick(holding: HoldingDto): void {
+    this.selectedTaxHolding = holding;
+    this.showTaxHistoryModal = true;
+    this.cdr.markForCheck();
+  }
+
+  onTaxHistoryModalClosed(): void {
+    this.showTaxHistoryModal = false;
+    this.selectedTaxHolding = null;
+    this.cdr.markForCheck();
+  }
+
+  onTaxPaid(): void {
+    this.loadTaxSummary();
+    this.cdr.markForCheck();
+  }
+
+  // ── Tax Summary Section ────────────────────────────────────────────────────
+
+  loadTaxSummary(): void {
+    this.taxSummaryLoading = true;
+    this.cdr.markForCheck();
+    this.apiService.getTaxEvents().subscribe({
+      next: (s) => {
+        this.taxSummary = s;
+        this.taxSummaryLoading = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.taxSummaryLoading = false;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  onMarkAllPaid(year?: number): void {
+    if (this.sharingCtx.isReadOnly()) return;
+    this.taxMarkingAllYear = year ?? 0;
+    this.cdr.markForCheck();
+    this.apiService.markAllTaxEventsPaid(year).subscribe({
+      next: () => {
+        this.taxMarkingAllYear = null;
+        this.loadTaxSummary();
+      },
+      error: () => {
+        this.taxMarkingAllYear = null;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  onMarkSinglePaid(event: TaxEventDto): void {
+    if (this.sharingCtx.isReadOnly()) return;
+    this.apiService.markTaxEventPaid(event.id).subscribe({
+      next: () => this.loadTaxSummary(),
+      error: () => {}
+    });
+  }
+
+  getTaxCurrentYear(): number { return new Date().getFullYear(); }
+
+  getTaxPendingCurrentYear(): number {
+    if (!this.taxSummary) return 0;
+    const y = this.getTaxCurrentYear();
+    return this.taxSummary.events
+      .filter(e => e.status === 'Pending' && new Date(e.eventDate).getFullYear() === y)
+      .reduce((s, e) => s + e.taxAmount, 0);
+  }
+
+  getTaxEventsByHolding(): { holdingId: number; ticker: string; etfName: string | null; events: TaxEventDto[] }[] {
+    if (!this.taxSummary) return [];
+    const map = new Map<number, { holdingId: number; ticker: string; etfName: string | null; events: TaxEventDto[] }>();
+    for (const e of this.taxSummary.events) {
+      if (!map.has(e.holdingId)) map.set(e.holdingId, { holdingId: e.holdingId, ticker: e.ticker, etfName: e.etfName, events: [] });
+      map.get(e.holdingId)!.events.push(e);
+    }
+    return Array.from(map.values());
+  }
+
+  formatTaxEventType(t: string): string {
+    return t === 'DeemedDisposal' ? '8-yr Deemed Disposal' : 'Sell';
+  }
+
+  getGroupPending(events: TaxEventDto[]): number {
+    return events.filter(e => e.status === 'Pending').reduce((s, e) => s + e.taxAmount, 0);
   }
 
 

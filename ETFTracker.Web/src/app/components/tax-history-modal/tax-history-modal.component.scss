@@ -1,0 +1,200 @@
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modal-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 960px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+}
+
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 1.4rem 1.8rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.modal-title {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+
+  h2 { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 0; }
+}
+
+.modal-icon { font-size: 1.5rem; }
+.modal-sub { font-size: 0.82rem; color: var(--text-muted); margin: 0.2rem 0 0; }
+
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0.2rem 0.5rem;
+  &:hover { color: var(--text-primary); }
+}
+
+.modal-loading, .modal-error {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+.modal-error { color: var(--negative); }
+
+/* ── Summary cards ── */
+.tax-summary-cards {
+  display: flex;
+  gap: 1rem;
+  padding: 1.2rem 1.8rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.tax-card-sm {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.7rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 160px;
+
+  &--pending { border-color: rgba(248,155,41,0.4); background: rgba(248,155,41,0.06); }
+  &--paid    { border-color: rgba(20,217,144,0.3); background: rgba(20,217,144,0.06); }
+}
+
+.card-label { font-size: 0.74rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.card-value { font-size: 1.05rem; font-weight: 700; color: var(--text-primary); }
+.card-value--date { font-size: 0.9rem; color: var(--accent); }
+
+/* ── Table ── */
+.events-table-wrap {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.events-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.83rem;
+
+  th {
+    padding: 0.6rem 0.9rem;
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-align: left;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
+  td {
+    padding: 0.6rem 0.9rem;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  tr.row-pending td { background: rgba(248,155,41,0.025); }
+  tr.row-paid td    { opacity: 0.7; }
+  tr:last-child td  { border-bottom: none; }
+}
+
+.type-badge {
+  display: inline-block;
+  border-radius: 6px;
+  padding: 0.18rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+
+  &--disposal {
+    background: rgba(79,142,247,0.12);
+    color: var(--accent);
+    border: 1px solid rgba(79,142,247,0.25);
+  }
+  &--sell {
+    background: rgba(124,92,252,0.12);
+    color: var(--accent-purple);
+    border: 1px solid rgba(124,92,252,0.25);
+  }
+}
+
+.status-badge {
+  display: inline-block;
+  border-radius: 6px;
+  padding: 0.18rem 0.6rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+
+  &--pending {
+    background: rgba(248,155,41,0.12);
+    color: #f89b29;
+    border: 1px solid rgba(248,155,41,0.3);
+  }
+  &--paid {
+    background: rgba(20,217,144,0.1);
+    color: var(--positive);
+    border: 1px solid rgba(20,217,144,0.25);
+  }
+}
+
+.tax-amount { font-weight: 700; color: var(--negative); }
+
+.positive { color: var(--positive); }
+.negative { color: var(--negative); }
+
+.btn-mark-paid {
+  background: rgba(20,217,144,0.1);
+  color: var(--positive);
+  border: 1px solid rgba(20,217,144,0.3);
+  border-radius: 6px;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+
+  &:hover { background: rgba(20,217,144,0.2); }
+  &:disabled { opacity: 0.5; cursor: wait; }
+}
+
+.paid-on {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.empty-state {
+  padding: 2.5rem 2rem;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+.empty-hint {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  margin-top: 0.4rem;
+}
+

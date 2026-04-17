@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, HostListener, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, EventEmitter, Output, Input, HostListener, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, CreateTransactionDto, TickerSearchResult } from '../../services/api.service';
@@ -15,6 +15,8 @@ import { debounceTime, Subject, switchMap, of } from 'rxjs';
 export class AddTransactionModalComponent {
   @Output() transactionAdded = new EventEmitter<void>();
   @Output() cancelled = new EventEmitter<void>();
+  @Input() isIrishInvestor = false;
+  @Input() taxRate = 41;
 
   ticker: string = '';
   quantity: number = 0;
@@ -99,7 +101,9 @@ export class AddTransactionModalComponent {
       ticker: this.ticker.toUpperCase(),
       quantity: this.quantity,
       purchasePrice: this.purchasePrice,
-      purchaseDate: this.purchaseDate
+      purchaseDate: this.purchaseDate,
+      isIrishInvestor: this.isIrishInvestor,
+      taxRate: this.taxRate
     };
 
     this.apiService.addTransaction(transaction).subscribe({

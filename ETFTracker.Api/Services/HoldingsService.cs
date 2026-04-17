@@ -20,12 +20,15 @@ public class HoldingsService : IHoldingsService
 {
     private readonly AppDbContext _context;
     private readonly IPriceService _priceService;
+    private readonly IDeemedDisposalService _deemedDisposalService;
     private readonly ILogger<HoldingsService> _logger;
 
-    public HoldingsService(AppDbContext context, IPriceService priceService, ILogger<HoldingsService> logger)
+    public HoldingsService(AppDbContext context, IPriceService priceService,
+        IDeemedDisposalService deemedDisposalService, ILogger<HoldingsService> logger)
     {
         _context = context;
         _priceService = priceService;
+        _deemedDisposalService = deemedDisposalService;
         _logger = logger;
     }
 
@@ -94,12 +97,17 @@ public class HoldingsService : IHoldingsService
         // Pre-load sell data for all holdings in one go
         var holdingIds = dbHoldings.Select(h => h.Id).ToList();
 
-        // Total tax paid per holding
-        var taxByHolding = await _context.SellRecords
-            .Where(sr => holdingIds.Contains(sr.HoldingId))
-            .GroupBy(sr => sr.HoldingId)
-            .Select(g => new { HoldingId = g.Key, TotalTax = g.Sum(sr => sr.CgtPaid) })
-            .ToDictionaryAsync(x => x.HoldingId, x => x.TotalTax, cancellationToken);
+        // Tax summary per holding from tax_events (single source of truth going forward)
+        var taxEventsByHolding = await _context.TaxEvents
+            .Where(te => holdingIds.Contains(te.HoldingId))
+            .GroupBy(te => te.HoldingId)
+            .Select(g => new
+            {
+                HoldingId = g.Key,
+                TotalPaid = g.Where(te => te.Status == TaxEventStatus.Paid).Sum(te => te.TaxAmount),
+                TotalPending = g.Where(te => te.Status == TaxEventStatus.Pending).Sum(te => te.TaxAmount)
+            })
+            .ToDictionaryAsync(x => x.HoldingId, cancellationToken);
 
         // Total consumed quantity per buy transaction id
         var txnIds = dbHoldings.SelectMany(h => h.Transactions.Select(t => t.Id)).ToList();
@@ -108,6 +116,36 @@ public class HoldingsService : IHoldingsService
             .GroupBy(sla => sla.BuyTransactionId)
             .Select(g => new { TxnId = g.Key, Consumed = g.Sum(sla => sla.QuantityConsumed) })
             .ToDictionaryAsync(x => x.TxnId, x => x.Consumed, cancellationToken);
+
+        // Next deemed-disposal date per holding (earliest future anniversary across lots with remaining quantity)
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var nextDeemedDisposalByHolding = new Dictionary<int, DateOnly?>();
+        foreach (var holding in dbHoldings)
+        {
+            DateOnly? next = null;
+            foreach (var t in holding.Transactions)
+            {
+                // Skip fully sold lots — they no longer attract deemed disposal
+                var consumed = consumedByTxn.TryGetValue(t.Id, out var c) ? c : 0m;
+                if (t.Quantity - consumed <= 0m) continue;
+
+                for (int years = 8; ; years += 8)
+                {
+                    DateOnly ann;
+                    try { ann = new DateOnly(t.PurchaseDate.Year + years, t.PurchaseDate.Month, t.PurchaseDate.Day); }
+                    catch { ann = new DateOnly(t.PurchaseDate.Year + years, t.PurchaseDate.Month,
+                        Math.Min(t.PurchaseDate.Day, DateTime.DaysInMonth(t.PurchaseDate.Year + years, t.PurchaseDate.Month))); }
+
+                    if (ann > today)
+                    {
+                        if (!next.HasValue || ann < next.Value) next = ann;
+                        break;
+                    }
+                }
+            }
+            nextDeemedDisposalByHolding[holding.Id] = next;
+        }
+
 
         var holdingDtos = new List<HoldingDto>();
 
@@ -143,8 +181,10 @@ public class HoldingsService : IHoldingsService
                 TotalValue = totalValue,
                 PriceUnavailable = priceUnavailable,
                 PriceSource = priceResult.Source,
-                TotalTaxPaid = taxByHolding.TryGetValue(holding.Id, out var tax) ? tax : 0m,
+                TotalTaxPaid = taxEventsByHolding.TryGetValue(holding.Id, out var taxData) ? taxData.TotalPaid : 0m,
+                TotalTaxPending = taxEventsByHolding.TryGetValue(holding.Id, out var taxData2) ? taxData2.TotalPending : 0m,
                 AvailableQuantity = availableQty,
+                NextDeemedDisposalDate = nextDeemedDisposalByHolding.TryGetValue(holding.Id, out var nd) ? nd : null,
                 DailyMetrics = await CalculatePeriodMetricsAsync(holding.Ticker, holding.Quantity, 1, cancellationToken),
                 WeeklyMetrics = await CalculatePeriodMetricsAsync(holding.Ticker, holding.Quantity, 7, cancellationToken),
                 MonthlyMetrics = await CalculatePeriodMetricsAsync(holding.Ticker, holding.Quantity, 30, cancellationToken),
@@ -247,16 +287,8 @@ public class HoldingsService : IHoldingsService
             _context.Transactions.Add(newTransaction);
             await _context.SaveChangesAsync(cancellationToken);
 
-            // Update holding average cost and quantity
-            var allTransactions = await _context.Transactions
-                .Where(t => t.HoldingId == holding.Id)
-                .ToListAsync(cancellationToken);
-
-            var totalQuantity = allTransactions.Sum(t => t.Quantity);
-            var totalCost = allTransactions.Sum(t => t.Quantity * t.PurchasePrice);
-            
-            holding.Quantity = totalQuantity;
-            holding.AverageCost = totalQuantity > 0 ? totalCost / totalQuantity : 0;
+            // Recalculate from remaining (unsold) quantities so prior sells stay respected.
+            await RecalculateHoldingFromRemainingLotsAsync(holding, cancellationToken);
             holding.UpdatedAt = utcNow;
             
             _context.Holdings.Update(holding);
@@ -270,6 +302,20 @@ public class HoldingsService : IHoldingsService
             // Any failure is swallowed inside BackfillHistoricalPricesIfNeededAsync,
             // so the buy is never rolled back even if the history fetch fails.
             await BackfillHistoricalPricesIfNeededAsync(dto.Ticker, dto.PurchaseDate, cancellationToken);
+
+            // Check for deemed-disposal events triggered by this buy's purchase date
+            if (dto.IsIrishInvestor)
+            {
+                try
+                {
+                    await _deemedDisposalService.CheckAndCreateDeemedDisposalEventsAsync(
+                        holding.Id, userId, dto.IsIrishInvestor, dto.TaxRate, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Deemed-disposal check failed for holding {HoldingId} — non-fatal.", holding.Id);
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -329,6 +375,43 @@ public class HoldingsService : IHoldingsService
         }
     }
 
+    private async Task RecalculateHoldingFromRemainingLotsAsync(Holding holding, CancellationToken cancellationToken)
+    {
+        var allTransactions = await _context.Transactions
+            .Where(t => t.HoldingId == holding.Id)
+            .ToListAsync(cancellationToken);
+
+        if (allTransactions.Count == 0)
+        {
+            holding.Quantity = 0;
+            holding.AverageCost = 0;
+            return;
+        }
+
+        var txnIds = allTransactions.Select(t => t.Id).ToList();
+        var consumedByTxn = await _context.SellLotAllocations
+            .Where(sla => txnIds.Contains(sla.BuyTransactionId))
+            .GroupBy(sla => sla.BuyTransactionId)
+            .Select(g => new { TxnId = g.Key, Consumed = g.Sum(sla => sla.QuantityConsumed) })
+            .ToDictionaryAsync(x => x.TxnId, x => x.Consumed, cancellationToken);
+
+        decimal remainingQty = 0m;
+        decimal remainingCost = 0m;
+
+        foreach (var txn in allTransactions)
+        {
+            var consumed = consumedByTxn.TryGetValue(txn.Id, out var c) ? c : 0m;
+            var remaining = Math.Max(0m, txn.Quantity - consumed);
+            if (remaining <= 0m) continue;
+
+            remainingQty += remaining;
+            remainingCost += remaining * txn.PurchasePrice;
+        }
+
+        holding.Quantity = remainingQty;
+        holding.AverageCost = remainingQty > 0m ? remainingCost / remainingQty : 0m;
+    }
+
     public async Task DeleteTransactionAsync(int transactionId, int userId, CancellationToken cancellationToken = default)
     {
         using var dbTx = await _context.Database.BeginTransactionAsync(cancellationToken);
@@ -365,8 +448,7 @@ public class HoldingsService : IHoldingsService
                 }
                 else
                 {
-                    holding.Quantity = remaining.Sum(t => t.Quantity);
-                    holding.AverageCost = remaining.Sum(t => t.Quantity * t.PurchasePrice) / holding.Quantity;
+                    await RecalculateHoldingFromRemainingLotsAsync(holding, cancellationToken);
                     holding.UpdatedAt = new DateTime(DateTime.UtcNow.Ticks, DateTimeKind.Utc);
                     _context.Holdings.Update(holding);
                 }
@@ -410,8 +492,7 @@ public class HoldingsService : IHoldingsService
             var holding = await _context.Holdings.FindAsync(new object[] { holdingId }, cancellationToken);
             if (holding != null)
             {
-                holding.Quantity = allTxns.Sum(t => t.Quantity);
-                holding.AverageCost = allTxns.Sum(t => t.Quantity * t.PurchasePrice) / holding.Quantity;
+                await RecalculateHoldingFromRemainingLotsAsync(holding, cancellationToken);
                 holding.UpdatedAt = new DateTime(DateTime.UtcNow.Ticks, DateTimeKind.Utc);
                 _context.Holdings.Update(holding);
                 await _context.SaveChangesAsync(cancellationToken);
@@ -434,6 +515,13 @@ public class HoldingsService : IHoldingsService
         var dbHoldings = await _context.Holdings
             .Where(h => h.UserId == userId)
             .Include(h => h.Transactions)
+            .ToListAsync(cancellationToken);
+
+        // Load all sells for those holdings once (used to decrement quantity over time)
+        var holdingIds = dbHoldings.Select(h => h.Id).ToList();
+        var sellRecords = await _context.SellRecords
+            .Where(sr => holdingIds.Contains(sr.HoldingId))
+            .Select(sr => new { sr.HoldingId, sr.SellDate, sr.Quantity })
             .ToListAsync(cancellationToken);
 
         // Derive start date from the user's earliest transaction (so backfilled history is visible)
@@ -479,10 +567,14 @@ public class HoldingsService : IHoldingsService
 
             foreach (var holding in dbHoldings)
             {
-                // Quantity held as of this date = sum of transactions up to and including this date
-                var quantity = holding.Transactions
+                // Quantity held as of this date = buys up to date minus sells up to date
+                var boughtQty = holding.Transactions
                     .Where(t => t.PurchaseDate <= date)
                     .Sum(t => t.Quantity);
+                var soldQty = sellRecords
+                    .Where(sr => sr.HoldingId == holding.Id && sr.SellDate <= date)
+                    .Sum(sr => sr.Quantity);
+                var quantity = Math.Max(0m, boughtQty - soldQty);
 
                 if (quantity <= 0) continue;
 

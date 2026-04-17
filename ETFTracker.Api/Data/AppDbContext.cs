@@ -19,6 +19,7 @@ public class AppDbContext : DbContext
     public DbSet<UserGoal> UserGoals { get; set; }
     public DbSet<SellRecord> SellRecords { get; set; }
     public DbSet<SellLotAllocation> SellLotAllocations { get; set; }
+    public DbSet<TaxEvent> TaxEvents { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -271,9 +272,54 @@ public class AppDbContext : DbContext
             .HasForeignKey(sla => sla.BuyTransactionId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        // TaxEvent
+        modelBuilder.Entity<TaxEvent>().ToTable("tax_events");
+        modelBuilder.Entity<TaxEvent>().HasKey(te => te.Id);
+        modelBuilder.Entity<TaxEvent>().Property(te => te.Id).HasColumnName("id");
+        modelBuilder.Entity<TaxEvent>().Property(te => te.UserId).HasColumnName("user_id");
+        modelBuilder.Entity<TaxEvent>().Property(te => te.HoldingId).HasColumnName("holding_id");
+        modelBuilder.Entity<TaxEvent>().Property(te => te.BuyTransactionId).HasColumnName("buy_transaction_id").IsRequired(false);
+        modelBuilder.Entity<TaxEvent>().Property(te => te.SellRecordId).HasColumnName("sell_record_id").IsRequired(false);
+        modelBuilder.Entity<TaxEvent>().Property(te => te.EventType).HasColumnName("event_type").HasConversion<string>();
+        modelBuilder.Entity<TaxEvent>().Property(te => te.EventDate).HasColumnName("event_date").HasColumnType("date");
+        modelBuilder.Entity<TaxEvent>().Property(te => te.QuantityAtEvent).HasColumnName("quantity_at_event").HasColumnType("decimal(12,4)");
+        modelBuilder.Entity<TaxEvent>().Property(te => te.CostBasisPerUnit).HasColumnName("cost_basis_per_unit").HasColumnType("decimal(12,4)");
+        modelBuilder.Entity<TaxEvent>().Property(te => te.PricePerUnitAtEvent).HasColumnName("price_per_unit_at_event").HasColumnType("decimal(12,4)");
+        modelBuilder.Entity<TaxEvent>().Property(te => te.TaxableGain).HasColumnName("taxable_gain").HasColumnType("decimal(12,2)");
+        modelBuilder.Entity<TaxEvent>().Property(te => te.TaxAmount).HasColumnName("tax_amount").HasColumnType("decimal(12,2)");
+        modelBuilder.Entity<TaxEvent>().Property(te => te.TaxRateUsed).HasColumnName("tax_rate_used").HasColumnType("decimal(5,2)");
+        modelBuilder.Entity<TaxEvent>().Property(te => te.Status).HasColumnName("status").HasConversion<string>().HasDefaultValue(TaxEventStatus.Pending);
+        modelBuilder.Entity<TaxEvent>().Property(te => te.PaidAt).HasColumnName("paid_at").IsRequired(false);
+        modelBuilder.Entity<TaxEvent>().Property(te => te.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+        modelBuilder.Entity<TaxEvent>().HasIndex(te => te.UserId);
+        modelBuilder.Entity<TaxEvent>().HasIndex(te => te.HoldingId);
+        // Unique: one deemed-disposal event per (buy transaction, anniversary date)
+        modelBuilder.Entity<TaxEvent>().HasIndex(te => new { te.BuyTransactionId, te.EventDate })
+            .HasFilter("buy_transaction_id IS NOT NULL")
+            .IsUnique();
+        modelBuilder.Entity<TaxEvent>()
+            .HasOne(te => te.Holding)
+            .WithMany(h => h.TaxEvents)
+            .HasForeignKey(te => te.HoldingId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<TaxEvent>()
+            .HasOne(te => te.User)
+            .WithMany()
+            .HasForeignKey(te => te.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<TaxEvent>()
+            .HasOne(te => te.BuyTransaction)
+            .WithMany()
+            .HasForeignKey(te => te.BuyTransactionId)
+            .OnDelete(DeleteBehavior.SetNull);
+        modelBuilder.Entity<TaxEvent>()
+            .HasOne(te => te.SellRecord)
+            .WithMany()
+            .HasForeignKey(te => te.SellRecordId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         // UserGoal — one goal per user (upsert semantics)
-        modelBuilder.Entity<UserGoal>().ToTable("user_goals");
-        modelBuilder.Entity<UserGoal>().HasKey(g => g.Id);
+        modelBuilder.Entity<UserGoal>().ToTable("user_goals");        modelBuilder.Entity<UserGoal>().HasKey(g => g.Id);
         modelBuilder.Entity<UserGoal>().Property(g => g.Id).HasColumnName("id");
         modelBuilder.Entity<UserGoal>().Property(g => g.UserId).HasColumnName("user_id");
         modelBuilder.Entity<UserGoal>().Property(g => g.SourceVersionId).HasColumnName("source_version_id").IsRequired(false);
