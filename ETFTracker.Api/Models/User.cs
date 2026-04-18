@@ -8,6 +8,9 @@ public class User
     public string? LastName { get; set; }
     public string? AvatarUrl { get; set; }
 
+    // Email/password authentication
+    public string? PasswordHash { get; set; }
+
     // OAuth provider identifiers
     public string? GitHubId { get; set; }
     public string? GitHubUsername { get; set; }

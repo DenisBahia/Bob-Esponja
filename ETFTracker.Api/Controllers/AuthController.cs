@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using ETFTracker.Api.Data;
+using ETFTracker.Api.Dtos;
 using ETFTracker.Api.Models;
 using ETFTracker.Api.Services;
 
@@ -32,6 +33,56 @@ public class AuthController : ControllerBase
         _jwtService    = jwtService;
         _configuration = configuration;
         _logger        = logger;
+    }
+
+    // ── Email / Password ───────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Registers a new user with email and password.
+    /// </summary>
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] RegisterDto dto, CancellationToken ct)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        var emailLower = dto.Email.ToLowerInvariant();
+        if (await _db.Users.AnyAsync(u => u.Email == emailLower, ct))
+            return Conflict(new { error = "email_taken", message = "An account with this email already exists." });
+
+        var now = DateTime.UtcNow;
+        var user = new User
+        {
+            Email        = emailLower,
+            FirstName    = dto.FirstName,
+            LastName     = dto.LastName,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+            CreatedAt    = now,
+            UpdatedAt    = now
+        };
+        _db.Users.Add(user);
+        await _db.SaveChangesAsync(ct);
+
+        var token = _jwtService.GenerateToken(user);
+        return Ok(new { token });
+    }
+
+    /// <summary>
+    /// Authenticates an existing user with email and password.
+    /// </summary>
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] LoginDto dto, CancellationToken ct)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        var emailLower = dto.Email.ToLowerInvariant();
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == emailLower, ct);
+
+        if (user == null || string.IsNullOrEmpty(user.PasswordHash)
+            || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
+            return Unauthorized(new { error = "invalid_credentials", message = "Invalid email or password." });
+
+        var token = _jwtService.GenerateToken(user);
+        return Ok(new { token });
     }
 
     // ── GitHub ─────────────────────────────────────────────────────────────────

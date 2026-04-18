@@ -1,12 +1,18 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
+import { environment } from '../../../environments/environment';
+
+const AUTH_API = `${environment.apiBase}/api/auth`;
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   template: `
     <div class="login-container">
       <div class="login-card">
@@ -14,12 +20,32 @@ import { AuthService } from '../../services/auth.service';
         <div class="brand">
           <span class="brand-icon">📊</span>
           <h1>Investments Tracker</h1>
-          <p class="subtitle">Sign in to access your portfolio</p>
+          <p class="subtitle">{{ isRegister ? 'Create your account' : 'Sign in to access your portfolio' }}</p>
         </div>
 
-        <div *ngIf="errorMessage" class="error-banner">
-          {{ errorMessage }}
-        </div>
+        <div *ngIf="errorMessage" class="error-banner">{{ errorMessage }}</div>
+        <div *ngIf="successMessage" class="success-banner">{{ successMessage }}</div>
+
+        <!-- Email / Password form -->
+        <form (ngSubmit)="submitEmailForm()" #emailForm="ngForm" class="email-form">
+          <div *ngIf="isRegister" class="name-row">
+            <input type="text" [(ngModel)]="firstName" name="firstName" placeholder="First name" class="input" />
+            <input type="text" [(ngModel)]="lastName"  name="lastName"  placeholder="Last name"  class="input" />
+          </div>
+          <input type="email"    [(ngModel)]="email"    name="email"    placeholder="Email"    required class="input" />
+          <input type="password" [(ngModel)]="password" name="password" placeholder="Password" required class="input"
+                 [minlength]="isRegister ? 8 : 1" />
+          <button type="submit" class="btn btn-primary" [disabled]="loading">
+            {{ loading ? 'Please wait…' : (isRegister ? 'Create account' : 'Sign in') }}
+          </button>
+        </form>
+
+        <p class="toggle-link">
+          {{ isRegister ? 'Already have an account?' : "Don't have an account?" }}
+          <a (click)="toggleMode()">{{ isRegister ? 'Sign in' : 'Register' }}</a>
+        </p>
+
+        <div class="divider"><span>or continue with</span></div>
 
         <div class="btn-group">
           <button class="btn btn-github" (click)="loginWithGitHub()">
@@ -74,7 +100,7 @@ import { AuthService } from '../../services/auth.service';
       text-align: center;
       box-shadow: var(--shadow-lg);
     }
-    .brand { margin-bottom: 2rem; }
+    .brand { margin-bottom: 1.5rem; }
     .brand-icon { font-size: 2.5rem; display: block; margin-bottom: 0.75rem; }
     h1 { font-size: 1.35rem; font-weight: 700; margin: 0 0 0.4rem; color: var(--text-primary); }
     .subtitle { color: var(--text-muted); font-size: 0.88rem; margin: 0; }
@@ -85,8 +111,72 @@ import { AuthService } from '../../services/auth.service';
       border: 1px solid rgba(240,82,82,0.3);
       border-radius: 8px;
       padding: 0.75rem;
-      margin-bottom: 1.25rem;
+      margin-bottom: 1rem;
       font-size: 0.88rem;
+    }
+    .success-banner {
+      background: rgba(52,211,153,0.1);
+      color: #34d399;
+      border: 1px solid rgba(52,211,153,0.3);
+      border-radius: 8px;
+      padding: 0.75rem;
+      margin-bottom: 1rem;
+      font-size: 0.88rem;
+    }
+
+    .email-form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      margin-bottom: 0.75rem;
+    }
+    .name-row { display: flex; gap: 0.5rem; }
+    .name-row .input { flex: 1; }
+    .input {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      box-sizing: border-box;
+      outline: none;
+      &:focus { border-color: var(--accent); }
+    }
+
+    .btn-primary {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.75rem;
+      border-radius: 10px;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      &:hover:not(:disabled) { opacity: 0.88; }
+      &:disabled { opacity: 0.55; cursor: default; }
+    }
+
+    .toggle-link {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin: 0.5rem 0 0.75rem;
+      a { color: var(--accent); cursor: pointer; margin-left: 4px; text-decoration: underline; }
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 0.75rem 0;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      &::before, &::after { content: ''; flex: 1; height: 1px; background: var(--border-light); }
     }
 
     .btn-group { display: flex; flex-direction: column; gap: 0.75rem; }
@@ -105,28 +195,69 @@ import { AuthService } from '../../services/auth.service';
       &:hover { opacity: 0.88; transform: translateY(-1px); }
       &:active { transform: translateY(0); }
     }
-    .btn-github {
-      background: #24292e;
-      color: #fff;
-      border-color: #24292e;
-    }
-    .btn-google {
-      background: var(--bg-elevated);
-      color: var(--text-primary);
-    }
+    .btn-github { background: #24292e; color: #fff; border-color: #24292e; }
+    .btn-google { background: var(--bg-elevated); color: var(--text-primary); }
   `]
 })
 export class LoginComponent implements OnInit {
-  errorMessage = '';
+  errorMessage   = '';
+  successMessage = '';
+  isRegister     = false;
+  loading        = false;
 
-  constructor(private auth: AuthService, private route: ActivatedRoute) {}
+  email     = '';
+  password  = '';
+  firstName = '';
+  lastName  = '';
+
+  constructor(private auth: AuthService, private route: ActivatedRoute, private http: HttpClient, private router: Router) {}
 
   ngOnInit(): void {
     const err = this.route.snapshot.queryParamMap.get('error');
     if (err === 'oauth_failed') this.errorMessage = 'Authentication failed. Please try again.';
   }
 
+  toggleMode(): void {
+    this.isRegister     = !this.isRegister;
+    this.errorMessage   = '';
+    this.successMessage = '';
+  }
+
+  async submitEmailForm(): Promise<void> {
+    this.errorMessage   = '';
+    this.successMessage = '';
+    this.loading        = true;
+    try {
+      let token: string;
+      if (this.isRegister) {
+        const res = await firstValueFrom(
+          this.http.post<{ token: string }>(`${AUTH_API}/register`, {
+            email: this.email, password: this.password,
+            firstName: this.firstName || null, lastName: this.lastName || null
+          })
+        );
+        token = res.token;
+      } else {
+        const res = await firstValueFrom(
+          this.http.post<{ token: string }>(`${AUTH_API}/login`, {
+            email: this.email, password: this.password
+          })
+        );
+        token = res.token;
+      }
+      this.auth.handleToken(token);
+      await this.router.navigate(['/dashboard']);
+    } catch (err: any) {
+      const msg = err?.error?.message;
+      if (err?.status === 409)       this.errorMessage = 'An account with this email already exists.';
+      else if (err?.status === 401)  this.errorMessage = 'Invalid email or password.';
+      else if (msg)                  this.errorMessage = msg;
+      else                           this.errorMessage = 'Something went wrong. Please try again.';
+    } finally {
+      this.loading = false;
+    }
+  }
+
   loginWithGitHub(): void { this.auth.loginWithGitHub(); }
   loginWithGoogle(): void  { this.auth.loginWithGoogle(); }
 }
-

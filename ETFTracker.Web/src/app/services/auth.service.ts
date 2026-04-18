@@ -39,6 +39,7 @@ export class AuthService {
     window.location.href = `${API_BASE}/google`;
   }
 
+
   /** Called by auth-callback page after the OAuth redirect lands */
   handleToken(token: string): void {
     localStorage.setItem(TOKEN_KEY, token);
