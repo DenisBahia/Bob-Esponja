@@ -87,12 +87,58 @@ public class TaxEventsController : ControllerBase
                 }
             }
 
+            // ── Tax-free allowance ────────────────────────────────────────────────
+            var projSettings = await _db.ProjectionSettings
+                .FirstOrDefaultAsync(ps => ps.UserId == UserId, ct);
+
+            var annualAllowance = (projSettings is { IsIrishInvestor: false } && projSettings.TaxFreeAllowancePerYear > 0)
+                ? projSettings.TaxFreeAllowancePerYear
+                : 0m;
+
+            var allowanceByYear = new List<TaxYearAllowanceSummaryDto>();
+            decimal totalPendingAfterAllowance;
+
+            if (annualAllowance > 0)
+            {
+                var pendingByYear = dtos
+                    .Where(e => e.Status == "Pending")
+                    .GroupBy(e => e.EventDate.Year)
+                    .OrderBy(g => g.Key);
+
+                foreach (var yearGroup in pendingByYear)
+                {
+                    var totalGain = yearGroup.Sum(e => e.TaxableGain);
+                    var taxBefore = yearGroup.Sum(e => e.TaxAmount);
+                    // Allowance is deducted directly from the tax due (not from gain)
+                    var applied   = Math.Min(annualAllowance, taxBefore);
+                    var taxAfter  = Math.Round(Math.Max(0m, taxBefore - applied), 2);
+
+                    allowanceByYear.Add(new TaxYearAllowanceSummaryDto
+                    {
+                        Year                = yearGroup.Key,
+                        TotalTaxableGain    = totalGain,
+                        TaxBeforeAllowance  = taxBefore,
+                        AllowanceApplied    = applied,
+                        TaxAfterAllowance   = taxAfter,
+                    });
+                }
+
+                totalPendingAfterAllowance = allowanceByYear.Sum(y => y.TaxAfterAllowance);
+            }
+            else
+            {
+                totalPendingAfterAllowance = dtos.Where(e => e.Status == "Pending").Sum(e => e.TaxAmount);
+            }
+
             return Ok(new TaxSummaryDto
             {
                 TotalPaid = dtos.Where(e => e.Status == "Paid").Sum(e => e.TaxAmount),
                 TotalPending = dtos.Where(e => e.Status == "Pending").Sum(e => e.TaxAmount),
                 NextDeemedDisposalDate = nextDd,
-                Events = dtos
+                Events = dtos,
+                AnnualTaxFreeAllowance = annualAllowance,
+                AllowanceByYear = allowanceByYear,
+                TotalPendingAfterAllowance = totalPendingAfterAllowance,
             });
         }
         catch (Exception ex)

@@ -369,9 +369,33 @@
             <span class="tax-ov-label">Total Paid</span>
             <span class="tax-ov-value tax-ov-value--green">{{ formatCurrency(taxSummary.totalPaid) }}</span>
           </div>
-          <div class="tax-ov-card" *ngIf="taxSummary.nextDeemedDisposalDate">
+          <div class="tax-ov-card" *ngIf="isIrishInvestor && taxSummary.nextDeemedDisposalDate">
             <span class="tax-ov-label">Next Deemed Disposal</span>
             <span class="tax-ov-value tax-ov-value--accent">{{ taxSummary.nextDeemedDisposalDate }}</span>
+          </div>
+          <!-- Allowance card — only when active -->
+          <div class="tax-ov-card tax-ov-card--allowance" *ngIf="taxSummary.annualTaxFreeAllowance > 0">
+            <span class="tax-ov-label">After Allowance</span>
+            <span class="tax-ov-value tax-ov-value--green">{{ formatCurrency(taxSummary.totalPendingAfterAllowance) }}</span>
+          </div>
+        </div>
+
+        <!-- Tax-free allowance year breakdown — shown only when allowance is active -->
+        <div class="tax-allowance-section" *ngIf="taxSummary.annualTaxFreeAllowance > 0">
+          <div class="tax-allowance-header">
+            🎁 Annual Tax-Free Allowance: <strong>{{ formatCurrency(taxSummary.annualTaxFreeAllowance) }}</strong>
+          </div>
+          <div class="tax-allowance-rows">
+            <div class="tax-allowance-row" *ngFor="let row of taxSummary.allowanceByYear">
+              <span class="tax-allowance-year">{{ row.year }}</span>
+              <span class="tax-allowance-stat">Tax due: <strong>{{ formatCurrency(row.taxBeforeAllowance) }}</strong></span>
+              <span class="tax-allowance-stat tax-allowance-deduct">Allowance: −{{ formatCurrency(row.allowanceApplied) }}</span>
+              <span class="tax-allowance-stat tax-allowance-result">After allowance: <strong>{{ formatCurrency(row.taxAfterAllowance) }}</strong></span>
+            </div>
+          </div>
+          <div class="tax-allowance-total">
+            <span>Adjusted Total Pending</span>
+            <strong>{{ formatCurrency(taxSummary.totalPendingAfterAllowance) }}</strong>
           </div>
         </div>
 
@@ -605,18 +629,13 @@
                      [(ngModel)]="projectionSettings.exitTaxPercent" />
             </div>
 
-            <div class="param-group checkbox-group" *ngIf="canManageExcludePreExistingTax">
-              <button type="button"
-                      class="setting-toggle"
-                      [class.active]="projectionSettings.excludePreExistingFromTax"
-                      (click)="toggleExcludePreExistingFromTax()"
-                      aria-label="Exclude buys before 01/01/2026 from tax"
-                      [attr.aria-pressed]="projectionSettings.excludePreExistingFromTax">
-                <span class="setting-toggle-label">Exclude buys before 01/01/2026 from tax</span>
-                <span class="setting-toggle-track">
-                  <span class="setting-toggle-thumb"></span>
-                </span>
-              </button>
+            <!-- Tax-Free Allowance — non-Irish investors only -->
+            <div class="param-group" *ngIf="!isIrishInvestor">
+              <label for="taxFreeAllowance">Annual Tax-Free Allowance</label>
+              <input id="taxFreeAllowance" type="number" step="100" min="0"
+                     [(ngModel)]="projectionSettings.taxFreeAllowancePerYear"
+                     placeholder="0" />
+              <span class="param-hint">Deducted from taxable gains each year before CGT is applied. 0 = disabled.</span>
             </div>
           </div>
         </div>

@@ -251,6 +251,44 @@
     margin-bottom: 2.2rem;
   }
 
+  &__irish-highlight {
+    max-width: 620px;
+    border: 1px solid rgba(46, 196, 182, 0.42);
+    background: linear-gradient(140deg, rgba(46, 196, 182, 0.18) 0%, rgba(79, 142, 247, 0.1) 100%);
+    border-radius: 14px;
+    padding: 1rem 1.2rem;
+    margin-bottom: 2.1rem;
+    box-shadow: 0 12px 34px rgba(46, 196, 182, 0.16);
+
+    h3 {
+      margin: 0.45rem 0 0.5rem;
+      font-size: clamp(1.03rem, 1.6vw, 1.2rem);
+      line-height: 1.35;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+
+    p {
+      margin: 0;
+      color: var(--text-secondary);
+      font-size: 0.92rem;
+      line-height: 1.6;
+    }
+  }
+
+  &__irish-highlight-label {
+    display: inline-flex;
+    border-radius: 999px;
+    background: rgba(46, 196, 182, 0.18);
+    border: 1px solid rgba(46, 196, 182, 0.35);
+    color: #8ce6da;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 0.24rem 0.62rem;
+  }
+
   &__cta {
     display: flex;
     align-items: center;

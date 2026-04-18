@@ -2457,7 +2457,80 @@ th.sortable {
   &:hover { background: rgba(20, 217, 144, 0.2); }
 }
 
-.te-paid-on {
-  font-size: 0.74rem;
+// Tax-free allowance input hint
+.param-hint {
+  display: block;
+  font-size: 0.75rem;
   color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+// Tax-free allowance overview card
+.tax-ov-card--allowance {
+  background: rgba(79, 142, 247, 0.1);
+  border: 1px solid rgba(79, 142, 247, 0.25);
+}
+
+// Tax-free allowance year breakdown
+.tax-allowance-section {
+  margin: 1rem 0 1.25rem;
+  background: rgba(79, 142, 247, 0.06);
+  border: 1px solid rgba(79, 142, 247, 0.18);
+  border-radius: 10px;
+  padding: 1rem 1.2rem;
+}
+
+.tax-allowance-header {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+  strong { color: #4f8ef7; }
+}
+
+.tax-allowance-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.tax-allowance-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  align-items: baseline;
+  padding: 0.4rem 0.6rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  strong { color: var(--text-primary); }
+}
+
+.tax-allowance-year {
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 3rem;
+}
+
+.tax-allowance-deduct {
+  color: #f89b29;
+}
+
+.tax-allowance-result strong {
+  color: var(--positive);
+}
+
+.tax-allowance-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 0.6rem;
+  border-top: 1px solid rgba(79, 142, 247, 0.2);
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  strong {
+    color: var(--positive);
+    font-size: 1rem;
+  }
 }

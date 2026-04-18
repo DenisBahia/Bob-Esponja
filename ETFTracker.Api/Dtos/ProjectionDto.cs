@@ -18,6 +18,11 @@ public class ProjectionSettingsDto
     /// When null or 0, the actual current portfolio value (from live prices) is used.
     /// </summary>
     public decimal? StartAmount { get; set; }
+    /// <summary>User is subject to the Irish Exit Tax / Deemed Disposal regime.
+    /// When true the tax-free allowance is suppressed.</summary>
+    public bool IsIrishInvestor { get; set; }
+    /// <summary>Annual tax-free CGT allowance. 0 = disabled. Not used for Irish investors.</summary>
+    public decimal TaxFreeAllowancePerYear { get; set; }
 }
 
 public class ProjectionDataPointDto

@@ -16,6 +16,12 @@ public class ProjectionSettings
     public decimal SiaAnnualPercent { get; set; }
     /// <summary>Optional override for the starting portfolio value (null = use live portfolio value).</summary>
     public decimal? StartAmount { get; set; }
+    /// <summary>True when the user is subject to the Irish Exit Tax / Deemed Disposal regime.
+    /// When true the tax-free allowance feature is suppressed.</summary>
+    public bool IsIrishInvestor { get; set; } = false;
+    /// <summary>Annual tax-free CGT allowance (e.g. £3,000 UK). 0 = disabled.
+    /// Not applicable for Irish investors.</summary>
+    public decimal TaxFreeAllowancePerYear { get; set; } = 0m;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 

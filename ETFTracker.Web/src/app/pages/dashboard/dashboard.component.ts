@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, AfterViewChecked, ChangeDetectionStrategy, ChangeDetectorRef, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, DashboardDto, HoldingDto, ProjectionResultDto, ProjectionSettingsDto, PortfolioEvolutionDto, ProjectionVersionSummaryDto, ProjectionVersionDetailDto, ProjectionDataPointDto, SaveVersionRequestDto, UserGoalDto, GoalDataPointDto, UpsertGoalRequestDto, TaxSummaryDto, TaxEventDto } from '../../services/api.service';
+import { ApiService, DashboardDto, HoldingDto, ProjectionResultDto, ProjectionSettingsDto, PortfolioEvolutionDto, ProjectionVersionSummaryDto, ProjectionVersionDetailDto, ProjectionDataPointDto, SaveVersionRequestDto, UserGoalDto, GoalDataPointDto, UpsertGoalRequestDto, TaxSummaryDto, TaxEventDto, TaxYearAllowanceSummaryDto } from '../../services/api.service';
 import { AuthService, CurrentUser } from '../../services/auth.service';
 import { AddTransactionModalComponent } from '../../components/add-transaction-modal/add-transaction-modal.component';
 import { BuyHistoryModalComponent } from '../../components/buy-history-modal/buy-history-modal.component';
@@ -87,6 +87,8 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     excludePreExistingFromTax: false,
     siaAnnualPercent: 0,
     startAmount: null,
+    isIrishInvestor: true,
+    taxFreeAllowancePerYear: 0,
   };
   projectionLoading = false;
   projectionSaving = false;
@@ -273,6 +275,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   toggleIrishInvestor(): void {
     this.isIrishInvestor = !this.isIrishInvestor;
     localStorage.setItem('isIrishInvestor', String(this.isIrishInvestor));
+    this.projectionSettings.isIrishInvestor = this.isIrishInvestor;
     // Recalculate projection with updated effective settings
     this.projectionChartRendered = false;
     this.lineChart?.destroy();
@@ -649,6 +652,9 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.apiService.getProjection().subscribe({
       next: (data) => {
         this.projectionSettings = { ...data.settings };
+        // Sync the toggle from the persisted server value
+        this.isIrishInvestor = data.settings.isIrishInvestor;
+        localStorage.setItem('isIrishInvestor', String(this.isIrishInvestor));
         if (!this.isIrishInvestor) {
           // Server data was calculated with Irish taxes; recalculate without them
           this.apiService.calculateProjection(this.effectiveProjectionSettings).subscribe({

@@ -64,6 +64,8 @@ public class ProjectionService : IProjectionService
                 ExcludePreExistingFromTax = dbSettings.ExcludePreExistingFromTax,
                 SiaAnnualPercent = dbSettings.SiaAnnualPercent,
                 StartAmount = dbSettings.StartAmount,
+                IsIrishInvestor = dbSettings.IsIrishInvestor,
+                TaxFreeAllowancePerYear = dbSettings.TaxFreeAllowancePerYear,
             }
             : new ProjectionSettingsDto
             {
@@ -271,16 +273,40 @@ public class ProjectionService : IProjectionService
         var cumulativeTax = 0m;
         var cumulativeSia = 0m;
 
+        // Annual tax-free allowance: only for non-Irish investors and when > 0
+        var annualAllowance = (!settings.IsIrishInvestor && settings.TaxFreeAllowancePerYear > 0)
+            ? settings.TaxFreeAllowancePerYear
+            : 0m;
+
         for (int i = 0; i <= settings.ProjectionYears; i++)
         {
             var year = currentYear + i;
             var inflationFactor = (decimal)Math.Pow((double)(1 + settings.InflationPercent / 100m), i);
 
-            var cgtPaid = cgtByYear.TryGetValue(year, out var cgt) ? cgt : 0m;
-            var exitTaxPaid = (year == projectionEndYear) ? exitTaxTotal : 0m;
+            var cgtRaw      = cgtByYear.TryGetValue(year, out var cgt) ? cgt : 0m;
+            var exitTaxRaw  = (year == projectionEndYear) ? exitTaxTotal : 0m;
+
+            // Apply allowance: deduct from total tax due this year, floored at 0
+            var taxDueThisYear   = cgtRaw + exitTaxRaw;
+            var allowanceUsed    = Math.Min(annualAllowance, taxDueThisYear);
+            var taxAfterAllowance = Math.Max(0m, taxDueThisYear - allowanceUsed);
+
+            // Distribute the reduction proportionally between CGT and exit-tax for display
+            decimal cgtPaid, exitTaxPaid;
+            if (taxDueThisYear > 0)
+            {
+                cgtPaid     = Math.Round(cgtRaw     * taxAfterAllowance / taxDueThisYear, 2);
+                exitTaxPaid = Math.Round(exitTaxRaw * taxAfterAllowance / taxDueThisYear, 2);
+            }
+            else
+            {
+                cgtPaid     = 0m;
+                exitTaxPaid = 0m;
+            }
+
             cumulativeTax += cgtPaid + exitTaxPaid;
 
-            // SIA: annual tax on the entire end-of-year portfolio balance
+            // SIA: annual tax on the entire end-of-year portfolio balance (allowance does not apply to SIA)
             var siaTax = Math.Round(endOfYear[i] * settings.SiaAnnualPercent / 100m, 2);
             cumulativeSia += siaTax;
 
@@ -328,6 +354,8 @@ public class ProjectionService : IProjectionService
                 ExcludePreExistingFromTax = dto.ExcludePreExistingFromTax,
                 SiaAnnualPercent = dto.SiaAnnualPercent,
                 StartAmount = (dto.StartAmount.HasValue && dto.StartAmount.Value > 0m) ? dto.StartAmount : null,
+                IsIrishInvestor = dto.IsIrishInvestor,
+                TaxFreeAllowancePerYear = dto.TaxFreeAllowancePerYear,
                 CreatedAt = utcNow,
                 UpdatedAt = utcNow,
             };
@@ -345,6 +373,8 @@ public class ProjectionService : IProjectionService
             existing.ExcludePreExistingFromTax = dto.ExcludePreExistingFromTax;
             existing.SiaAnnualPercent = dto.SiaAnnualPercent;
             existing.StartAmount = (dto.StartAmount.HasValue && dto.StartAmount.Value > 0m) ? dto.StartAmount : null;
+            existing.IsIrishInvestor = dto.IsIrishInvestor;
+            existing.TaxFreeAllowancePerYear = dto.TaxFreeAllowancePerYear;
             existing.UpdatedAt = utcNow;
         }
 

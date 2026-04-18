@@ -27,6 +27,14 @@ public class TaxSummaryDto
     public decimal TotalPaid { get; set; }
     public DateOnly? NextDeemedDisposalDate { get; set; }
     public List<TaxEventDto> Events { get; set; } = new();
+
+    // ── Tax-free allowance ───────────────────────────────────────────────────
+    /// <summary>Annual allowance from ProjectionSettings (0 = disabled or Irish investor).</summary>
+    public decimal AnnualTaxFreeAllowance { get; set; }
+    /// <summary>Per-year totals after applying the allowance (pending events only).</summary>
+    public List<TaxYearAllowanceSummaryDto> AllowanceByYear { get; set; } = new();
+    /// <summary>Total pending after deducting the allowance across all years.</summary>
+    public decimal TotalPendingAfterAllowance { get; set; }
 }
 
 public class MarkTaxEventPaidDto
@@ -35,3 +43,14 @@ public class MarkTaxEventPaidDto
     public DateTime? PaidAt { get; set; }
 }
 
+/// <summary>One row per calendar year summarising the allowance impact on pending tax.</summary>
+public class TaxYearAllowanceSummaryDto
+{
+    public int Year { get; set; }
+    public decimal TotalTaxableGain { get; set; }
+    public decimal TaxBeforeAllowance { get; set; }
+    /// <summary>Portion of the annual allowance consumed (capped at tax before allowance).</summary>
+    public decimal AllowanceApplied { get; set; }
+    /// <summary>Tax after deducting the allowance (floored at 0).</summary>
+    public decimal TaxAfterAllowance { get; set; }
+}

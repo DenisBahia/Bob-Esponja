@@ -83,6 +83,10 @@ export interface ProjectionSettingsDto {
   siaAnnualPercent: number;
   /** Optional override for the starting portfolio value (0 / undefined = use live portfolio value). */
   startAmount?: number | null;
+  /** User is subject to Irish Exit Tax / Deemed Disposal regime. Hides tax-free allowance when true. */
+  isIrishInvestor: boolean;
+  /** Annual tax-free CGT allowance. 0 = disabled. Not used for Irish investors. */
+  taxFreeAllowancePerYear: number;
 }
 
 export interface ProjectionDataPointDto {
@@ -243,6 +247,18 @@ export interface TaxSummaryDto {
   totalPaid: number;
   nextDeemedDisposalDate: string | null;
   events: TaxEventDto[];
+  // Tax-free allowance
+  annualTaxFreeAllowance: number;
+  allowanceByYear: TaxYearAllowanceSummaryDto[];
+  totalPendingAfterAllowance: number;
+}
+
+export interface TaxYearAllowanceSummaryDto {
+  year: number;
+  totalTaxableGain: number;
+  taxBeforeAllowance: number;
+  allowanceApplied: number;
+  taxAfterAllowance: number;
 }
 
 export interface MarkTaxEventPaidDto {

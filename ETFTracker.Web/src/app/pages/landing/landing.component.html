@@ -86,9 +86,19 @@
       Finally, a portfolio tracker that understands the complexity of Irish investment taxation &mdash;
       38% Exit Tax, 8-year Deemed Disposal, and the upcoming SIA regime arriving in 2027.
       Track holdings in real time, project your after-tax wealth decades ahead, and compare tax regimes
-      side by side. Plus, monitor pending vs paid tax events across sells and deemed disposals with one-click
+      side by side. Configure your annual tax-free allowance and see it deducted per calendar year in
+      your tax summary. Plus, monitor pending vs paid tax events across sells and deemed disposals with one-click
       mark-as-paid workflows. Also perfect for global investors with CGT calculations and inflation-adjusted returns.
     </p>
+
+    <div class="hero__irish-highlight reveal">
+      <div class="hero__irish-highlight-label">Irish Tax Advantage</div>
+      <h3>We calculate your deemed disposal amount due for old asset positions.</h3>
+      <p>
+        No spreadsheet gymnastics. Add your historical lots and Investments Tracker automatically surfaces
+        upcoming deemed-disposal events, expected tax due, and pending vs paid status in one place.
+      </p>
+    </div>
 
     <div class="hero__cta reveal">
       <button class="lp-btn lp-btn--hero" (click)="navigateToLogin()">
@@ -121,6 +131,11 @@
       <div class="hero__stat">
         <span class="hero__stat-val">Tax events</span>
         <span class="hero__stat-lbl">Pending vs paid tracking</span>
+      </div>
+      <span class="hero__stat-sep"></span>
+      <div class="hero__stat">
+        <span class="hero__stat-val">Allowance</span>
+        <span class="hero__stat-lbl">Annual tax-free deducted</span>
       </div>
       <span class="hero__stat-sep"></span>
       <div class="hero__stat">
@@ -209,7 +224,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         </div>
         <h3>Tax Event Center</h3>
-        <p>All taxable events are tracked automatically: deemed disposals and sells, taxable gain, rate used, tax due, and status. See pending vs paid totals and mark single events, current year, or all events as paid.</p>
+        <p>All taxable events are tracked automatically: deemed disposals and sells, taxable gain, rate used, tax due, and status. See pending vs paid totals and mark single events, current year, or all events as paid. Configure your annual tax-free allowance and see the allowance applied per year alongside a reduced <em>after-allowance</em> total.</p>
       </div>
 
       <div class="feature-card feature-card--highlighted reveal" style="--delay:0.3s">
@@ -1019,8 +1034,8 @@
     <!-- Bottom callout -->
     <div class="tax-cta reveal">
       <div class="tax-cta__text">
-        <strong>Already inside the app:</strong> run a 20-year projection, toggle between Exit Tax + Deemed Disposal and SIA mode on the same chart, and keep your tax timeline clean with pending/paid status tracking and mark-paid actions.
-      </div>
+          <strong>Already inside the app:</strong> run a 20-year projection, toggle between Exit Tax + Deemed Disposal and SIA mode on the same chart, configure your annual tax-free allowance, and keep your tax timeline clean with pending/paid status tracking and mark-paid actions.
+        </div>
       <button class="lp-btn lp-btn--primary" (click)="navigateToLogin()">Compare tax regimes now &rarr;</button>
     </div>
   </div>
@@ -1154,43 +1169,52 @@
   <div class="container spotlight__inner spotlight__inner--reversed">
     <!-- Tax card illustration -->
     <div class="spotlight__visual reveal">
-      <div class="tax-card">
-        <div class="tax-card__header">🇮🇪 Irish Tax Summary · Year 8</div>
-        <div class="tax-card__body">
-          <div class="tax-row">
-            <span class="tax-row__label">Portfolio value</span>
-            <span class="tax-row__value">€87,240</span>
+        <div class="tax-card">
+          <div class="tax-card__header">🇮🇪 Irish Tax Summary · Year 8</div>
+          <div class="tax-card__body">
+            <div class="tax-row">
+              <span class="tax-row__label">Portfolio value</span>
+              <span class="tax-row__value">€87,240</span>
+            </div>
+            <div class="tax-row">
+              <span class="tax-row__label">Cost basis</span>
+              <span class="tax-row__value">€52,000</span>
+            </div>
+            <div class="tax-row">
+              <span class="tax-row__label">Unrealised gain</span>
+              <span class="tax-row__value tax-row__value--pos">+€35,240</span>
+            </div>
+            <div class="tax-row tax-row--divider"></div>
+            <div class="tax-row">
+              <span class="tax-row__label">Deemed Disposal triggered</span>
+              <span class="tax-badge">Year 8 rule</span>
+            </div>
+            <div class="tax-row">
+              <span class="tax-row__label">Exit Tax @ 38%</span>
+              <span class="tax-row__value tax-row__value--neg">-€13,391</span>
+            </div>
+            <div class="tax-row tax-row--divider"></div>
+            <div class="tax-row">
+              <span class="tax-row__label">Annual tax-free allowance</span>
+              <span class="tax-row__value tax-row__value--pos">-€1,270</span>
+            </div>
+            <div class="tax-row">
+              <span class="tax-row__label">Tax after allowance</span>
+              <span class="tax-row__value tax-row__value--neg">-€12,121</span>
+            </div>
+            <div class="tax-row tax-row--total">
+              <span class="tax-row__label">After-tax value</span>
+              <span class="tax-row__value tax-row__value--pos">€75,119</span>
+            </div>
+            <div class="tax-row">
+              <span class="tax-row__label">Status workflow</span>
+              <span class="tax-badge">Pending → Paid</span>
+            </div>
           </div>
-          <div class="tax-row">
-            <span class="tax-row__label">Cost basis</span>
-            <span class="tax-row__value">€52,000</span>
-          </div>
-          <div class="tax-row">
-            <span class="tax-row__label">Unrealised gain</span>
-            <span class="tax-row__value tax-row__value--pos">+€35,240</span>
-          </div>
-          <div class="tax-row tax-row--divider"></div>
-          <div class="tax-row">
-            <span class="tax-row__label">Deemed Disposal triggered</span>
-            <span class="tax-badge">Year 8 rule</span>
-          </div>
-          <div class="tax-row">
-            <span class="tax-row__label">Exit Tax @ 38%</span>
-            <span class="tax-row__value tax-row__value--neg">-€13,391</span>
-          </div>
-          <div class="tax-row tax-row--total">
-            <span class="tax-row__label">After-tax value</span>
-            <span class="tax-row__value tax-row__value--pos">€73,849</span>
-          </div>
-          <div class="tax-row">
-            <span class="tax-row__label">Status workflow</span>
-            <span class="tax-badge">Pending → Paid</span>
+          <div class="tax-card__footer">
+            Tax calculated automatically inside every projection, with event-level status tracking, annual allowance deductions, and mark-paid actions
           </div>
         </div>
-        <div class="tax-card__footer">
-          Tax calculated automatically inside every projection, with event-level status tracking and mark-paid actions
-        </div>
-      </div>
     </div>
 
     <div class="spotlight__text reveal">
@@ -1224,6 +1248,10 @@
         </li>
         <li>
           <svg viewBox="0 0 24 24" fill="none" stroke="#14d990" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Annual tax-free allowance configurable per investor type &mdash; applied year-by-year with a clear breakdown of allowance consumed vs tax remaining
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#14d990" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
           Year-by-year breakdown of every tax event, plus SIA rows in charts and tables
         </li>
       </ul>
@@ -1248,7 +1276,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
         </div>
         <h3>CGT Calculations</h3>
-        <p>Capital Gains Tax is calculated automatically for non-Irish investors. FIFO lot matching, allowable costs and net gain at your local CGT rate. Know your tax position before you sell.</p>
+        <p>Capital Gains Tax is calculated automatically for non-Irish investors. FIFO lot matching, allowable costs and net gain at your local CGT rate. Configure your annual tax-free allowance (e.g. the UK&rsquo;s £3,000 exemption) and the app deducts it per calendar year — showing tax before allowance, allowance applied, and the final reduced amount. Know your real tax position before you sell.</p>
       </div>
       <div class="global-card reveal" style="--delay:0.1s">
         <div class="global-card__icon">
@@ -1329,7 +1357,7 @@
     <div class="cta-section__inner reveal">
       <h2>Ready to take control of your investments?</h2>
       <p>Free to use. No credit card. No setup. Sign in with GitHub or Google and start tracking in seconds.</p>
-      <p class="cta-section__tagline">Irish investors: finally see your real after-tax wealth, track pending vs paid tax events, and model what SIA could mean for you in 2027.</p>
+      <p class="cta-section__tagline">Irish investors: finally see your real after-tax wealth, track pending vs paid tax events, apply your annual tax-free allowance automatically, and model what SIA could mean for you in 2027.</p>
 
       <div class="cta-section__btns">
         <button class="lp-btn lp-btn--github" (click)="navigateToLogin()">
