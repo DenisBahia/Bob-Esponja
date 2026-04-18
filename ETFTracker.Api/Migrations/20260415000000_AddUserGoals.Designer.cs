@@ -3,6 +3,7 @@ using System;
 using ETFTracker.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ETFTracker.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260415000000_AddUserGoals")]
+    partial class AddUserGoals
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -223,12 +226,6 @@ namespace ETFTracker.Api.Migrations
                         .HasColumnType("decimal(5,2)")
                         .HasColumnName("inflation_percent");
 
-                    b.Property<bool>("IsIrishInvestor")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("is_irish_investor");
-
                     b.Property<decimal>("MonthlyBuyAmount")
                         .HasColumnType("decimal(12,2)")
                         .HasColumnName("monthly_buy_amount");
@@ -246,12 +243,6 @@ namespace ETFTracker.Api.Migrations
                     b.Property<decimal?>("StartAmount")
                         .HasColumnType("decimal(15,2)")
                         .HasColumnName("start_amount");
-
-                    b.Property<decimal>("TaxFreeAllowancePerYear")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(15,2)")
-                        .HasDefaultValue(0m)
-                        .HasColumnName("tax_free_allowance_per_year");
 
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
@@ -356,206 +347,6 @@ namespace ETFTracker.Api.Migrations
                     b.ToTable("projection_versions", (string)null);
                 });
 
-            modelBuilder.Entity("ETFTracker.Api.Models.SellLotAllocation", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<decimal>("AdjustedCostPerUnit")
-                        .HasColumnType("decimal(12,4)")
-                        .HasColumnName("adjusted_cost_per_unit");
-
-                    b.Property<int>("BuyTransactionId")
-                        .HasColumnType("integer")
-                        .HasColumnName("buy_transaction_id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<DateOnly?>("DeemedDisposalDate")
-                        .HasColumnType("date")
-                        .HasColumnName("deemed_disposal_date");
-
-                    b.Property<decimal?>("DeemedDisposalPricePerUnit")
-                        .HasColumnType("decimal(12,4)")
-                        .HasColumnName("deemed_disposal_price_per_unit");
-
-                    b.Property<decimal>("OriginalCostPerUnit")
-                        .HasColumnType("decimal(12,4)")
-                        .HasColumnName("original_cost_per_unit");
-
-                    b.Property<decimal>("ProfitOnLot")
-                        .HasColumnType("decimal(12,2)")
-                        .HasColumnName("profit_on_lot");
-
-                    b.Property<decimal>("QuantityConsumed")
-                        .HasColumnType("decimal(12,4)")
-                        .HasColumnName("quantity_consumed");
-
-                    b.Property<int>("SellRecordId")
-                        .HasColumnType("integer")
-                        .HasColumnName("sell_record_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BuyTransactionId");
-
-                    b.HasIndex("SellRecordId");
-
-                    b.ToTable("sell_lot_allocations", (string)null);
-                });
-
-            modelBuilder.Entity("ETFTracker.Api.Models.SellRecord", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<decimal>("CgtPaid")
-                        .HasColumnType("decimal(12,2)")
-                        .HasColumnName("cgt_paid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<int>("HoldingId")
-                        .HasColumnType("integer")
-                        .HasColumnName("holding_id");
-
-                    b.Property<bool>("IsIrishInvestor")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_irish_investor");
-
-                    b.Property<decimal>("Quantity")
-                        .HasColumnType("decimal(12,4)")
-                        .HasColumnName("quantity");
-
-                    b.Property<DateOnly>("SellDate")
-                        .HasColumnType("date")
-                        .HasColumnName("sell_date");
-
-                    b.Property<decimal>("SellPrice")
-                        .HasColumnType("decimal(12,4)")
-                        .HasColumnName("sell_price");
-
-                    b.Property<decimal>("TaxRateUsed")
-                        .HasColumnType("decimal(5,2)")
-                        .HasColumnName("tax_rate_used");
-
-                    b.Property<decimal>("TotalProfit")
-                        .HasColumnType("decimal(12,2)")
-                        .HasColumnName("total_profit");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("HoldingId");
-
-                    b.ToTable("sell_records", (string)null);
-                });
-
-            modelBuilder.Entity("ETFTracker.Api.Models.TaxEvent", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int?>("BuyTransactionId")
-                        .HasColumnType("integer")
-                        .HasColumnName("buy_transaction_id");
-
-                    b.Property<decimal>("CostBasisPerUnit")
-                        .HasColumnType("decimal(12,4)")
-                        .HasColumnName("cost_basis_per_unit");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<DateOnly>("EventDate")
-                        .HasColumnType("date")
-                        .HasColumnName("event_date");
-
-                    b.Property<string>("EventType")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("event_type");
-
-                    b.Property<int>("HoldingId")
-                        .HasColumnType("integer")
-                        .HasColumnName("holding_id");
-
-                    b.Property<DateTime?>("PaidAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("paid_at");
-
-                    b.Property<decimal>("PricePerUnitAtEvent")
-                        .HasColumnType("decimal(12,4)")
-                        .HasColumnName("price_per_unit_at_event");
-
-                    b.Property<decimal>("QuantityAtEvent")
-                        .HasColumnType("decimal(12,4)")
-                        .HasColumnName("quantity_at_event");
-
-                    b.Property<int?>("SellRecordId")
-                        .HasColumnType("integer")
-                        .HasColumnName("sell_record_id");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("text")
-                        .HasDefaultValue("Pending")
-                        .HasColumnName("status");
-
-                    b.Property<decimal>("TaxAmount")
-                        .HasColumnType("decimal(12,2)")
-                        .HasColumnName("tax_amount");
-
-                    b.Property<decimal>("TaxRateUsed")
-                        .HasColumnType("decimal(5,2)")
-                        .HasColumnName("tax_rate_used");
-
-                    b.Property<decimal>("TaxableGain")
-                        .HasColumnType("decimal(12,2)")
-                        .HasColumnName("taxable_gain");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("HoldingId");
-
-                    b.HasIndex("SellRecordId");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("BuyTransactionId", "EventDate")
-                        .IsUnique()
-                        .HasFilter("buy_transaction_id IS NOT NULL");
-
-                    b.ToTable("tax_events", (string)null);
-                });
-
             modelBuilder.Entity("ETFTracker.Api.Models.Transaction", b =>
                 {
                     b.Property<int>("Id")
@@ -640,9 +431,6 @@ namespace ETFTracker.Api.Migrations
                     b.Property<string>("LastName")
                         .HasColumnType("text")
                         .HasColumnName("last_name");
-
-                    b.Property<string>("PasswordHash")
-                        .HasColumnType("text");
 
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
@@ -745,69 +533,6 @@ namespace ETFTracker.Api.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("ETFTracker.Api.Models.SellLotAllocation", b =>
-                {
-                    b.HasOne("ETFTracker.Api.Models.Transaction", "BuyTransaction")
-                        .WithMany()
-                        .HasForeignKey("BuyTransactionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("ETFTracker.Api.Models.SellRecord", "SellRecord")
-                        .WithMany("LotAllocations")
-                        .HasForeignKey("SellRecordId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("BuyTransaction");
-
-                    b.Navigation("SellRecord");
-                });
-
-            modelBuilder.Entity("ETFTracker.Api.Models.SellRecord", b =>
-                {
-                    b.HasOne("ETFTracker.Api.Models.Holding", "Holding")
-                        .WithMany("SellRecords")
-                        .HasForeignKey("HoldingId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Holding");
-                });
-
-            modelBuilder.Entity("ETFTracker.Api.Models.TaxEvent", b =>
-                {
-                    b.HasOne("ETFTracker.Api.Models.Transaction", "BuyTransaction")
-                        .WithMany()
-                        .HasForeignKey("BuyTransactionId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("ETFTracker.Api.Models.Holding", "Holding")
-                        .WithMany("TaxEvents")
-                        .HasForeignKey("HoldingId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("ETFTracker.Api.Models.SellRecord", "SellRecord")
-                        .WithMany()
-                        .HasForeignKey("SellRecordId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("ETFTracker.Api.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("BuyTransaction");
-
-                    b.Navigation("Holding");
-
-                    b.Navigation("SellRecord");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("ETFTracker.Api.Models.Transaction", b =>
                 {
                     b.HasOne("ETFTracker.Api.Models.Holding", "Holding")
@@ -836,16 +561,7 @@ namespace ETFTracker.Api.Migrations
 
             modelBuilder.Entity("ETFTracker.Api.Models.Holding", b =>
                 {
-                    b.Navigation("SellRecords");
-
-                    b.Navigation("TaxEvents");
-
                     b.Navigation("Transactions");
-                });
-
-            modelBuilder.Entity("ETFTracker.Api.Models.SellRecord", b =>
-                {
-                    b.Navigation("LotAllocations");
                 });
 
             modelBuilder.Entity("ETFTracker.Api.Models.User", b =>
