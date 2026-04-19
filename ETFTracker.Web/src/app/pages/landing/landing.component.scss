@@ -157,26 +157,14 @@
   &__brand {
     display: flex;
     align-items: center;
-    gap: 0.65rem;
     flex: 1;
   }
-  &__logo-wrap {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    background: rgba(16, 185, 129, 0.1);
-    border: 1px solid rgba(16, 185, 129, 0.22);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    flex-shrink: 0;
-  }
   &__brand-logo {
-    height: 28px;
-    width: 28px;
-    object-fit: contain;
     display: block;
+    flex-shrink: 0;
+    width: auto;
+    height: auto;
+    max-height: 2.5rem;
   }
   &__brand-name {
     font-size: 1.1rem;
@@ -949,13 +937,7 @@
     font-size: 1rem;
   }
   &__brand-logo {
-    height: 28px;
-    width: 28px;
-    object-fit: contain;
-    border-radius: 8px;
-    background: rgba(16,185,129,0.1);
-    border: 1px solid rgba(16,185,129,0.2);
-    padding: 2px;
+    display: block;
   }
   &__icon { font-size: 1.2rem; }
 
