@@ -22,6 +22,9 @@ public class ProjectionSettings
     /// <summary>Annual tax-free CGT allowance (e.g. £3,000 UK). 0 = disabled.
     /// Not applicable for Irish investors.</summary>
     public decimal TaxFreeAllowancePerYear { get; set; } = 0m;
+    /// <summary>Tax rate applied to 8-year deemed disposal events (Irish investors only).
+    /// Defaults to ExitTaxPercent when not explicitly set. User cannot override this at point-of-use.</summary>
+    public decimal DeemedDisposalPercent { get; set; } = 41m;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 

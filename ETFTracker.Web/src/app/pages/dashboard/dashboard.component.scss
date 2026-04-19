@@ -252,6 +252,32 @@
         }
       }
 
+      .btn-settings {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.5rem 0.9rem;
+        background: rgba(79, 142, 247, 0.10);
+        color: #93c5fd;
+        border: 1px solid rgba(79, 142, 247, 0.22);
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+
+        .settings-text { display: inline; }
+
+        &:hover {
+          background: rgba(79, 142, 247, 0.22);
+          border-color: rgba(79, 142, 247, 0.45);
+          color: #bfdbfe;
+          transform: translateY(-1px);
+        }
+      }
+
       .btn-logout {
         flex-shrink: 0;
         display: flex;
@@ -371,6 +397,10 @@
       }
 
       .btn-share .share-text {
+        display: none;
+      }
+
+      .btn-settings .settings-text {
         display: none;
       }
 

@@ -23,6 +23,8 @@ public class ProjectionSettingsDto
     public bool IsIrishInvestor { get; set; }
     /// <summary>Annual tax-free CGT allowance. 0 = disabled. Not used for Irish investors.</summary>
     public decimal TaxFreeAllowancePerYear { get; set; }
+    /// <summary>Tax rate for 8-year deemed disposal events. Always from user defaults, not editable at point-of-use.</summary>
+    public decimal DeemedDisposalPercent { get; set; }
 }
 
 public class ProjectionDataPointDto

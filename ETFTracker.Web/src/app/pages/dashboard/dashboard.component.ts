@@ -1,13 +1,14 @@
 import { Component, OnInit, OnDestroy, AfterViewChecked, ChangeDetectionStrategy, ChangeDetectorRef, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, DashboardDto, HoldingDto, ProjectionResultDto, ProjectionSettingsDto, PortfolioEvolutionDto, ProjectionVersionSummaryDto, ProjectionVersionDetailDto, ProjectionDataPointDto, SaveVersionRequestDto, UserGoalDto, GoalDataPointDto, UpsertGoalRequestDto, TaxSummaryDto, TaxEventDto, TaxYearAllowanceSummaryDto } from '../../services/api.service';
+import { ApiService, DashboardDto, HoldingDto, ProjectionResultDto, ProjectionSettingsDto, PortfolioEvolutionDto, ProjectionVersionSummaryDto, ProjectionVersionDetailDto, ProjectionDataPointDto, SaveVersionRequestDto, UserGoalDto, GoalDataPointDto, UpsertGoalRequestDto, TaxSummaryDto, TaxEventDto, TaxYearAllowanceSummaryDto, UserTaxDefaultsDto } from '../../services/api.service';
 import { AuthService, CurrentUser } from '../../services/auth.service';
 import { AddTransactionModalComponent } from '../../components/add-transaction-modal/add-transaction-modal.component';
 import { BuyHistoryModalComponent } from '../../components/buy-history-modal/buy-history-modal.component';
 import { SellModalComponent } from '../../components/sell-modal/sell-modal.component';
 import { ShareProfileModalComponent } from '../../components/share-profile-modal/share-profile-modal.component';
 import { TaxHistoryModalComponent } from '../../components/tax-history-modal/tax-history-modal.component';
+import { UserSettingsModalComponent } from '../../components/user-settings-modal/user-settings-modal.component';
 import { SharingContextService } from '../../services/sharing-context.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -41,7 +42,7 @@ const DARK_SCALE_DEFAULTS = {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, AddTransactionModalComponent, BuyHistoryModalComponent, SellModalComponent, ShareProfileModalComponent, TaxHistoryModalComponent],
+  imports: [CommonModule, FormsModule, AddTransactionModalComponent, BuyHistoryModalComponent, SellModalComponent, ShareProfileModalComponent, TaxHistoryModalComponent, UserSettingsModalComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -56,6 +57,10 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   showBuyHistoryModal = false;
   selectedHoldingId: number | null = null;
   showShareModal = false;
+  showUserSettingsModal = false;
+
+  // User tax defaults (loaded on init, drives pre-fill across the app)
+  userTaxDefaults: UserTaxDefaultsDto | null = null;
 
   // Sell modal
   showSellModal = false;
@@ -82,13 +87,14 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     annualBuyIncreasePercent: 3,
     projectionYears: 10,
     inflationPercent: 2,
-    cgtPercent: 38,
-    exitTaxPercent: 38,
+    cgtPercent: 33,
+    exitTaxPercent: 41,
     excludePreExistingFromTax: false,
     siaAnnualPercent: 0,
     startAmount: null,
     isIrishInvestor: true,
     taxFreeAllowancePerYear: 0,
+    deemedDisposalPercent: 41,
   };
   projectionLoading = false;
   projectionSaving = false;
@@ -311,11 +317,62 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.initProjection();
     this.loadPortfolioEvolution();
     this.loadTaxSummary();
+    this.loadTaxDefaults();
   }
 
   onShareModalClosed(): void {
     this.showShareModal = false;
     this.cdr.markForCheck();
+  }
+
+  // ── User Settings Modal ──────────────────────────────────────────────────────
+
+  openUserSettings(): void {
+    this.showUserSettingsModal = true;
+    this.cdr.markForCheck();
+  }
+
+  onUserSettingsClosed(saved: UserTaxDefaultsDto | null): void {
+    this.showUserSettingsModal = false;
+    if (saved) {
+      this.userTaxDefaults = saved;
+      // Sync isIrishInvestor toggle and relevant projection settings with new defaults
+      this.isIrishInvestor = saved.isIrishInvestor;
+      localStorage.setItem('isIrishInvestor', String(this.isIrishInvestor));
+      this.projectionSettings = {
+        ...this.projectionSettings,
+        isIrishInvestor: saved.isIrishInvestor,
+        exitTaxPercent: saved.exitTaxPercent,
+        deemedDisposalPercent: saved.deemedDisposalPercent,
+        siaAnnualPercent: saved.siaAnnualPercent,
+        cgtPercent: saved.cgtPercent,
+        taxFreeAllowancePerYear: saved.taxFreeAllowancePerYear,
+      };
+      // Recalculate projection and refresh tax summary with the updated defaults
+      this.projectionChartRendered = false;
+      this.lineChart?.destroy();
+      this.lineChart = null;
+      this.projectionLoading = true;
+      this.apiService.calculateProjection(this.effectiveProjectionSettings).subscribe({
+        next: (result) => { this.projection = result; this.projectionLoading = false; this.cdr.markForCheck(); },
+        error: () => { this.projectionLoading = false; this.cdr.markForCheck(); }
+      });
+      this.loadTaxSummary();
+    }
+    this.cdr.markForCheck();
+  }
+
+  private loadTaxDefaults(): void {
+    this.apiService.getTaxDefaults().subscribe({
+      next: (defaults) => {
+        this.userTaxDefaults = defaults;
+        // Sync isIrishInvestor from server (authoritative)
+        this.isIrishInvestor = defaults.isIrishInvestor;
+        localStorage.setItem('isIrishInvestor', String(defaults.isIrishInvestor));
+        this.cdr.markForCheck();
+      },
+      error: () => { /* non-fatal — fall back to localStorage value */ }
+    });
   }
 
   onStartedViewingAs(): void {
@@ -651,7 +708,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.lineChart = null;
     this.apiService.getProjection().subscribe({
       next: (data) => {
-        this.projectionSettings = { ...data.settings };
+        this.projectionSettings = { ...data.settings, deemedDisposalPercent: data.settings.deemedDisposalPercent ?? 41 };
         // Sync the toggle from the persisted server value
         this.isIrishInvestor = data.settings.isIrishInvestor;
         localStorage.setItem('isIrishInvestor', String(this.isIrishInvestor));

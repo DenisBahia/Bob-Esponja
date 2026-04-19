@@ -34,16 +34,11 @@
             <span>🔗</span>
             <span class="share-text">Sharing</span>
           </button>
-          <!-- Irish Investor toggle -->
-          <div class="irish-investor-toggle"
-               [class.active]="isIrishInvestor"
-               (click)="toggleIrishInvestor()"
-               title="Toggle Irish investor mode — enables Deemed Disposal, Exit Tax, and SIA tax calculations">
-            <span class="irish-toggle-label">🍀 Irish</span>
-            <span class="irish-toggle-track">
-              <span class="irish-toggle-thumb"></span>
-            </span>
-          </div>
+          <!-- User Settings button (replaces inline Irish Investor toggle) -->
+          <button class="btn-settings" (click)="openUserSettings()" title="User Settings — investor profile & default tax rates">
+            <span>⚙️</span>
+            <span class="settings-text">Settings</span>
+          </button>
           <button class="btn-logout" (click)="auth.logout()" title="Sign out">
             <span class="logout-icon">🚪</span>
             <span class="logout-text">Sign out</span>
@@ -920,5 +915,11 @@
     (closed)="onTaxHistoryModalClosed()"
     (taxPaid)="onTaxPaid()">
   </app-tax-history-modal>
+
+  <!-- User Settings Modal -->
+  <app-user-settings-modal
+    *ngIf="showUserSettingsModal"
+    (closed)="onUserSettingsClosed($event)">
+  </app-user-settings-modal>
 </div>
 

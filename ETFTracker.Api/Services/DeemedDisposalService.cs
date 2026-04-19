@@ -10,9 +10,11 @@ public interface IDeemedDisposalService
     /// Checks all buy transactions for a holding and inserts any missing
     /// deemed-disposal TaxEvent rows for anniversaries that have already passed.
     /// Safe to call multiple times — duplicate events are skipped via the unique index.
+    /// The tax rate is always loaded from the user's stored DeemedDisposalPercent default
+    /// and cannot be overridden at point-of-use.
     /// </summary>
     Task CheckAndCreateDeemedDisposalEventsAsync(
-        int holdingId, int userId, bool isIrishInvestor, decimal taxRate,
+        int holdingId, int userId, bool isIrishInvestor,
         CancellationToken ct = default);
 }
 
@@ -28,10 +30,17 @@ public class DeemedDisposalService : IDeemedDisposalService
     }
 
     public async Task CheckAndCreateDeemedDisposalEventsAsync(
-        int holdingId, int userId, bool isIrishInvestor, decimal taxRate,
+        int holdingId, int userId, bool isIrishInvestor,
         CancellationToken ct = default)
     {
         if (!isIrishInvestor) return;
+
+        // Always load the deemed-disposal rate from user defaults — not overridable at call site
+        var projSettings = await _db.ProjectionSettings
+            .FirstOrDefaultAsync(ps => ps.UserId == userId, ct);
+        var taxRate = projSettings?.DeemedDisposalPercent
+                      ?? projSettings?.ExitTaxPercent
+                      ?? 41m;
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var threshold = today.AddYears(-8);

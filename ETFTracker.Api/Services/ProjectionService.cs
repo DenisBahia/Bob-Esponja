@@ -30,10 +30,12 @@ public class ProjectionService : IProjectionService
         AnnualBuyIncreasePercent = 3m,
         ProjectionYears = 10,
         InflationPercent = 2m,
-        CgtPercent = 38m,
-        ExitTaxPercent = 38m,
+        CgtPercent = 33m,
+        ExitTaxPercent = 41m,
         ExcludePreExistingFromTax = false,
         SiaAnnualPercent = 0m,
+        IsIrishInvestor = true,
+        DeemedDisposalPercent = 41m,
     };
 
     public ProjectionService(AppDbContext context, IPriceService priceService, ILogger<ProjectionService> logger)
@@ -66,6 +68,7 @@ public class ProjectionService : IProjectionService
                 StartAmount = dbSettings.StartAmount,
                 IsIrishInvestor = dbSettings.IsIrishInvestor,
                 TaxFreeAllowancePerYear = dbSettings.TaxFreeAllowancePerYear,
+                DeemedDisposalPercent = dbSettings.DeemedDisposalPercent,
             }
             : new ProjectionSettingsDto
             {
@@ -78,6 +81,7 @@ public class ProjectionService : IProjectionService
                 ExitTaxPercent = DefaultSettings.ExitTaxPercent,
                 ExcludePreExistingFromTax = DefaultSettings.ExcludePreExistingFromTax,
                 SiaAnnualPercent = DefaultSettings.SiaAnnualPercent,
+                DeemedDisposalPercent = DefaultSettings.DeemedDisposalPercent,
                 StartAmount = null,
             };
 
@@ -356,6 +360,7 @@ public class ProjectionService : IProjectionService
                 StartAmount = (dto.StartAmount.HasValue && dto.StartAmount.Value > 0m) ? dto.StartAmount : null,
                 IsIrishInvestor = dto.IsIrishInvestor,
                 TaxFreeAllowancePerYear = dto.TaxFreeAllowancePerYear,
+                DeemedDisposalPercent = dto.DeemedDisposalPercent,
                 CreatedAt = utcNow,
                 UpdatedAt = utcNow,
             };
@@ -375,6 +380,7 @@ public class ProjectionService : IProjectionService
             existing.StartAmount = (dto.StartAmount.HasValue && dto.StartAmount.Value > 0m) ? dto.StartAmount : null;
             existing.IsIrishInvestor = dto.IsIrishInvestor;
             existing.TaxFreeAllowancePerYear = dto.TaxFreeAllowancePerYear;
+            existing.DeemedDisposalPercent = dto.DeemedDisposalPercent;
             existing.UpdatedAt = utcNow;
         }
 

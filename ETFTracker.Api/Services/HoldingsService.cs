@@ -309,7 +309,7 @@ public class HoldingsService : IHoldingsService
                 try
                 {
                     await _deemedDisposalService.CheckAndCreateDeemedDisposalEventsAsync(
-                        holding.Id, userId, dto.IsIrishInvestor, dto.TaxRate, cancellationToken);
+                        holding.Id, userId, dto.IsIrishInvestor, cancellationToken);
                 }
                 catch (Exception ex)
                 {

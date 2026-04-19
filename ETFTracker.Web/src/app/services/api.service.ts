@@ -87,6 +87,21 @@ export interface ProjectionSettingsDto {
   isIrishInvestor: boolean;
   /** Annual tax-free CGT allowance. 0 = disabled. Not used for Irish investors. */
   taxFreeAllowancePerYear: number;
+  /** Tax rate for 8-year deemed disposal events. Always from user defaults. */
+  deemedDisposalPercent: number;
+}
+
+// ── User Tax Defaults ─────────────────────────────────────────────────────────
+
+export interface UserTaxDefaultsDto {
+  isIrishInvestor: boolean;
+  // Irish-only
+  exitTaxPercent: number;
+  deemedDisposalPercent: number;
+  siaAnnualPercent: number;
+  // Non-Irish only
+  cgtPercent: number;
+  taxFreeAllowancePerYear: number;
 }
 
 export interface ProjectionDataPointDto {
@@ -440,5 +455,15 @@ export class ApiService {
       ? `${this.apiUrl}/tax-events/mark-all-paid?year=${year}`
       : `${this.apiUrl}/tax-events/mark-all-paid`;
     return this.http.put<{ marked: number }>(url, {});
+  }
+
+  // ── User Settings ──────────────────────────────────────────────────────────
+
+  getTaxDefaults(): Observable<UserTaxDefaultsDto> {
+    return this.http.get<UserTaxDefaultsDto>(`${this.apiUrl}/user-settings/tax-defaults`);
+  }
+
+  saveTaxDefaults(dto: UserTaxDefaultsDto): Observable<UserTaxDefaultsDto> {
+    return this.http.put<UserTaxDefaultsDto>(`${this.apiUrl}/user-settings/tax-defaults`, dto);
   }
 }

@@ -179,6 +179,8 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<ProjectionSettings>()
             .Property(ps => ps.TaxFreeAllowancePerYear).HasColumnName("tax_free_allowance_per_year").HasColumnType("decimal(15,2)").HasDefaultValue(0m);
         modelBuilder.Entity<ProjectionSettings>()
+            .Property(ps => ps.DeemedDisposalPercent).HasColumnName("deemed_disposal_percent").HasColumnType("decimal(5,2)").HasDefaultValue(41m);
+        modelBuilder.Entity<ProjectionSettings>()
             .Property(ps => ps.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
         modelBuilder.Entity<ProjectionSettings>()
             .Property(ps => ps.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
