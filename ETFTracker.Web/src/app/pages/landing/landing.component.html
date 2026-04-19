@@ -4,13 +4,16 @@
 <nav class="lp-nav" [class.lp-nav--scrolled]="scrolled">
   <div class="lp-nav__inner">
     <div class="lp-nav__brand" (click)="scrollTo('top', $event)" style="cursor:pointer">
-      <img src="logo.png" alt="Portify logo" class="lp-nav__brand-logo" />
+      <div class="lp-nav__logo-wrap">
+        <img src="logo.png" alt="Portify logo" class="lp-nav__brand-logo" />
+      </div>
+      <span class="lp-nav__brand-name">Portify</span>
     </div>
     <div class="lp-nav__links">
       <a href="#features"  (click)="scrollTo('features', $event)">Features</a>
-      <a href="#irish-tax" (click)="scrollTo('irish-tax', $event)">Irish Tax</a>
       <a href="#preview"   (click)="scrollTo('preview', $event)">Preview</a>
       <a href="#how"       (click)="scrollTo('how', $event)">How it works</a>
+      <a href="#irish-tax" (click)="scrollTo('irish-tax', $event)">Irish Tax</a>
     </div>
     <div class="lp-nav__actions">
       <a class="lp-btn lp-btn--contact" href="mailto:contact@prt-fy.com?subject=Portify%20Contact">
@@ -43,34 +46,21 @@
         <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
       </filter>
     </defs>
-    <!-- Grid horizontals -->
     <line x1="0" y1="560" x2="1400" y2="560" stroke="rgba(16,185,129,0.07)" stroke-width="1"/>
     <line x1="0" y1="460" x2="1400" y2="460" stroke="rgba(16,185,129,0.07)" stroke-width="1"/>
     <line x1="0" y1="360" x2="1400" y2="360" stroke="rgba(16,185,129,0.07)" stroke-width="1"/>
     <line x1="0" y1="260" x2="1400" y2="260" stroke="rgba(16,185,129,0.07)" stroke-width="1"/>
     <line x1="0" y1="160" x2="1400" y2="160" stroke="rgba(16,185,129,0.07)" stroke-width="1"/>
-    <!-- Grid verticals -->
     <line x1="200"  y1="0" x2="200"  y2="700" stroke="rgba(16,185,129,0.05)" stroke-width="1"/>
     <line x1="400"  y1="0" x2="400"  y2="700" stroke="rgba(16,185,129,0.05)" stroke-width="1"/>
     <line x1="600"  y1="0" x2="600"  y2="700" stroke="rgba(16,185,129,0.05)" stroke-width="1"/>
     <line x1="800"  y1="0" x2="800"  y2="700" stroke="rgba(16,185,129,0.05)" stroke-width="1"/>
     <line x1="1000" y1="0" x2="1000" y2="700" stroke="rgba(16,185,129,0.05)" stroke-width="1"/>
     <line x1="1200" y1="0" x2="1200" y2="700" stroke="rgba(16,185,129,0.05)" stroke-width="1"/>
-    <!-- Fill area: primary line -->
-    <path d="M0,580 C120,560 240,540 360,510 C480,480 600,445 720,400 C840,355 960,305 1080,265 C1200,225 1320,195 1400,170 L1400,700 L0,700Z"
-          fill="url(#heroFill1)"/>
-    <!-- Fill area: secondary line -->
-    <path d="M0,610 C120,595 240,580 360,562 C480,544 600,522 720,498 C840,474 960,450 1080,428 C1200,406 1320,390 1400,378 L1400,700 L0,700Z"
-          fill="url(#heroFill2)"/>
-    <!-- Primary animated chart line -->
-    <polyline class="hero-line-1"
-      points="0,580 140,555 280,525 420,493 560,455 700,412 840,368 980,318 1120,275 1260,232 1400,170"
-      stroke="#10B981" stroke-width="2.5" fill="none" filter="url(#glow)"/>
-    <!-- Secondary animated line (purple) -->
-    <polyline class="hero-line-2"
-      points="0,610 140,600 280,585 420,568 560,548 700,525 840,502 980,478 1120,456 1260,436 1400,418"
-      stroke="#059669" stroke-width="1.8" fill="none" opacity="0.75"/>
-    <!-- Glowing endpoints -->
+    <path d="M0,580 C120,560 240,540 360,510 C480,480 600,445 720,400 C840,355 960,305 1080,265 C1200,225 1320,195 1400,170 L1400,700 L0,700Z" fill="url(#heroFill1)"/>
+    <path d="M0,610 C120,595 240,580 360,562 C480,544 600,522 720,498 C840,474 960,450 1080,428 C1200,406 1320,390 1400,378 L1400,700 L0,700Z" fill="url(#heroFill2)"/>
+    <polyline class="hero-line-1" points="0,580 140,555 280,525 420,493 560,455 700,412 840,368 980,318 1120,275 1260,232 1400,170" stroke="#10B981" stroke-width="2.5" fill="none" filter="url(#glow)"/>
+    <polyline class="hero-line-2" points="0,610 140,600 280,585 420,568 560,548 700,525 840,502 980,478 1120,456 1260,436 1400,418" stroke="#059669" stroke-width="1.8" fill="none" opacity="0.75"/>
     <circle class="hero-dot-1" cx="1400" cy="170" r="6" fill="#10B981" filter="url(#glow)"/>
     <circle class="hero-dot-2" cx="1400" cy="418" r="5" fill="#059669"/>
   </svg>
@@ -78,31 +68,20 @@
   <div class="hero__content">
     <div class="hero__badge reveal">
       <span class="hero__badge-pulse"></span>
-      Free to use &nbsp;&middot;&nbsp; No ads &nbsp;&middot;&nbsp; Privacy-first &nbsp;&middot;&nbsp; Irish tax center built-in
+      Totally Free &nbsp;&middot;&nbsp; No ads &nbsp;&middot;&nbsp; Privacy-first &nbsp;&middot;&nbsp; ETFs, Stocks, Crypto &amp; more
     </div>
 
     <h1 class="hero__headline reveal">
-      Portify<br>
-      <span class="hero__accent">Own Your Portfolio.</span>
+      Track, Project &amp; Plan<br>
+      <span class="hero__accent">Your Investments.</span>
     </h1>
 
     <p class="hero__sub reveal">
-      Finally, a portfolio tracker that understands the complexity of Irish investment taxation &mdash;
-      38% Exit Tax, 8-year Deemed Disposal, and the upcoming SIA regime arriving in 2027.
-      Track holdings in real time, project your after-tax wealth decades ahead, and compare tax regimes
-      side by side. Configure your annual tax-free allowance and see it deducted per calendar year in
-      your tax summary. Plus, monitor pending vs paid tax events across sells and deemed disposals with one-click
-      mark-as-paid workflows. Also perfect for global investors with CGT calculations and inflation-adjusted returns.
+      The portfolio tracker built for serious long-term investors.
+      Real-time prices, decades-ahead wealth projections, automated CGT calculations,
+      inflation-adjusted returns, buy &amp; sell history, and deep tax tooling for
+      every investor &mdash; including a dedicated engine for Irish Exit Tax &amp; Deemed Disposal.
     </p>
-
-    <div class="hero__irish-highlight reveal">
-      <div class="hero__irish-highlight-label">Irish Tax Advantage</div>
-      <h3>We calculate your deemed disposal amount due for old asset positions.</h3>
-      <p>
-        No spreadsheet gymnastics. Add your historical lots and Portify automatically surfaces
-        upcoming deemed-disposal events, expected tax due, and pending vs paid status in one place.
-      </p>
-    </div>
 
     <div class="hero__cta reveal">
       <button class="lp-btn lp-btn--hero" (click)="navigateToLogin()">
@@ -118,34 +97,44 @@
     <!-- Quick stats strip -->
     <div class="hero__stats reveal">
       <div class="hero__stat">
-        <span class="hero__stat-val">38%</span>
-        <span class="hero__stat-lbl">Exit Tax calculated</span>
-      </div>
-      <span class="hero__stat-sep"></span>
-      <div class="hero__stat">
-        <span class="hero__stat-val">8-yr rule</span>
-        <span class="hero__stat-lbl">Deemed Disposal modelled</span>
-      </div>
-      <span class="hero__stat-sep"></span>
-      <div class="hero__stat">
-        <span class="hero__stat-val">SIA 2027</span>
-        <span class="hero__stat-lbl">New regime comparison</span>
-      </div>
-      <span class="hero__stat-sep"></span>
-      <div class="hero__stat">
-        <span class="hero__stat-val">Tax events</span>
-        <span class="hero__stat-lbl">Pending vs paid tracking</span>
-      </div>
-      <span class="hero__stat-sep"></span>
-      <div class="hero__stat">
-        <span class="hero__stat-val">Allowance</span>
-        <span class="hero__stat-lbl">Annual tax-free deducted</span>
+        <span class="hero__stat-val">Real-time</span>
+        <span class="hero__stat-lbl">Live price feeds</span>
       </div>
       <span class="hero__stat-sep"></span>
       <div class="hero__stat">
         <span class="hero__stat-val">30+ yrs</span>
         <span class="hero__stat-lbl">Projection horizon</span>
       </div>
+      <span class="hero__stat-sep"></span>
+      <div class="hero__stat">
+        <span class="hero__stat-val">CGT</span>
+        <span class="hero__stat-lbl">Auto tax calculations</span>
+      </div>
+      <span class="hero__stat-sep"></span>
+      <div class="hero__stat">
+        <span class="hero__stat-val">Multi-asset</span>
+        <span class="hero__stat-lbl">ETFs, stocks, crypto &amp; bonds</span>
+      </div>
+      <span class="hero__stat-sep"></span>
+      <div class="hero__stat">
+        <span class="hero__stat-val">&#x1F1EE;&#x1F1EA; Irish</span>
+        <span class="hero__stat-lbl">Exit Tax &amp; Deemed Disposal</span>
+      </div>
+      <span class="hero__stat-sep"></span>
+      <div class="hero__stat">
+        <span class="hero__stat-val">Free</span>
+        <span class="hero__stat-lbl">No credit card needed</span>
+      </div>
+    </div>
+
+    <!-- Irish tax highlight — secondary callout -->
+    <div class="hero__irish-highlight reveal">
+      <div class="hero__irish-highlight-label">&#x1F1EE;&#x1F1EA; Irish Investor Bonus</div>
+      <h3>Full 38% Exit Tax &amp; 8-year Deemed Disposal engine built in.</h3>
+      <p>
+        Portify automatically surfaces upcoming deemed-disposal events, expected tax due, and
+        pending vs paid status &mdash; plus side-by-side SIA vs Exit Tax comparisons for 2027.
+      </p>
     </div>
   </div>
 
@@ -157,21 +146,6 @@
 </section>
 
 <!-- ═══════════════════════════════════════════
-     SIA ANNOUNCEMENT BANNER
-══════════════════════════════════════════════ -->
-<div class="sia-banner">
-  <div class="container sia-banner__inner">
-    <span class="sia-banner__flag">&#x1F1EE;&#x1F1EA;</span>
-    <div class="sia-banner__text">
-      <strong>Ireland&rsquo;s new SIA investment account arrives in 2027.</strong>
-      A flat annual rate on your total portfolio &mdash; replacing the dreaded Deemed Disposal &amp; Exit Tax complexity.
-      Portify already lets you compare both regimes side by side.
-    </div>
-    <button class="lp-btn lp-btn--sia" (click)="scrollTo('irish-tax', $event)">See comparison &rarr;</button>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════
      FEATURES GRID
 ══════════════════════════════════════════════ -->
 <section class="features" id="features">
@@ -179,7 +153,7 @@
     <div class="section-header reveal">
       <span class="section-tag">Features</span>
       <h2>Everything you need to invest smarter</h2>
-      <p>Built for long-term investors who want clarity, not complexity. Irish tax rules baked in. Global CGT support included. Works for ETFs, stocks, funds, crypto and more.</p>
+      <p>Built for long-term investors who want clarity, not complexity. Real-time prices, automated tax calculations, multi-decade projections, and buy/sell history — for any investor, anywhere.</p>
     </div>
 
     <div class="features__grid">
@@ -283,7 +257,7 @@
     <div class="section-header reveal">
       <span class="section-tag">App Preview</span>
       <h2>See what's waiting for you</h2>
-      <p>A pixel-perfect dark dashboard built for focus — rich Irish tax projections, a dedicated tax summary center with pending/paid workflows, SIA-specific views, and color-coded buy/sell history with per-transaction performance data.</p>
+      <p>A pixel-perfect dark dashboard built for focus — rich analytics, tax projections, buy/sell history with per-transaction performance, allocation charts, portfolio sharing, and more.</p>
     </div>
 
     <!-- Slide tabs -->
@@ -931,119 +905,6 @@
   </div>
 </section>
 
-<!-- ═══════════════════════════════════════════
-     IRISH TAX PROBLEM SECTION
-══════════════════════════════════════════════ -->
-<section class="tax-problem" id="irish-tax">
-  <div class="container">
-    <div class="section-header reveal">
-      <span class="section-tag section-tag--ireland">&#x1F1EE;&#x1F1EA; Irish Investors</span>
-      <h2>Ireland has some of the most complex<br>investment tax rules in the world.</h2>
-      <p>38% Exit Tax. Deemed Disposal every 8 years. Tax on unrealised gains. No loss offsetting. Portify was built to tame all of it &mdash; and to prepare you for SIA when it arrives in 2027.</p>
-    </div>
-
-    <!-- Problem/Solution comparison cards -->
-    <div class="tax-compare reveal">
-      <!-- Current regime card -->
-      <div class="tax-compare__card tax-compare__card--problem">
-        <div class="tax-compare__card-header">
-          <span class="tax-compare__regime-badge tax-compare__regime-badge--current">Current Regime</span>
-          <h3>Deemed Disposal + Exit Tax</h3>
-          <p>The rules as they stand today</p>
-        </div>
-        <div class="tax-compare__card-body">
-          <div class="tax-compare__row">
-            <span class="tax-compare__label">Tax rate on gains</span>
-            <span class="tax-compare__value tax-compare__value--bad">38% Exit Tax</span>
-          </div>
-          <div class="tax-compare__row">
-            <span class="tax-compare__label">When tax is triggered</span>
-            <span class="tax-compare__value tax-compare__value--bad">Every 8 years (even if you didn&rsquo;t sell)</span>
-          </div>
-          <div class="tax-compare__row">
-            <span class="tax-compare__label">What is taxed</span>
-            <span class="tax-compare__value">Unrealised gains at the 8-year mark</span>
-          </div>
-          <div class="tax-compare__row">
-            <span class="tax-compare__label">Loss offsetting</span>
-            <span class="tax-compare__value tax-compare__value--bad">Not allowed</span>
-          </div>
-          <div class="tax-compare__row">
-            <span class="tax-compare__label">Complexity</span>
-            <span class="tax-compare__value tax-compare__value--bad">Very high &mdash; per-lot tracking required</span>
-          </div>
-          <div class="tax-compare__row">
-            <span class="tax-compare__label">Predictability</span>
-            <span class="tax-compare__value tax-compare__value--bad">Low &mdash; surprise bill every 8 years</span>
-          </div>
-          <div class="tax-compare__row">
-            <span class="tax-compare__label">Applies to</span>
-            <span class="tax-compare__value">ETFs, funds, offshore investments</span>
-          </div>
-        </div>
-        <div class="tax-compare__card-footer tax-compare__card-footer--bad">
-          Portify models every Deemed Disposal event automatically
-        </div>
-      </div>
-
-      <div class="tax-compare__vs">
-        <span>VS</span>
-        <div class="tax-compare__arrow">&#x2192;</div>
-        <span class="tax-compare__year">2027</span>
-      </div>
-
-      <!-- SIA card -->
-      <div class="tax-compare__card tax-compare__card--solution">
-        <div class="tax-compare__card-header">
-          <span class="tax-compare__regime-badge tax-compare__regime-badge--sia">SIA &mdash; 2027</span>
-          <h3>Savings &amp; Investment Account</h3>
-          <p>Ireland&rsquo;s simplified investment regime</p>
-        </div>
-        <div class="tax-compare__card-body">
-          <div class="tax-compare__row">
-            <span class="tax-compare__label">Tax rate</span>
-            <span class="tax-compare__value tax-compare__value--good">Flat annual % on portfolio value</span>
-          </div>
-          <div class="tax-compare__row">
-            <span class="tax-compare__label">When tax is triggered</span>
-            <span class="tax-compare__value tax-compare__value--good">Once per year &mdash; predictable &amp; simple</span>
-          </div>
-          <div class="tax-compare__row">
-            <span class="tax-compare__label">What is taxed</span>
-            <span class="tax-compare__value">Total portfolio value (flat rate)</span>
-          </div>
-          <div class="tax-compare__row">
-            <span class="tax-compare__label">Loss offsetting</span>
-            <span class="tax-compare__value tax-compare__value--good">N/A &mdash; flat rate structure</span>
-          </div>
-          <div class="tax-compare__row">
-            <span class="tax-compare__label">Complexity</span>
-            <span class="tax-compare__value tax-compare__value--good">Very low &mdash; just one number per year</span>
-          </div>
-          <div class="tax-compare__row">
-            <span class="tax-compare__label">Predictability</span>
-            <span class="tax-compare__value tax-compare__value--good">High &mdash; easy to budget for annually</span>
-          </div>
-          <div class="tax-compare__row">
-            <span class="tax-compare__label">Applies to</span>
-            <span class="tax-compare__value">All qualifying investments in the SIA wrapper</span>
-          </div>
-        </div>
-        <div class="tax-compare__card-footer tax-compare__card-footer--good">
-          Model SIA now and compare with the current regime in Portify
-        </div>
-      </div>
-    </div>
-
-    <!-- Bottom callout -->
-    <div class="tax-cta reveal">
-      <div class="tax-cta__text">
-          <strong>Already inside the app:</strong> run a 20-year projection, toggle between Exit Tax + Deemed Disposal and SIA mode on the same chart, configure your annual tax-free allowance, and keep your tax timeline clean with pending/paid status tracking and mark-paid actions.
-        </div>
-      <button class="lp-btn lp-btn--primary" (click)="navigateToLogin()">Compare tax regimes now &rarr;</button>
-    </div>
-  </div>
-</section>
 
 <!-- ═══════════════════════════════════════════
      PROJECTION FEATURE SPOTLIGHT
@@ -1055,37 +916,33 @@
       <h2>See where your money is headed — decades from now</h2>
       <p>
         Enter your starting balance, expected annual return, monthly contributions, and inflation rate.
-        Portify instantly models your wealth growth year by year, showing both the gross and
-        after-tax outcome side by side — including an SIA annual tax mode that applies a yearly % to the full portfolio value.
+        Portify instantly models your wealth growth year by year — showing both gross and after-tax
+        outcomes side by side, with CGT, inflation adjustment, and optional Irish tax modes all built in.
       </p>
       <ul class="spotlight__list">
         <li>
           <svg viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          Compound interest with monthly buy drip and annual buy increase %
+          Compound growth with monthly contributions and annual buy increase %
         </li>
         <li>
           <svg viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          Inflation-adjusted real-terms wealth
+          Inflation-adjusted real-terms wealth alongside nominal values
         </li>
         <li>
           <svg viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          Irish Exit Tax automatically factored in when using the deemed-disposal model
+          CGT mode: apply your local capital gains rate to growth at sale
         </li>
         <li>
           <svg viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          Deemed Disposal (8-year rule) modelled precisely
+          Irish Exit Tax &amp; Deemed Disposal (8-year rule) modelled precisely
         </li>
         <li>
           <svg viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          SIA annual % available as an alternative yearly tax on the whole portfolio
+          SIA annual % available as an alternative Irish tax model from 2027
         </li>
         <li>
           <svg viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          Extra SIA chart lines and table columns for after-tax comparisons
-        </li>
-        <li>
-          <svg viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          Save &amp; compare multiple projection scenarios — view as Graph, Data Table or Versions
+          Save &amp; compare multiple projection scenarios — Graph, Data Table, or Versions
         </li>
       </ul>
       <button class="lp-btn lp-btn--primary" (click)="navigateToLogin()">Try it now →</button>
@@ -1270,9 +1127,9 @@
 <section class="global-investors">
   <div class="container">
     <div class="section-header reveal">
-      <span class="section-tag">For Everyone</span>
-      <h2>Not Irish? You&rsquo;ll still love it.</h2>
-      <p>Powerful CGT calculations, inflation-adjusted returns and multi-asset tracking make this the ideal tool for any long-term investor, anywhere in the world.</p>
+      <span class="section-tag">For Every Investor</span>
+      <h2>Powerful tools for investors everywhere.</h2>
+      <p>Whether you're in the UK, Europe, the US or anywhere else — Portify handles CGT, inflation-adjusted returns and multi-asset tracking right out of the box.</p>
     </div>
     <div class="global-grid">
       <div class="global-card reveal">
@@ -1280,7 +1137,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
         </div>
         <h3>CGT Calculations</h3>
-        <p>Capital Gains Tax is calculated automatically for non-Irish investors. FIFO lot matching, allowable costs and net gain at your local CGT rate. Configure your annual tax-free allowance (e.g. the UK&rsquo;s £3,000 exemption) and the app deducts it per calendar year — showing tax before allowance, allowance applied, and the final reduced amount. Know your real tax position before you sell.</p>
+        <p>Capital Gains Tax is calculated automatically. FIFO lot matching, allowable costs and net gain at your local CGT rate. Configure your annual tax-free allowance (e.g. the UK&rsquo;s £3,000 exemption) and see it deducted per calendar year — so you always know your real tax position before you sell.</p>
       </div>
       <div class="global-card reveal" style="--delay:0.1s">
         <div class="global-card__icon">
@@ -1293,8 +1150,8 @@
         <div class="global-card__icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
         </div>
-        <h3>Multi-Asset, Multi-Currency</h3>
-        <p>Track ETFs, stocks, index funds, bonds and crypto. Prices fetched in real time from Eodhd and Yahoo Finance. Works for any exchange-listed ticker worldwide.</p>
+        <h3>Multi-Asset, Any Exchange</h3>
+        <p>Track ETFs, stocks, index funds, bonds and crypto. Prices fetched in real time from Eodhd and Yahoo Finance. Works for any exchange-listed ticker worldwide, with a smart source badge showing exactly where each price came from.</p>
       </div>
       <div class="global-card reveal" style="--delay:0.3s">
         <div class="global-card__icon">
@@ -1308,7 +1165,134 @@
 </section>
 
 <!-- ═══════════════════════════════════════════
-     HOW IT WORKS
+     SIA ANNOUNCEMENT BANNER
+══════════════════════════════════════════════ -->
+<div class="sia-banner">
+  <div class="container sia-banner__inner">
+    <span class="sia-banner__flag">&#x1F1EE;&#x1F1EA;</span>
+    <div class="sia-banner__text">
+      <strong>Irish investors:</strong> Ireland&rsquo;s new SIA investment account arrives in 2027 &mdash; a flat annual rate replacing Deemed Disposal &amp; Exit Tax complexity.
+      Portify already lets you compare both regimes side by side.
+    </div>
+    <button class="lp-btn lp-btn--sia" (click)="scrollTo('irish-tax', $event)">See comparison &rarr;</button>
+  </div>
+</div>
+<!-- ═══════════════════════════════════════════
+     IRISH TAX PROBLEM SECTION
+══════════════════════════════════════════════ -->
+<section class="tax-problem" id="irish-tax">
+  <div class="container">
+    <div class="section-header reveal">
+      <span class="section-tag section-tag--ireland">&#x1F1EE;&#x1F1EA; Irish Investors</span>
+      <h2>Ireland has some of the most complex<br>investment tax rules in the world.</h2>
+      <p>38% Exit Tax. Deemed Disposal every 8 years. Tax on unrealised gains. No loss offsetting. Portify was built to tame all of it &mdash; and to prepare you for SIA when it arrives in 2027.</p>
+    </div>
+
+    <!-- Problem/Solution comparison cards -->
+    <div class="tax-compare reveal">
+      <!-- Current regime card -->
+      <div class="tax-compare__card tax-compare__card--problem">
+        <div class="tax-compare__card-header">
+          <span class="tax-compare__regime-badge tax-compare__regime-badge--current">Current Regime</span>
+          <h3>Deemed Disposal + Exit Tax</h3>
+          <p>The rules as they stand today</p>
+        </div>
+        <div class="tax-compare__card-body">
+          <div class="tax-compare__row">
+            <span class="tax-compare__label">Tax rate on gains</span>
+            <span class="tax-compare__value tax-compare__value--bad">38% Exit Tax</span>
+          </div>
+          <div class="tax-compare__row">
+            <span class="tax-compare__label">When tax is triggered</span>
+            <span class="tax-compare__value tax-compare__value--bad">Every 8 years (even if you didn&rsquo;t sell)</span>
+          </div>
+          <div class="tax-compare__row">
+            <span class="tax-compare__label">What is taxed</span>
+            <span class="tax-compare__value">Unrealised gains at the 8-year mark</span>
+          </div>
+          <div class="tax-compare__row">
+            <span class="tax-compare__label">Loss offsetting</span>
+            <span class="tax-compare__value tax-compare__value--bad">Not allowed</span>
+          </div>
+          <div class="tax-compare__row">
+            <span class="tax-compare__label">Complexity</span>
+            <span class="tax-compare__value tax-compare__value--bad">Very high &mdash; per-lot tracking required</span>
+          </div>
+          <div class="tax-compare__row">
+            <span class="tax-compare__label">Predictability</span>
+            <span class="tax-compare__value tax-compare__value--bad">Low &mdash; surprise bill every 8 years</span>
+          </div>
+          <div class="tax-compare__row">
+            <span class="tax-compare__label">Applies to</span>
+            <span class="tax-compare__value">ETFs, funds, offshore investments</span>
+          </div>
+        </div>
+        <div class="tax-compare__card-footer tax-compare__card-footer--bad">
+          Portify models every Deemed Disposal event automatically
+        </div>
+      </div>
+
+      <div class="tax-compare__vs">
+        <span>VS</span>
+        <div class="tax-compare__arrow">&#x2192;</div>
+        <span class="tax-compare__year">2027</span>
+      </div>
+
+      <!-- SIA card -->
+      <div class="tax-compare__card tax-compare__card--solution">
+        <div class="tax-compare__card-header">
+          <span class="tax-compare__regime-badge tax-compare__regime-badge--sia">SIA &mdash; 2027</span>
+          <h3>Savings &amp; Investment Account</h3>
+          <p>Ireland&rsquo;s simplified investment regime</p>
+        </div>
+        <div class="tax-compare__card-body">
+          <div class="tax-compare__row">
+            <span class="tax-compare__label">Tax rate</span>
+            <span class="tax-compare__value tax-compare__value--good">Flat annual % on portfolio value</span>
+          </div>
+          <div class="tax-compare__row">
+            <span class="tax-compare__label">When tax is triggered</span>
+            <span class="tax-compare__value tax-compare__value--good">Once per year &mdash; predictable &amp; simple</span>
+          </div>
+          <div class="tax-compare__row">
+            <span class="tax-compare__label">What is taxed</span>
+            <span class="tax-compare__value">Total portfolio value (flat rate)</span>
+          </div>
+          <div class="tax-compare__row">
+            <span class="tax-compare__label">Loss offsetting</span>
+            <span class="tax-compare__value tax-compare__value--good">N/A &mdash; flat rate structure</span>
+          </div>
+          <div class="tax-compare__row">
+            <span class="tax-compare__label">Complexity</span>
+            <span class="tax-compare__value tax-compare__value--good">Very low &mdash; just one number per year</span>
+          </div>
+          <div class="tax-compare__row">
+            <span class="tax-compare__label">Predictability</span>
+            <span class="tax-compare__value tax-compare__value--good">High &mdash; easy to budget for annually</span>
+          </div>
+          <div class="tax-compare__row">
+            <span class="tax-compare__label">Applies to</span>
+            <span class="tax-compare__value">All qualifying investments in the SIA wrapper</span>
+          </div>
+        </div>
+        <div class="tax-compare__card-footer tax-compare__card-footer--good">
+          Model SIA now and compare with the current regime in Portify
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom callout -->
+    <div class="tax-cta reveal">
+      <div class="tax-cta__text">
+          <strong>Already inside the app:</strong> run a 20-year projection, toggle between Exit Tax + Deemed Disposal and SIA mode on the same chart, configure your annual tax-free allowance, and keep your tax timeline clean with pending/paid status tracking and mark-paid actions.
+        </div>
+      <button class="lp-btn lp-btn--primary" (click)="navigateToLogin()">Compare tax regimes now &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     IRISH TAX PROBLEM SECTION
 ══════════════════════════════════════════════ -->
 <section class="how" id="how">
   <div class="container">
@@ -1361,9 +1345,9 @@
   <div class="container">
     <div class="cta-section__inner reveal">
       <h2>Ready to take control of your investments?</h2>
-      <p *ngIf="showGitHubAuth">Free to use. No credit card. No setup. Sign in with GitHub or Google and start tracking in seconds.</p>
-      <p *ngIf="!showGitHubAuth">Free to use. No credit card. No setup. Sign in with Google and start tracking in seconds.</p>
-      <p class="cta-section__tagline">Own Your Portfolio.</p>
+      <p *ngIf="showGitHubAuth">Free to use. No credit card. Sign in with GitHub or Google and start tracking in seconds.</p>
+      <p *ngIf="!showGitHubAuth">Free to use. No credit card. Sign in with Google and start tracking in seconds.</p>
+      <p class="cta-section__tagline">Track. Project. Grow.</p>
 
       <div class="cta-section__btns">
         <button *ngIf="showGitHubAuth" class="lp-btn lp-btn--github" (click)="navigateToLogin()">
@@ -1404,7 +1388,7 @@
       <span>Portify</span>
     </div>
     <p class="lp-footer__copy">
-      Built for Irish investors &amp; global long-term investors. Free to use, forever.
+      Free for all investors, everywhere. Powerful tools, zero complexity.
     </p>
     <div class="lp-footer__links">
       <a href="#features"  (click)="scrollTo('features', $event)">Features</a>

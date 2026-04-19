@@ -94,6 +94,9 @@ public class HoldingsService : IHoldingsService
             .OrderBy(h => h.Ticker)
             .ToListAsync(cancellationToken);
 
+        // Keep deemed-disposal events up to date for Irish users even when no new buy is added.
+        await EnsureDeemedDisposalsAreCurrentAsync(userId, dbHoldings, cancellationToken);
+
         // Pre-load sell data for all holdings in one go
         var holdingIds = dbHoldings.Select(h => h.Id).ToList();
 
@@ -301,19 +304,29 @@ public class HoldingsService : IHoldingsService
             // still alive when the Yahoo Finance call and subsequent SaveChanges run.
             // Any failure is swallowed inside BackfillHistoricalPricesIfNeededAsync,
             // so the buy is never rolled back even if the history fetch fails.
-            await BackfillHistoricalPricesIfNeededAsync(dto.Ticker, dto.PurchaseDate, cancellationToken);
+            var hasPriceHistoryCoverage = await BackfillHistoricalPricesIfNeededAsync(
+                dto.Ticker, dto.PurchaseDate, cancellationToken);
 
             // Check for deemed-disposal events triggered by this buy's purchase date
             if (dto.IsIrishInvestor)
             {
-                try
+                if (!hasPriceHistoryCoverage)
                 {
-                    await _deemedDisposalService.CheckAndCreateDeemedDisposalEventsAsync(
-                        holding.Id, userId, dto.IsIrishInvestor, cancellationToken);
+                    _logger.LogWarning(
+                        "Skipping deemed-disposal check for holding {HoldingId}: missing historical prices covering buy date {PurchaseDate}.",
+                        holding.Id, dto.PurchaseDate);
                 }
-                catch (Exception ex)
+                else
                 {
-                    _logger.LogWarning(ex, "Deemed-disposal check failed for holding {HoldingId} — non-fatal.", holding.Id);
+                    try
+                    {
+                        await _deemedDisposalService.CheckAndCreateDeemedDisposalEventsAsync(
+                            holding.Id, userId, dto.IsIrishInvestor, cancellationToken);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Deemed-disposal check failed for holding {HoldingId} — non-fatal.", holding.Id);
+                    }
                 }
             }
         }
@@ -330,7 +343,7 @@ public class HoldingsService : IHoldingsService
     /// <paramref name="purchaseDate"/>.  If not, fetches the full daily history from
     /// Yahoo Finance (period1 = purchaseDate, period2 = today) and saves it to the DB.
     /// </summary>
-    private async Task BackfillHistoricalPricesIfNeededAsync(
+    private async Task<bool> BackfillHistoricalPricesIfNeededAsync(
         string ticker,
         DateOnly purchaseDate,
         CancellationToken cancellationToken)
@@ -344,27 +357,45 @@ public class HoldingsService : IHoldingsService
                 .Where(ps => ps.Ticker == ticker)
                 .MinAsync(ps => (DateTime?)ps.SnapshotDate, cancellationToken);
 
-            // Backfill when: no snapshots at all  OR  purchase date predates earliest snapshot
+            // Backfill when: no snapshots at all OR purchase date predates earliest snapshot
             bool needsBackfill = earliestSnapshotDate == null
                                  || earliestSnapshotDate.Value.Date > purchaseDateUtc.Date;
 
-            if (!needsBackfill)
+            if (needsBackfill)
+            {
+                _logger.LogInformation(
+                    "Starting historical price backfill for {Ticker} from {PurchaseDate}",
+                    ticker, purchaseDate);
+
+                var saved = await _priceService.FetchAndSaveHistoricalPricesAsync(ticker, purchaseDate, cancellationToken);
+
+                _logger.LogInformation(
+                    "Historical price backfill complete for {Ticker}: {Count} snapshots saved",
+                    ticker, saved);
+            }
+            else
             {
                 _logger.LogDebug(
                     "Price history for {Ticker} already covers {PurchaseDate} — skipping backfill",
                     ticker, purchaseDate);
-                return;
             }
 
-            _logger.LogInformation(
-                "Starting historical price backfill for {Ticker} from {PurchaseDate}",
-                ticker, purchaseDate);
+            // Re-check coverage after optional backfill; deemed-disposal depends on this.
+            var earliestAfterBackfill = await _context.PriceSnapshots
+                .Where(ps => ps.Ticker == ticker)
+                .MinAsync(ps => (DateTime?)ps.SnapshotDate, cancellationToken);
 
-            var saved = await _priceService.FetchAndSaveHistoricalPricesAsync(ticker, purchaseDate, cancellationToken);
+            var hasCoverage = earliestAfterBackfill != null
+                              && earliestAfterBackfill.Value.Date <= purchaseDateUtc.Date;
 
-            _logger.LogInformation(
-                "Historical price backfill complete for {Ticker}: {Count} snapshots saved",
-                ticker, saved);
+            if (!hasCoverage)
+            {
+                _logger.LogWarning(
+                    "Historical prices for {Ticker} still do not cover buy date {PurchaseDate} after backfill attempt.",
+                    ticker, purchaseDate);
+            }
+
+            return hasCoverage;
         }
         catch (Exception ex)
         {
@@ -372,6 +403,7 @@ public class HoldingsService : IHoldingsService
             _logger.LogError(ex,
                 "Error during historical price backfill for {Ticker} (purchase date {PurchaseDate})",
                 ticker, purchaseDate);
+            return false;
         }
     }
 
@@ -698,5 +730,53 @@ public class HoldingsService : IHoldingsService
         var today = DateTime.UtcNow.Date;
         var yearStart = new DateTime(today.Year, 1, 1);
         return (today - yearStart).Days;
+    }
+
+    private async Task EnsureDeemedDisposalsAreCurrentAsync(
+        int userId,
+        List<Holding> holdings,
+        CancellationToken cancellationToken)
+    {
+        if (holdings.Count == 0) return;
+
+        var isIrishInvestor = await _context.ProjectionSettings
+            .Where(ps => ps.UserId == userId)
+            .Select(ps => ps.IsIrishInvestor)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (!isIrishInvestor) return;
+
+        foreach (var holding in holdings)
+        {
+            // Ensure we have historical coverage from the earliest buy before calculating deemed disposal.
+            var earliestBuyDate = holding.Transactions.Count > 0
+                ? holding.Transactions.Min(t => t.PurchaseDate)
+                : (DateOnly?)null;
+
+            if (!earliestBuyDate.HasValue) continue;
+
+            var hasPriceHistoryCoverage = await BackfillHistoricalPricesIfNeededAsync(
+                holding.Ticker, earliestBuyDate.Value, cancellationToken);
+
+            if (!hasPriceHistoryCoverage)
+            {
+                _logger.LogWarning(
+                    "Skipping deemed-disposal refresh for holding {HoldingId}: missing historical prices covering earliest buy date {PurchaseDate}.",
+                    holding.Id, earliestBuyDate.Value);
+                continue;
+            }
+
+            try
+            {
+                await _deemedDisposalService.CheckAndCreateDeemedDisposalEventsAsync(
+                    holding.Id, userId, isIrishInvestor: true, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex,
+                    "Deemed-disposal refresh failed during holdings load for holding {HoldingId}.",
+                    holding.Id);
+            }
+        }
     }
 }
