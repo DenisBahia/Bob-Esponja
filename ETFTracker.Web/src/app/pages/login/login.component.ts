@@ -19,8 +19,6 @@ const AUTH_API = `${environment.apiBase}/api/auth`;
 
         <div class="brand">
           <img src="logo.png" alt="Portify logo" class="brand-logo" />
-          <h1>Portify</h1>
-          <p class="subtitle">Own Your Portfolio.</p>
         </div>
 
         <div *ngIf="errorMessage" class="error-banner">{{ errorMessage }}</div>
