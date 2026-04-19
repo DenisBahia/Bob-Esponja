@@ -13,6 +13,8 @@ import { AuthService } from '../../services/auth.service';
 export class LandingComponent implements OnInit, OnDestroy {
   scrolled = false;
   activeSlide = 0;
+  // UI toggle only: GitHub auth remains implemented in services/routes.
+  readonly showGitHubAuth = false;
 
   readonly slides = [
     { label: 'Dashboard' },

@@ -48,7 +48,7 @@ const AUTH_API = `${environment.apiBase}/api/auth`;
         <div class="divider"><span>or continue with</span></div>
 
         <div class="btn-group">
-          <button class="btn btn-github" (click)="loginWithGitHub()">
+          <button *ngIf="showGitHubAuth" class="btn btn-github" (click)="loginWithGitHub()">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
               <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.21 11.39.6.11.82-.26.82-.58
                        0-.28-.01-1.04-.02-2.04-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76
@@ -210,6 +210,9 @@ export class LoginComponent implements OnInit {
   successMessage = '';
   isRegister     = false;
   loading        = false;
+
+  // Keep GitHub auth code path available while hiding it from the UI for now.
+  readonly showGitHubAuth = false;
 
   email     = '';
   password  = '';
