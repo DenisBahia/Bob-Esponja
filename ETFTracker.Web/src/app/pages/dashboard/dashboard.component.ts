@@ -20,7 +20,7 @@ import {
 Chart.register(ArcElement, Tooltip, Legend, PieController, LineController, LineElement, PointElement, LinearScale, CategoryScale, Filler);
 
 const PIE_COLORS = [
-  '#4f8ef7', '#7c5cfc', '#06d6d0', '#14d990', '#f89b29',
+  '#10B981', '#059669', '#06d6d0', '#10B981', '#f89b29',
   '#f05252', '#fa709a', '#a78bfa', '#34d399', '#fbbf24',
   '#60a5fa', '#c084fc', '#2dd4bf', '#86efac', '#fcd34d',
 ];
@@ -540,13 +540,13 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
       {
         label: 'Projected Portfolio Value',
         data: points.map(p => p.totalAmount),
-        borderColor: '#4f8ef7',
-        backgroundColor: 'rgba(79, 142, 247, 0.10)',
+        borderColor: '#10B981',
+        backgroundColor: 'rgba(16, 185, 129, 0.10)',
         fill: true,
         tension: 0.35,
         pointRadius: 5,
         pointHoverRadius: 7,
-        pointBackgroundColor: '#4f8ef7',
+        pointBackgroundColor: '#10B981',
       },
       {
         label: 'Amount corrected by inflation',
@@ -1130,13 +1130,13 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
           {
             label: 'Projected Portfolio Value (Goal)',
             data: this.goalDataPoints.map(p => p.targetValue),
-            borderColor: '#14d990',
-            backgroundColor: 'rgba(20, 217, 144, 0.10)',
+            borderColor: '#10B981',
+            backgroundColor: 'rgba(16, 185, 129, 0.10)',
             fill: true,
             tension: 0.35,
             pointRadius: 5,
             pointHoverRadius: 7,
-            pointBackgroundColor: '#14d990',
+            pointBackgroundColor: '#10B981',
           },
           {
             label: 'Actual / Estimated Position',
@@ -1435,7 +1435,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
       (!p.isFuture) ? (i + 1 === currentMonth ? 9 : 5) : 0
     );
     const pointColors = monthlyData.map((_, i) =>
-      i + 1 === currentMonth ? '#f89b29' : '#14d990'
+      i + 1 === currentMonth ? '#f89b29' : '#10B981'
     );
 
     // ── Actual position data ─────────────────────────────────────────────────
@@ -1463,8 +1463,8 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
           {
             label: `${new Date().getFullYear()} Monthly Target`,
             data: pastValues,
-            borderColor: '#14d990',
-            backgroundColor: 'rgba(20, 217, 144, 0.10)',
+            borderColor: '#10B981',
+            backgroundColor: 'rgba(16, 185, 129, 0.10)',
             fill: true,
             tension: 0.3,
             pointRadius: pointRadii,
@@ -1475,13 +1475,13 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
           {
             label: 'Forecast (future months)',
             data: futureValues,
-            borderColor: 'rgba(20, 217, 144, 0.4)',
-            backgroundColor: 'rgba(20, 217, 144, 0.03)',
+            borderColor: 'rgba(16, 185, 129, 0.4)',
+            backgroundColor: 'rgba(16, 185, 129, 0.03)',
             fill: false,
             tension: 0.3,
             pointRadius: 4,
             pointHoverRadius: 6,
-            pointBackgroundColor: 'rgba(20, 217, 144, 0.4)',
+            pointBackgroundColor: 'rgba(16, 185, 129, 0.4)',
             borderDash: [5, 4],
             spanGaps: false,
           } as any,
@@ -1565,7 +1565,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
 
     // Each metric has its own colour family; each version gets a different shade of that family
     const LINE_TYPE_CONFIG: { key: keyof ProjectionDataPointDto; label: string; dash: number[]; shades: string[] }[] = [
-      { key: 'totalAmount',                       label: 'Projected Portfolio Value',             dash: [],      shades: ['#4f8ef7', '#2563d4', '#7cb5ff', '#1a47a0'] },
+      { key: 'totalAmount',                       label: 'Projected Portfolio Value',             dash: [],      shades: ['#10B981', '#2563d4', '#7cb5ff', '#1a47a0'] },
       { key: 'inflationCorrectedAmount',          label: 'Inflation Corrected',                   dash: [6, 3],  shades: ['#f05252', '#b91c1c', '#f87171', '#7f1d1d'] },
       { key: 'afterTaxTotalAmount',               label: 'After Taxes',                           dash: [4, 4],  shades: ['#4d6080', '#2d4565', '#6d80a0', '#1d2f45'] },
       { key: 'afterTaxInflationCorrectedAmount',  label: 'After Tax + Inflation Corrected',       dash: [8, 3],  shades: ['#f89b29', '#c27416', '#fbba60', '#7c4a0a'] },
@@ -1673,8 +1673,8 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
 
     // Build per-point arrays for dynamic point styling
     const pointRadii = points.map(p => (p.hasBuy ? 8 : 3));
-    const pointColors = points.map(p => (p.hasBuy ? '#f05252' : '#4f8ef7'));
-    const pointBorderColors = points.map(p => (p.hasBuy ? '#c0392b' : '#4f8ef7'));
+    const pointColors = points.map(p => (p.hasBuy ? '#f05252' : '#10B981'));
+    const pointBorderColors = points.map(p => (p.hasBuy ? '#c0392b' : '#10B981'));
     const pointBorderWidths = points.map(p => (p.hasBuy ? 2 : 1));
     const pointHoverRadii = points.map(p => (p.hasBuy ? 10 : 5));
 
@@ -1686,8 +1686,8 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
           {
             label: 'Portfolio Value',
             data: points.map(p => p.totalValue),
-            borderColor: '#4f8ef7',
-            backgroundColor: 'rgba(79, 142, 247, 0.08)',
+            borderColor: '#10B981',
+            backgroundColor: 'rgba(16, 185, 129, 0.08)',
             fill: true,
             tension: 0.25,
             pointRadius: pointRadii,

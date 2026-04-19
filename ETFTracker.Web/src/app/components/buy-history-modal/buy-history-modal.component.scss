@@ -26,7 +26,7 @@
   background: var(--bg-card);
   border: 1px solid var(--border-light);
   border-radius: 14px;
-  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(79, 142, 247, 0.08);
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(16, 185, 129, 0.08);
   max-width: 1000px;
   width: 95%;
   max-height: 90vh;
@@ -176,7 +176,7 @@
         }
 
         &.row-editing {
-          background: rgba(79, 142, 247, 0.06) !important;
+          background: rgba(16, 185, 129, 0.06) !important;
           border-left-color: var(--accent) !important;
         }
 
@@ -193,7 +193,7 @@
           margin-right: 0.1rem;
 
           &:hover {
-            background: rgba(79, 142, 247, 0.15);
+            background: rgba(16, 185, 129, 0.15);
             opacity: 1;
           }
         }
@@ -209,7 +209,7 @@
           min-width: 80px;
           outline: none;
 
-          &:focus { box-shadow: 0 0 0 2px rgba(79, 142, 247, 0.25); }
+          &:focus { box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25); }
 
           &.edit-input-sm { min-width: 70px; width: 80px; }
         }
@@ -260,7 +260,7 @@
           .btn-confirm-no {
             background: rgba(141, 160, 191, 0.1);
             border: 1px solid rgba(141, 160, 191, 0.3);
-            color: #8da0bf;
+            color: var(--text-secondary);
             border-radius: 4px;
             padding: 0.1rem 0.4rem;
             font-size: 0.75rem;
@@ -325,8 +325,8 @@
   transition: color 0.15s, border-color 0.15s;
 
   &.active {
-    color: #4f8ef7;
-    border-bottom-color: #4f8ef7;
+    color: #10B981;
+    border-bottom-color: #10B981;
   }
 
   &:hover:not(.active) {
@@ -339,7 +339,7 @@
   &.positive { border-left-color: var(--positive); }
   &.negative { border-left-color: var(--negative); }
 
-  .gain { color: #14d990; }
+  .gain { color: #10B981; }
   .loss { color: #f05252; }
 }
 
@@ -356,7 +356,7 @@
 
   thead th {
     background: #0e1a2e;
-    color: #8da0bf;
+    color: var(--text-secondary);
     padding: 6px 10px;
     font-size: 0.72rem;
     text-transform: uppercase;
@@ -366,10 +366,10 @@
   tbody td {
     padding: 6px 10px;
     color: var(--text-secondary);
-    border-bottom: 1px solid rgba(31, 46, 74, 0.6);
+    border-bottom: 1px solid rgba(229, 231, 235, 0.6);
   }
 
-  .gain { color: #14d990; }
+  .gain { color: #10B981; }
   .loss { color: #f05252; }
 }
 

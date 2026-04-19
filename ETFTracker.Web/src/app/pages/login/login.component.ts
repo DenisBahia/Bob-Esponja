@@ -18,9 +18,9 @@ const AUTH_API = `${environment.apiBase}/api/auth`;
       <div class="login-card">
 
         <div class="brand">
-          <span class="brand-icon">📊</span>
-          <h1>Investments Tracker</h1>
-          <p class="subtitle">{{ isRegister ? 'Create your account' : 'Sign in to access your portfolio' }}</p>
+          <img src="logo.png" alt="Portify logo" class="brand-logo" />
+          <h1>Portify</h1>
+          <p class="subtitle">Own Your Portfolio.</p>
         </div>
 
         <div *ngIf="errorMessage" class="error-banner">{{ errorMessage }}</div>
@@ -101,7 +101,13 @@ const AUTH_API = `${environment.apiBase}/api/auth`;
       box-shadow: var(--shadow-lg);
     }
     .brand { margin-bottom: 1.5rem; }
-    .brand-icon { font-size: 2.5rem; display: block; margin-bottom: 0.75rem; }
+    .brand-logo {
+      height: 56px;
+      width: auto;
+      display: block;
+      margin: 0 auto 0.75rem;
+      object-fit: contain;
+    }
     h1 { font-size: 1.35rem; font-weight: 700; margin: 0 0 0.4rem; color: var(--text-primary); }
     .subtitle { color: var(--text-muted); font-size: 0.88rem; margin: 0; }
 

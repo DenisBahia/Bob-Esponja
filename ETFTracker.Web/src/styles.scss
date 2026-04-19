@@ -1,27 +1,27 @@
 /* ── Dark Financial Dashboard – Global Styles ── */
 :root {
-  --bg-base:       #080c14;
-  --bg-surface:    #0d1526;
-  --bg-card:       #111d35;
-  --bg-elevated:   #172040;
-  --bg-input:      #0d1526;
-  --border:        #1f2e4a;
-  --border-light:  #243452;
+  --bg-base:       #0F172A;
+  --bg-surface:    #1E293B;
+  --bg-card:       #1E293B;
+  --bg-elevated:   #243B55;
+  --bg-input:      #1E293B;
+  --border:        rgba(229, 231, 235, 0.12);
+  --border-light:  rgba(229, 231, 235, 0.22);
 
-  --accent:        #4f8ef7;
-  --accent-hover:  #3b7de0;
-  --accent-purple: #7c5cfc;
-  --accent-cyan:   #06d6d0;
-  --accent-glow:   rgba(79, 142, 247, 0.15);
+  --accent:        #10B981;
+  --accent-hover:  #0EA572;
+  --accent-purple: #059669;
+  --accent-cyan:   #34D399;
+  --accent-glow:   rgba(16, 185, 129, 0.15);
 
-  --positive:      #14d990;
-  --positive-bg:   rgba(20, 217, 144, 0.08);
+  --positive:      #10B981;
+  --positive-bg:   rgba(16, 185, 129, 0.08);
   --negative:      #f05252;
   --negative-bg:   rgba(240, 82, 82, 0.08);
 
-  --text-primary:  #e4eaf5;
-  --text-secondary:#8da0bf;
-  --text-muted:    #4d6080;
+  --text-primary:  #FFFFFF;
+  --text-secondary:#E5E7EB;
+  --text-muted:    rgba(229, 231, 235, 0.5);
 
   --shadow-sm:     0 1px 4px rgba(0,0,0,0.4);
   --shadow-md:     0 4px 16px rgba(0,0,0,0.5);

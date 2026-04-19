@@ -22,7 +22,7 @@
   background: var(--bg-card);
   border: 1px solid var(--border-light);
   border-radius: 14px;
-  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(79, 142, 247, 0.08);
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(16, 185, 129, 0.08);
   max-width: 500px;
   width: 90%;
   max-height: 90vh;
@@ -164,7 +164,7 @@
             transition: background 0.12s;
 
             &:last-child { border-bottom: none; }
-            &:hover { background: rgba(79, 142, 247, 0.08); }
+            &:hover { background: rgba(16, 185, 129, 0.08); }
 
             .option-icon { font-size: 1rem; flex-shrink: 0; }
 
@@ -220,7 +220,7 @@
         gap: 0.4rem;
         margin-top: 0.5rem;
         padding: 0.5rem 0.75rem;
-        background: rgba(79, 142, 247, 0.08);
+        background: rgba(16, 185, 129, 0.08);
         border-left: 3px solid var(--accent);
         border-radius: 0 6px 6px 0;
         font-size: 0.85rem;
@@ -250,8 +250,8 @@
     margin-top: 0.6rem;
     margin-bottom: 1.35rem;
     padding: 0.75rem 0.9rem;
-    background: rgba(79, 142, 247, 0.05);
-    border: 1px solid rgba(79, 142, 247, 0.14);
+    background: rgba(16, 185, 129, 0.05);
+    border: 1px solid rgba(16, 185, 129, 0.14);
     border-radius: 8px;
 
     .ticker-support-header {

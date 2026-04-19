@@ -14,7 +14,13 @@
     <!-- Top nav / user menu -->
     <nav class="top-nav" *ngIf="auth.user() as user">
       <div class="nav-left">
-        <span class="app-brand">📊 Investments Tracker</span>
+        <div class="app-brand">
+          <img src="logo.png" alt="Portify logo" class="app-brand__logo" />
+          <div class="app-brand__text">
+            <span>Portify</span>
+            <small class="app-brand__slogan">Own Your Portfolio.</small>
+          </div>
+        </div>
       </div>
       <div class="nav-right">
         <div class="user-menu">

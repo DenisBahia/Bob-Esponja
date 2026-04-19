@@ -12,8 +12,8 @@
 }
 
 .modal-panel {
-  background: #111d35;
-  border: 1px solid rgba(79, 142, 247, 0.2);
+  background: #1E293B;
+  border: 1px solid rgba(16, 185, 129, 0.2);
   border-radius: 16px;
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
   width: 100%;
@@ -36,13 +36,13 @@
     margin: 0;
     font-size: 1.2rem;
     font-weight: 700;
-    color: #e4eaf5;
+    color: #FFFFFF;
   }
 
   .btn-close {
     background: transparent;
     border: none;
-    color: #8da0bf;
+    color: var(--text-secondary);
     font-size: 1.1rem;
     cursor: pointer;
     padding: 0.3rem 0.6rem;
@@ -51,7 +51,7 @@
 
     &:hover {
       background: rgba(255, 255, 255, 0.08);
-      color: #e4eaf5;
+      color: #FFFFFF;
     }
   }
 }
@@ -71,7 +71,7 @@
     background: transparent;
     border: none;
     border-bottom: 2px solid transparent;
-    color: #8da0bf;
+    color: var(--text-secondary);
     font-size: 0.9rem;
     font-weight: 500;
     cursor: pointer;
@@ -79,16 +79,16 @@
     margin-bottom: -1px;
 
     &.active {
-      color: #4f8ef7;
-      border-bottom-color: #4f8ef7;
+      color: #10B981;
+      border-bottom-color: #10B981;
     }
 
     &:hover:not(.active) {
-      color: #e4eaf5;
+      color: #FFFFFF;
     }
 
     .badge-count {
-      background: #4f8ef7;
+      background: #10B981;
       color: #fff;
       font-size: 0.72rem;
       font-weight: 700;
@@ -107,8 +107,8 @@
 
 // ── Share form ──────────────────────────────────────────────────────────────
 .share-form {
-  background: rgba(79, 142, 247, 0.05);
-  border: 1px solid rgba(79, 142, 247, 0.12);
+  background: rgba(16, 185, 129, 0.05);
+  border: 1px solid rgba(16, 185, 129, 0.12);
   border-radius: 10px;
   padding: 1.1rem 1.25rem;
   margin-bottom: 1.25rem;
@@ -117,7 +117,7 @@
     margin: 0 0 0.8rem;
     font-size: 0.95rem;
     font-weight: 600;
-    color: #c9d6ea;
+    color: var(--text-secondary);
   }
 
   .form-row {
@@ -134,15 +134,15 @@
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
-    color: #e4eaf5;
+    color: #FFFFFF;
     font-size: 0.9rem;
     transition: border-color 0.2s;
 
-    &::placeholder { color: #4d6080; }
+    &::placeholder { color: rgba(229, 231, 235, 0.5); }
 
     &:focus {
       outline: none;
-      border-color: #4f8ef7;
+      border-color: #10B981;
     }
   }
 
@@ -150,13 +150,13 @@
     display: flex;
     align-items: center;
     gap: 0.4rem;
-    color: #8da0bf;
+    color: var(--text-secondary);
     font-size: 0.87rem;
     cursor: pointer;
     white-space: nowrap;
 
     input[type='checkbox'] {
-      accent-color: #4f8ef7;
+      accent-color: #10B981;
       width: 15px;
       height: 15px;
     }
@@ -169,7 +169,7 @@
   }
 
   .hint {
-    color: #4d6080;
+    color: rgba(229, 231, 235, 0.5);
     font-size: 0.8rem;
     margin: 0.55rem 0 0;
   }
@@ -194,7 +194,7 @@
   transition: border-color 0.2s;
 
   &:hover {
-    border-color: rgba(79, 142, 247, 0.2);
+    border-color: rgba(16, 185, 129, 0.2);
   }
 
   &.revoked {
@@ -208,11 +208,11 @@
     .share-email {
       font-size: 0.92rem;
       font-weight: 600;
-      color: #c9d6ea;
+      color: var(--text-secondary);
 
       .share-name {
         font-weight: 400;
-        color: #8da0bf;
+        color: var(--text-secondary);
         margin-left: 0.35rem;
       }
     }
@@ -244,7 +244,7 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
 
-  &.status-active   { background: rgba(20, 217, 144, 0.15); color: #14d990; }
+  &.status-active   { background: rgba(16, 185, 129, 0.15); color: #10B981; }
   &.status-pending  { background: rgba(248, 155, 41, 0.15);  color: #f89b29; }
   &.status-revoked  { background: rgba(240, 82, 82, 0.15);   color: #f05252; }
 }
@@ -257,14 +257,14 @@
 
 .readonly-tag {
   font-size: 0.75rem;
-  color: #8da0bf;
+  color: var(--text-secondary);
 
   &.is-readonly { color: #f89b29; }
 }
 
 // ── Loading / empty ──────────────────────────────────────────────────────────
 .loading-msg, .empty-msg {
-  color: #4d6080;
+  color: rgba(229, 231, 235, 0.5);
   font-size: 0.9rem;
   padding: 1rem 0;
   text-align: center;
@@ -277,14 +277,14 @@
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
-  background: rgba(79, 142, 247, 0.1);
-  border: 1px solid rgba(79, 142, 247, 0.25);
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
   border-radius: 8px;
   margin-bottom: 1rem;
   font-size: 0.88rem;
-  color: #8da0bf;
+  color: var(--text-secondary);
 
-  strong { color: #4f8ef7; }
+  strong { color: #10B981; }
 }
 
 .shared-with-me-list {
@@ -304,7 +304,7 @@
   transition: border-color 0.2s;
 
   &:hover {
-    border-color: rgba(79, 142, 247, 0.2);
+    border-color: rgba(16, 185, 129, 0.2);
   }
 
   .shared-avatar {
@@ -313,7 +313,7 @@
     height: 42px;
     border-radius: 50%;
     overflow: hidden;
-    border: 2px solid rgba(79, 142, 247, 0.2);
+    border: 2px solid rgba(16, 185, 129, 0.2);
 
     img {
       width: 100%;
@@ -329,7 +329,7 @@
       justify-content: center;
       font-weight: 700;
       font-size: 1rem;
-      background: linear-gradient(135deg, #7c5cfc 0%, #4f8ef7 100%);
+      background: linear-gradient(135deg, #059669 0%, #10B981 100%);
       color: #fff;
     }
   }
@@ -341,12 +341,12 @@
     .shared-name {
       font-size: 0.95rem;
       font-weight: 600;
-      color: #c9d6ea;
+      color: var(--text-secondary);
     }
 
     .shared-email {
       font-size: 0.8rem;
-      color: #8da0bf;
+      color: var(--text-secondary);
     }
   }
 }
@@ -369,16 +369,16 @@
   &.btn-sm { padding: 0.35rem 0.75rem; font-size: 0.8rem; }
 
   &.btn-primary {
-    background: #4f8ef7;
+    background: #10B981;
     color: #fff;
     &:hover:not(:disabled) { background: #3a7be0; }
   }
 
   &.btn-ghost {
     background: rgba(255, 255, 255, 0.06);
-    color: #8da0bf;
+    color: var(--text-secondary);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    &:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); color: #e4eaf5; }
+    &:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); color: #FFFFFF; }
   }
 
   &.btn-danger {

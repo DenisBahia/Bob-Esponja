@@ -5,7 +5,7 @@
   margin: 0 0 1.25rem;
   padding: 0.35rem;
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(79, 142, 247, 0.18);
+  border: 1px solid rgba(16, 185, 129, 0.18);
   border-radius: 12px;
 }
 
@@ -14,7 +14,7 @@
   min-width: 0;
   border: 1px solid transparent;
   background: transparent;
-  color: #8da0bf;
+  color: var(--text-secondary);
   font-weight: 700;
   font-size: 0.92rem;
   border-radius: 9px;
@@ -23,15 +23,15 @@
   transition: all 0.2s ease;
 
   &:hover {
-    color: #d8e5f8;
-    background: rgba(79, 142, 247, 0.1);
+    color: #FFFFFF;
+    background: rgba(16, 185, 129, 0.1);
   }
 
   &.active {
-    color: #f4f8ff;
-    background: linear-gradient(135deg, rgba(79, 142, 247, 0.25) 0%, rgba(124, 92, 252, 0.22) 100%);
-    border-color: rgba(79, 142, 247, 0.45);
-    box-shadow: 0 0 0 1px rgba(79, 142, 247, 0.2) inset;
+    color: #FFFFFF;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(5, 150, 105, 0.22) 100%);
+    border-color: rgba(16, 185, 129, 0.45);
+    box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.2) inset;
   }
 }
 
@@ -67,17 +67,17 @@
   justify-content: space-between;
   gap: 1rem;
   padding: 0.7rem 2.5rem;
-  background: linear-gradient(135deg, rgba(79, 142, 247, 0.15) 0%, rgba(124, 92, 252, 0.15) 100%);
-  border-bottom: 1px solid rgba(79, 142, 247, 0.3);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.15) 100%);
+  border-bottom: 1px solid rgba(16, 185, 129, 0.3);
 
   .viewing-as-label {
     font-size: 0.9rem;
-    color: #8da0bf;
+    color: var(--text-secondary);
     display: flex;
     align-items: center;
     gap: 0.6rem;
 
-    strong { color: #4f8ef7; }
+    strong { color: #10B981; }
 
     .readonly-chip {
       font-size: 0.75rem;
@@ -95,7 +95,7 @@
     background: rgba(255, 255, 255, 0.07);
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 8px;
-    color: #c9d6ea;
+    color: var(--text-secondary);
     font-size: 0.83rem;
     font-weight: 600;
     cursor: pointer;
@@ -119,7 +119,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem 2.5rem;
-  background: linear-gradient(135deg, #0d1526 0%, #111d35 100%);
+  background: linear-gradient(135deg, #1E293B 0%, #1E293B 100%);
   border-bottom: 1px solid var(--border);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
   // sticky + margins moved to .sticky-header wrapper
@@ -128,13 +128,33 @@
     flex: 0 0 auto;
 
     .app-brand {
-      font-size: 1.3rem;
+      font-size: 1.05rem;
       font-weight: 800;
       color: var(--text-primary);
       letter-spacing: -0.02em;
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.6rem;
+
+      &__logo {
+        height: 36px;
+        width: auto;
+        object-fit: contain;
+        display: block;
+      }
+
+      &__text {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.05;
+      }
+
+      &__slogan {
+        font-size: 0.68rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        letter-spacing: 0.02em;
+      }
     }
   }
 
@@ -147,14 +167,14 @@
       gap: 1.25rem;
       padding: 0.5rem 1rem 0.5rem 1.25rem;
       background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(79, 142, 247, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.1);
       border-radius: 12px;
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
       &:hover {
         background: rgba(255, 255, 255, 0.06);
-        border-color: rgba(79, 142, 247, 0.25);
-        box-shadow: 0 0 0 3px rgba(79, 142, 247, 0.08);
+        border-color: rgba(16, 185, 129, 0.25);
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.08);
       }
 
       .user-info {
@@ -196,7 +216,7 @@
 
           &:hover {
             border-color: var(--accent);
-            box-shadow: 0 0 0 2px rgba(79, 142, 247, 0.2);
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
             transform: scale(1.05);
           }
         }
@@ -232,9 +252,9 @@
         align-items: center;
         gap: 0.45rem;
         padding: 0.5rem 0.9rem;
-        background: rgba(124, 92, 252, 0.12);
+        background: rgba(5, 150, 105, 0.12);
         color: #a78bfa;
-        border: 1px solid rgba(124, 92, 252, 0.25);
+        border: 1px solid rgba(5, 150, 105, 0.25);
         border-radius: 8px;
         font-size: 0.85rem;
         font-weight: 600;
@@ -245,8 +265,8 @@
         .share-text { display: inline; }
 
         &:hover {
-          background: rgba(124, 92, 252, 0.22);
-          border-color: rgba(124, 92, 252, 0.45);
+          background: rgba(5, 150, 105, 0.22);
+          border-color: rgba(5, 150, 105, 0.45);
           color: #c4b5fd;
           transform: translateY(-1px);
         }
@@ -258,9 +278,9 @@
         align-items: center;
         gap: 0.45rem;
         padding: 0.5rem 0.9rem;
-        background: rgba(79, 142, 247, 0.10);
+        background: rgba(16, 185, 129, 0.10);
         color: #93c5fd;
-        border: 1px solid rgba(79, 142, 247, 0.22);
+        border: 1px solid rgba(16, 185, 129, 0.22);
         border-radius: 8px;
         font-size: 0.85rem;
         font-weight: 600;
@@ -271,8 +291,8 @@
         .settings-text { display: inline; }
 
         &:hover {
-          background: rgba(79, 142, 247, 0.22);
-          border-color: rgba(79, 142, 247, 0.45);
+          background: rgba(16, 185, 129, 0.22);
+          border-color: rgba(16, 185, 129, 0.45);
           color: #bfdbfe;
           transform: translateY(-1px);
         }
@@ -322,7 +342,7 @@
         .irish-toggle-label {
           font-size: 0.78rem;
           font-weight: 600;
-          color: #8da0bf;
+          color: var(--text-secondary);
           white-space: nowrap;
           transition: color 0.2s;
         }
@@ -343,32 +363,32 @@
             width: 12px;
             height: 12px;
             border-radius: 50%;
-            background: #8da0bf;
+            background: #E5E7EB;
             transition: transform 0.2s, background 0.2s;
           }
         }
 
         &.active {
-          background: rgba(20, 217, 144, 0.08);
-          border-color: rgba(20, 217, 144, 0.3);
+          background: rgba(16, 185, 129, 0.08);
+          border-color: rgba(16, 185, 129, 0.3);
 
           .irish-toggle-label {
-            color: #14d990;
+            color: #10B981;
           }
 
           .irish-toggle-track {
-            background: rgba(20, 217, 144, 0.25);
+            background: rgba(16, 185, 129, 0.25);
 
             .irish-toggle-thumb {
               transform: translateX(14px);
-              background: #14d990;
+              background: #10B981;
             }
           }
         }
 
         &:hover {
-          background: rgba(20, 217, 144, 0.12);
-          border-color: rgba(20, 217, 144, 0.4);
+          background: rgba(16, 185, 129, 0.12);
+          border-color: rgba(16, 185, 129, 0.4);
         }
       }
     }
@@ -381,6 +401,10 @@
 
     .nav-left .app-brand {
       font-size: 1.1rem;
+
+      .app-brand__slogan {
+        display: none;
+      }
     }
 
     .nav-right .user-menu {
@@ -613,7 +637,7 @@ th.sortable {
           // Total Holdings – blue gradient hero card
           &.total {
             background: linear-gradient(135deg, #1a3a6e 0%, #0f224d 100%);
-            border-color: rgba(79, 142, 247, 0.3);
+            border-color: rgba(16, 185, 129, 0.3);
 
             &::before { background: var(--accent); }
 
@@ -774,14 +798,14 @@ th.sortable {
                   width: 14px;
                   height: 14px;
                   border-radius: 50%;
-                  background: #8da0bf;
+                  background: #E5E7EB;
                   transition: transform 0.18s ease, background 0.18s ease;
                 }
               }
 
               &:hover {
-                border-color: rgba(79, 142, 247, 0.45);
-                background: rgba(79, 142, 247, 0.08);
+                border-color: rgba(16, 185, 129, 0.45);
+                background: rgba(16, 185, 129, 0.08);
                 color: var(--text-primary);
               }
 
@@ -792,16 +816,16 @@ th.sortable {
               }
 
               &.active {
-                border-color: rgba(20, 217, 144, 0.35);
-                background: rgba(20, 217, 144, 0.08);
+                border-color: rgba(16, 185, 129, 0.35);
+                background: rgba(16, 185, 129, 0.08);
                 color: var(--text-primary);
 
                 .setting-toggle-track {
-                  background: rgba(20, 217, 144, 0.24);
+                  background: rgba(16, 185, 129, 0.24);
 
                   .setting-toggle-thumb {
                     transform: translateX(16px);
-                    background: #14d990;
+                    background: #10B981;
                   }
                 }
               }
@@ -835,7 +859,7 @@ th.sortable {
                 color: var(--text-secondary);
 
                 &:hover {
-                  background: rgba(79, 142, 247, 0.12);
+                  background: rgba(16, 185, 129, 0.12);
                   border-color: var(--accent);
                   color: var(--accent);
                   transform: scale(1.1);
@@ -880,7 +904,7 @@ th.sortable {
             border: 1px solid var(--accent);
             color: var(--accent);
 
-            &:hover:not(:disabled) { background: rgba(79, 142, 247, 0.10); }
+            &:hover:not(:disabled) { background: rgba(16, 185, 129, 0.10); }
             &:disabled { opacity: 0.45; cursor: not-allowed; }
           }
         }
@@ -1019,8 +1043,8 @@ th.sortable {
         width: 100%;
         padding: 0.5rem 0.9rem;
         margin-bottom: 1rem;
-        background: rgba(79, 142, 247, 0.06);
-        border: 1px solid rgba(79, 142, 247, 0.14);
+        background: rgba(16, 185, 129, 0.06);
+        border: 1px solid rgba(16, 185, 129, 0.14);
         border-left: 3px solid var(--accent);
         border-radius: 6px;
         font-size: 0.82rem;
@@ -1237,7 +1261,7 @@ th.sortable {
                 &:hover { background: var(--bg-elevated); cursor: pointer; }
 
                 &.version-selected td {
-                  background: rgba(79, 142, 247, 0.08);
+                  background: rgba(16, 185, 129, 0.08);
                 }
 
                 &.version-default td {
@@ -1375,7 +1399,7 @@ th.sortable {
                 .btn-confirm-no {
                   background: rgba(141, 160, 191, 0.1);
                   border: 1px solid rgba(141, 160, 191, 0.3);
-                  color: #8da0bf;
+                  color: var(--text-secondary);
                   border-radius: 4px;
                   padding: 0.1rem 0.4rem;
                   font-size: 0.75rem;
@@ -1426,8 +1450,8 @@ th.sortable {
       @extend %card;
       padding: 1.5rem;
       text-align: center;
-      background: linear-gradient(135deg, rgba(79, 142, 247, 0.06) 0%, rgba(124, 92, 252, 0.06) 100%);
-      border-color: rgba(79, 142, 247, 0.22);
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.06) 0%, rgba(5, 150, 105, 0.06) 100%);
+      border-color: rgba(16, 185, 129, 0.22);
 
       .empty-state-title {
         margin: 0 0 0.35rem;
@@ -1635,7 +1659,7 @@ th.sortable {
                   font-size: 0.8rem;
                   color: var(--accent-purple);
                   font-weight: 600;
-                  background: rgba(124, 92, 252, 0.12);
+                  background: rgba(5, 150, 105, 0.12);
                   border-radius: 4px;
                   padding: 1px 6px;
                 }
@@ -1977,13 +2001,13 @@ th.sortable {
   font-family: inherit;
 
   &.btn-primary {
-    background: var(--accent, #4f8ef7);
+    background: var(--accent, #10B981);
     color: #fff;
-    box-shadow: 0 0 0 0 rgba(79, 142, 247, 0.35);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.35);
 
     &:hover:not(:disabled) {
       background: var(--accent-hover, #3a7de0);
-      box-shadow: 0 0 0 4px rgba(79, 142, 247, 0.22);
+      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.22);
       transform: translateY(-1px);
     }
 
@@ -1992,11 +2016,11 @@ th.sortable {
 
   &.btn-secondary {
     background: transparent;
-    border: 1px solid var(--accent, #4f8ef7);
-    color: var(--accent, #4f8ef7);
+    border: 1px solid var(--accent, #10B981);
+    color: var(--accent, #10B981);
 
     &:hover:not(:disabled) {
-      background: rgba(79, 142, 247, 0.10);
+      background: rgba(16, 185, 129, 0.10);
       transform: translateY(-1px);
     }
 
@@ -2012,7 +2036,7 @@ th.sortable {
   h2 {
     font-size: 1.35rem;
     font-weight: 700;
-    color: #e4eaf5;
+    color: #FFFFFF;
     margin: 0 0 1.25rem;
   }
 }
@@ -2035,14 +2059,14 @@ th.sortable {
 }
 
 .goal-loading {
-  color: #8da0bf;
+  color: var(--text-secondary);
   font-size: 0.95rem;
   padding: 1rem 0;
 }
 
 .goal-empty-state {
   background: rgba(255, 255, 255, 0.03);
-  border: 1px dashed rgba(79, 142, 247, 0.25);
+  border: 1px dashed rgba(16, 185, 129, 0.25);
   border-radius: 12px;
   padding: 2.5rem 2rem;
   text-align: center;
@@ -2050,23 +2074,23 @@ th.sortable {
   .goal-empty-title {
     font-size: 1.1rem;
     font-weight: 600;
-    color: #c9d6ea;
+    color: var(--text-secondary);
     margin: 0 0 0.6rem;
   }
 
   .goal-empty-hint {
     font-size: 0.9rem;
-    color: #8da0bf;
+    color: var(--text-secondary);
     margin: 0;
-    strong { color: #4f8ef7; }
+    strong { color: #10B981; }
   }
 }
 
 .goal-source-hint {
   font-size: 0.85rem;
-  color: #8da0bf;
+  color: var(--text-secondary);
   margin: 0 0 1.25rem;
-  strong { color: #4f8ef7; }
+  strong { color: #10B981; }
 }
 
 // ── Goal inner tab bar ──────────────────────────────────────────────────────
@@ -2079,9 +2103,9 @@ th.sortable {
 .goal-sub-tab-btn {
   padding: 0.45rem 1.25rem;
   border-radius: 20px;
-  border: 1px solid rgba(79, 142, 247, 0.25);
+  border: 1px solid rgba(16, 185, 129, 0.25);
   background: transparent;
-  color: #8da0bf;
+  color: var(--text-secondary);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
@@ -2089,35 +2113,35 @@ th.sortable {
   font-family: inherit;
 
   &:hover:not(.active) {
-    background: rgba(79, 142, 247, 0.08);
-    color: #c9d6ea;
-    border-color: rgba(79, 142, 247, 0.4);
+    background: rgba(16, 185, 129, 0.08);
+    color: var(--text-secondary);
+    border-color: rgba(16, 185, 129, 0.4);
   }
 
   &.active {
-    background: rgba(79, 142, 247, 0.15);
-    border-color: rgba(79, 142, 247, 0.6);
-    color: #4f8ef7;
+    background: rgba(16, 185, 129, 0.15);
+    border-color: rgba(16, 185, 129, 0.6);
+    color: #10B981;
     font-weight: 600;
   }
 }
 
 .goal-monthly-notice {
-  background: rgba(79, 142, 247, 0.05);
-  border: 1px solid rgba(79, 142, 247, 0.18);
+  background: rgba(16, 185, 129, 0.05);
+  border: 1px solid rgba(16, 185, 129, 0.18);
   border-radius: 10px;
   padding: 1.25rem 1.5rem;
-  color: #8da0bf;
+  color: var(--text-secondary);
   font-size: 0.9rem;
   margin-bottom: 1.75rem;
-  strong { color: #4f8ef7; }
+  strong { color: #10B981; }
 }
 
 .goal-chart-wrapper {
   position: relative;
   height: 360px;
   background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(79, 142, 247, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.12);
   border-radius: 12px;
   padding: 1rem;
   margin-bottom: 1.75rem;
@@ -2128,7 +2152,7 @@ th.sortable {
 .goal-table-wrapper {
   overflow-x: auto;
   border-radius: 10px;
-  border: 1px solid rgba(79, 142, 247, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.12);
   margin-bottom: 1.25rem;
 }
 
@@ -2144,26 +2168,26 @@ th.sortable {
       padding: 0.7rem 1.1rem;
       text-align: left;
       font-weight: 600;
-      color: #8da0bf;
+      color: var(--text-secondary);
       font-size: 0.8rem;
       text-transform: uppercase;
       letter-spacing: 0.04em;
-      border-bottom: 1px solid rgba(79, 142, 247, 0.12);
+      border-bottom: 1px solid rgba(16, 185, 129, 0.12);
     }
   }
 
   tbody tr {
-    border-bottom: 1px solid rgba(79, 142, 247, 0.07);
+    border-bottom: 1px solid rgba(16, 185, 129, 0.07);
     transition: background 0.15s;
 
     &:last-child { border-bottom: none; }
-    &:hover { background: rgba(79, 142, 247, 0.05); }
+    &:hover { background: rgba(16, 185, 129, 0.05); }
   }
 
   .goal-year-col {
     padding: 0.6rem 1.1rem;
     font-weight: 700;
-    color: #c9d6ea;
+    color: var(--text-secondary);
     width: 6rem;
   }
 
@@ -2176,17 +2200,17 @@ th.sortable {
   width: 14rem;
   padding: 0.45rem 0.75rem;
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(79, 142, 247, 0.25);
+  border: 1px solid rgba(16, 185, 129, 0.25);
   border-radius: 7px;
-  color: #e4eaf5;
+  color: #FFFFFF;
   font-size: 0.9rem;
   font-family: inherit;
   transition: border-color 0.15s, background 0.15s;
 
   &:focus {
     outline: none;
-    border-color: rgba(79, 142, 247, 0.6);
-    background: rgba(79, 142, 247, 0.08);
+    border-color: rgba(16, 185, 129, 0.6);
+    background: rgba(16, 185, 129, 0.08);
   }
 
   &::-webkit-inner-spin-button,
@@ -2210,7 +2234,7 @@ th.sortable {
   transition: background 0.15s;
   line-height: 1;
 
-  &:hover:not(:disabled) { background: rgba(20, 217, 144, 0.15); }
+  &:hover:not(:disabled) { background: rgba(16, 185, 129, 0.15); }
   &:disabled { opacity: 0.4; cursor: not-allowed; }
 }
 
@@ -2234,7 +2258,7 @@ th.sortable {
 
   &:hover {
     border-color: var(--accent);
-    background: rgba(79, 142, 247, 0.08);
+    background: rgba(16, 185, 129, 0.08);
     color: var(--accent);
   }
 
@@ -2293,9 +2317,9 @@ th.sortable {
 }
 
 .btn-mark-all {
-  background: rgba(20, 217, 144, 0.1);
+  background: rgba(16, 185, 129, 0.1);
   color: var(--positive);
-  border: 1px solid rgba(20, 217, 144, 0.3);
+  border: 1px solid rgba(16, 185, 129, 0.3);
   border-radius: 8px;
   padding: 0.45rem 1rem;
   font-size: 0.83rem;
@@ -2303,14 +2327,14 @@ th.sortable {
   cursor: pointer;
   font-family: inherit;
   transition: background 0.15s;
-  &:hover:not(:disabled) { background: rgba(20, 217, 144, 0.18); }
+  &:hover:not(:disabled) { background: rgba(16, 185, 129, 0.18); }
   &:disabled { opacity: 0.5; cursor: wait; }
 
   &--all {
-    background: rgba(79, 142, 247, 0.1);
+    background: rgba(16, 185, 129, 0.1);
     color: var(--accent);
-    border-color: rgba(79, 142, 247, 0.3);
-    &:hover:not(:disabled) { background: rgba(79, 142, 247, 0.18); }
+    border-color: rgba(16, 185, 129, 0.3);
+    &:hover:not(:disabled) { background: rgba(16, 185, 129, 0.18); }
   }
 }
 
@@ -2339,7 +2363,7 @@ th.sortable {
 
   &--pending { border-color: rgba(248, 155, 41, 0.4); background: rgba(248, 155, 41, 0.05); }
   &--year    { border-color: rgba(240, 82, 82, 0.35); background: rgba(240, 82, 82, 0.04); }
-  &--paid    { border-color: rgba(20, 217, 144, 0.3); background: rgba(20, 217, 144, 0.04); }
+  &--paid    { border-color: rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.04); }
 }
 
 .tax-ov-label {
@@ -2439,14 +2463,14 @@ th.sortable {
   font-weight: 600;
 
   &--disposal {
-    background: rgba(79, 142, 247, 0.12);
+    background: rgba(16, 185, 129, 0.12);
     color: var(--accent);
-    border: 1px solid rgba(79, 142, 247, 0.25);
+    border: 1px solid rgba(16, 185, 129, 0.25);
   }
   &--sell {
-    background: rgba(124, 92, 252, 0.12);
+    background: rgba(5, 150, 105, 0.12);
     color: var(--accent-purple);
-    border: 1px solid rgba(124, 92, 252, 0.25);
+    border: 1px solid rgba(5, 150, 105, 0.25);
   }
 }
 
@@ -2467,16 +2491,16 @@ th.sortable {
     border: 1px solid rgba(248, 155, 41, 0.3);
   }
   &--paid {
-    background: rgba(20, 217, 144, 0.1);
+    background: rgba(16, 185, 129, 0.1);
     color: var(--positive);
-    border: 1px solid rgba(20, 217, 144, 0.25);
+    border: 1px solid rgba(16, 185, 129, 0.25);
   }
 }
 
 .btn-te-paid {
-  background: rgba(20, 217, 144, 0.1);
+  background: rgba(16, 185, 129, 0.1);
   color: var(--positive);
-  border: 1px solid rgba(20, 217, 144, 0.3);
+  border: 1px solid rgba(16, 185, 129, 0.3);
   border-radius: 5px;
   padding: 0.2rem 0.6rem;
   font-size: 0.74rem;
@@ -2484,7 +2508,7 @@ th.sortable {
   cursor: pointer;
   font-family: inherit;
   transition: background 0.15s;
-  &:hover { background: rgba(20, 217, 144, 0.2); }
+  &:hover { background: rgba(16, 185, 129, 0.2); }
 }
 
 // Tax-free allowance input hint
@@ -2497,15 +2521,15 @@ th.sortable {
 
 // Tax-free allowance overview card
 .tax-ov-card--allowance {
-  background: rgba(79, 142, 247, 0.1);
-  border: 1px solid rgba(79, 142, 247, 0.25);
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
 }
 
 // Tax-free allowance year breakdown
 .tax-allowance-section {
   margin: 1rem 0 1.25rem;
-  background: rgba(79, 142, 247, 0.06);
-  border: 1px solid rgba(79, 142, 247, 0.18);
+  background: rgba(16, 185, 129, 0.06);
+  border: 1px solid rgba(16, 185, 129, 0.18);
   border-radius: 10px;
   padding: 1rem 1.2rem;
 }
@@ -2514,7 +2538,7 @@ th.sortable {
   font-size: 0.9rem;
   color: var(--text-secondary);
   margin-bottom: 0.75rem;
-  strong { color: #4f8ef7; }
+  strong { color: #10B981; }
 }
 
 .tax-allowance-rows {
@@ -2556,7 +2580,7 @@ th.sortable {
   justify-content: space-between;
   align-items: center;
   padding-top: 0.6rem;
-  border-top: 1px solid rgba(79, 142, 247, 0.2);
+  border-top: 1px solid rgba(16, 185, 129, 0.2);
   font-size: 0.88rem;
   color: var(--text-secondary);
   strong {

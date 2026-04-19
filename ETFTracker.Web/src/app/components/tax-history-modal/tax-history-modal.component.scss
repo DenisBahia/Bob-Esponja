@@ -80,7 +80,7 @@
   min-width: 160px;
 
   &--pending { border-color: rgba(248,155,41,0.4); background: rgba(248,155,41,0.06); }
-  &--paid    { border-color: rgba(20,217,144,0.3); background: rgba(20,217,144,0.06); }
+  &--paid    { border-color: rgba(16,185,129,0.3); background: rgba(16,185,129,0.06); }
 }
 
 .card-label { font-size: 0.74rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
@@ -130,14 +130,14 @@
   font-weight: 600;
 
   &--disposal {
-    background: rgba(79,142,247,0.12);
+    background: rgba(16,185,129,0.12);
     color: var(--accent);
-    border: 1px solid rgba(79,142,247,0.25);
+    border: 1px solid rgba(16,185,129,0.25);
   }
   &--sell {
-    background: rgba(124,92,252,0.12);
+    background: rgba(5,150,105,0.12);
     color: var(--accent-purple);
-    border: 1px solid rgba(124,92,252,0.25);
+    border: 1px solid rgba(5,150,105,0.25);
   }
 }
 
@@ -154,9 +154,9 @@
     border: 1px solid rgba(248,155,41,0.3);
   }
   &--paid {
-    background: rgba(20,217,144,0.1);
+    background: rgba(16,185,129,0.1);
     color: var(--positive);
-    border: 1px solid rgba(20,217,144,0.25);
+    border: 1px solid rgba(16,185,129,0.25);
   }
 }
 
@@ -166,9 +166,9 @@
 .negative { color: var(--negative); }
 
 .btn-mark-paid {
-  background: rgba(20,217,144,0.1);
+  background: rgba(16,185,129,0.1);
   color: var(--positive);
-  border: 1px solid rgba(20,217,144,0.3);
+  border: 1px solid rgba(16,185,129,0.3);
   border-radius: 6px;
   padding: 0.25rem 0.65rem;
   font-size: 0.76rem;
@@ -177,7 +177,7 @@
   font-family: inherit;
   transition: background 0.15s;
 
-  &:hover { background: rgba(20,217,144,0.2); }
+  &:hover { background: rgba(16,185,129,0.2); }
   &:disabled { opacity: 0.5; cursor: wait; }
 }
 
