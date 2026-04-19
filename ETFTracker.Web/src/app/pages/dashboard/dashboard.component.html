@@ -45,6 +45,10 @@
             <span>⚙️</span>
             <span class="settings-text">Settings</span>
           </button>
+          <a class="btn-contact" href="mailto:contact@prt-fy.com?subject=Portify%20Support" title="Contact support">
+            <span>✉️</span>
+            <span class="contact-text">Contact</span>
+          </a>
           <button class="btn-logout" (click)="auth.logout()" title="Sign out">
             <span class="logout-icon">🚪</span>
             <span class="logout-text">Sign out</span>
@@ -80,6 +84,11 @@
               (click)="setMainSection('projections')">
         📈 Projections
       </button>
+    </div>
+
+    <div class="dashboard-contact-hint">
+      Need help, found an issue, or have an idea? Reach us at
+      <a href="mailto:contact@prt-fy.com?subject=Portify%20Support">contact@prt-fy.com</a>
     </div>
 
     <div *ngIf="activeMainSection === 'portfolio'">

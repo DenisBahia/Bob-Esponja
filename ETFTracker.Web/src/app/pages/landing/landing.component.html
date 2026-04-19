@@ -13,9 +13,14 @@
       <a href="#preview"   (click)="scrollTo('preview', $event)">Preview</a>
       <a href="#how"       (click)="scrollTo('how', $event)">How it works</a>
     </div>
-    <button class="lp-btn lp-btn--outline" (click)="navigateToLogin()">
-      Sign In &rarr;
-    </button>
+    <div class="lp-nav__actions">
+      <a class="lp-btn lp-btn--contact" href="mailto:contact@prt-fy.com?subject=Portify%20Contact">
+        Contact
+      </a>
+      <button class="lp-btn lp-btn--outline" (click)="navigateToLogin()">
+        Sign In &rarr;
+      </button>
+    </div>
   </div>
 </nav>
 
@@ -1380,6 +1385,10 @@
       <p class="cta-section__note">
         🔒 We only store your email address and investment data. Zero third-party tracking.
       </p>
+      <p class="cta-section__contact">
+        Questions, bug reports, or feature ideas? Reach us at
+        <a href="mailto:contact@prt-fy.com?subject=Portify%20Contact">contact@prt-fy.com</a>
+      </p>
     </div>
   </div>
 </section>
@@ -1400,6 +1409,7 @@
       <a href="#features"  (click)="scrollTo('features', $event)">Features</a>
       <a href="#irish-tax" (click)="scrollTo('irish-tax', $event)">Irish Tax</a>
       <a href="#how"       (click)="scrollTo('how', $event)">How it works</a>
+      <a href="mailto:contact@prt-fy.com?subject=Portify%20Contact">Contact</a>
       <a (click)="navigateToLogin()" style="cursor:pointer">Sign In</a>
     </div>
   </div>

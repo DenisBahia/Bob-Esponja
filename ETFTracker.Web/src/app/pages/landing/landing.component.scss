@@ -47,6 +47,12 @@
     border: 1.5px solid var(--border-light);
     &:hover { border-color: var(--accent); color: var(--accent); }
   }
+  &--contact {
+    background: rgba(16, 185, 129, 0.12);
+    color: var(--accent);
+    border: 1.5px solid rgba(16, 185, 129, 0.3);
+    &:hover { background: rgba(16, 185, 129, 0.2); }
+  }
   &--ghost {
     background: rgba(16, 185, 129, 0.09);
     color: var(--accent);
@@ -179,6 +185,12 @@
       transition: color 0.15s;
       &:hover { color: var(--text-primary); }
     }
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
   }
 
   &--scrolled {
@@ -882,6 +894,20 @@
     font-size: 0.82rem;
     color: var(--text-muted);
     margin-top: 1rem;
+  }
+
+  &__contact {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin: 0;
+
+    a {
+      color: var(--accent);
+      font-weight: 700;
+      text-decoration: none;
+
+      &:hover { text-decoration: underline; }
+    }
   }
 }
 

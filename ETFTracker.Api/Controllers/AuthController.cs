@@ -8,6 +8,7 @@ using ETFTracker.Api.Data;
 using ETFTracker.Api.Dtos;
 using ETFTracker.Api.Models;
 using ETFTracker.Api.Services;
+using System.Net.Mail;
 
 namespace ETFTracker.Api.Controllers;
 
@@ -43,9 +44,10 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterDto dto, CancellationToken ct)
     {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var registerValidation = ValidateRegisterRequest(dto);
+        if (registerValidation is not null) return registerValidation;
 
-        var emailLower = dto.Email.ToLowerInvariant();
+        var emailLower = dto.Email.Trim().ToLowerInvariant();
         if (await _db.Users.AnyAsync(u => u.Email == emailLower, ct))
             return Conflict(new { error = "email_taken", message = "An account with this email already exists." });
 
@@ -53,8 +55,8 @@ public class AuthController : ControllerBase
         var user = new User
         {
             Email        = emailLower,
-            FirstName    = dto.FirstName,
-            LastName     = dto.LastName,
+            FirstName    = NormalizeOptionalName(dto.FirstName),
+            LastName     = NormalizeOptionalName(dto.LastName),
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
             CreatedAt    = now,
             UpdatedAt    = now
@@ -72,9 +74,10 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto dto, CancellationToken ct)
     {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var loginValidation = ValidateLoginRequest(dto);
+        if (loginValidation is not null) return loginValidation;
 
-        var emailLower = dto.Email.ToLowerInvariant();
+        var emailLower = dto.Email.Trim().ToLowerInvariant();
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == emailLower, ct);
 
         if (user == null || string.IsNullOrEmpty(user.PasswordHash)
@@ -83,6 +86,49 @@ public class AuthController : ControllerBase
 
         var token = _jwtService.GenerateToken(user);
         return Ok(new { token });
+    }
+
+    private IActionResult? ValidateRegisterRequest(RegisterDto dto)
+    {
+        if (!IsValidEmail(dto.Email))
+            return BadRequest(new { error = "invalid_email", message = "Please enter a valid email address." });
+
+        if (string.IsNullOrWhiteSpace(dto.Password) || dto.Password.Length < 8)
+            return BadRequest(new { error = "invalid_password", message = "Password must be at least 8 characters." });
+
+        return null;
+    }
+
+    private IActionResult? ValidateLoginRequest(LoginDto dto)
+    {
+        if (!IsValidEmail(dto.Email))
+            return BadRequest(new { error = "invalid_email", message = "Please enter a valid email address." });
+
+        if (string.IsNullOrWhiteSpace(dto.Password))
+            return BadRequest(new { error = "invalid_password", message = "Password is required." });
+
+        return null;
+    }
+
+    private static bool IsValidEmail(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return false;
+
+        try
+        {
+            _ = new MailAddress(value.Trim());
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static string? NormalizeOptionalName(string? value)
+    {
+        var trimmed = value?.Trim();
+        return string.IsNullOrWhiteSpace(trimmed) ? null : trimmed;
     }
 
     // ── GitHub ─────────────────────────────────────────────────────────────────
