@@ -40,7 +40,10 @@
                 <span>🔗</span>
                 <span class="share-text">Sharing</span>
               </button>
-              <button class="btn-settings" (click)="openUserSettings()" title="User Settings — investor profile & default tax rates">
+              <button class="btn-settings"
+                      (click)="openUserSettings()"
+                      [disabled]="sharingCtx.isViewingAsOther()"
+                      [title]="sharingCtx.isViewingAsOther() ? 'Settings unavailable while viewing a shared portfolio' : 'User Settings — investor profile & default tax rates'">
                 <span>⚙️</span>
                 <span class="settings-text">Settings</span>
               </button>
@@ -55,7 +58,10 @@
             <span class="share-text">Sharing</span>
           </button>
           <!-- User Settings button (replaces inline Irish Investor toggle) -->
-          <button class="btn-settings" (click)="openUserSettings()" title="User Settings — investor profile & default tax rates">
+          <button class="btn-settings"
+                  (click)="openUserSettings()"
+                  [disabled]="sharingCtx.isViewingAsOther()"
+                  [title]="sharingCtx.isViewingAsOther() ? 'Settings unavailable while viewing a shared portfolio' : 'User Settings — investor profile & default tax rates'">
             <span>⚙️</span>
             <span class="settings-text">Settings</span>
           </button>

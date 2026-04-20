@@ -297,6 +297,18 @@
           color: #bfdbfe;
           transform: translateY(-1px);
         }
+
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          transform: none;
+        }
+
+        &:disabled:hover {
+          background: rgba(16, 185, 129, 0.10);
+          border-color: rgba(16, 185, 129, 0.22);
+          color: #93c5fd;
+        }
       }
 
       .btn-contact {

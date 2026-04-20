@@ -340,6 +340,9 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   // ── User Settings Modal ──────────────────────────────────────────────────────
 
   openUserSettings(): void {
+    if (this.sharingCtx.isViewingAsOther()) {
+      return;
+    }
     this.showUserSettingsModal = true;
     this.cdr.markForCheck();
   }
