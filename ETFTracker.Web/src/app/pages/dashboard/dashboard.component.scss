@@ -421,10 +421,23 @@
     }
   }
 
-  @media (max-width: 768px) {
-    padding: 0.8rem 1rem;
+  @media (max-width: 1024px) {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.8rem 0.75rem;
     flex-wrap: wrap;
     gap: 0.75rem;
+
+    .nav-left,
+    .nav-right {
+      min-width: 0;
+    }
+
+    .nav-left {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
 
     .nav-left .app-brand {
       font-size: 1.1rem;
@@ -438,41 +451,70 @@
       }
     }
 
-    .nav-right .user-menu {
-      gap: 0.75rem;
-      padding: 0.4rem 0.8rem;
+    .nav-right {
+      width: 100%;
 
-      .user-info .avatar-wrapper {
-        width: 36px;
-        height: 36px;
-      }
+      .user-menu {
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+        justify-content: space-between;
+        gap: 0.45rem;
+        padding: 0.35rem 0.45rem;
 
-      .user-details {
-        display: none;
-      }
+        .user-info {
+          min-width: 0;
+          flex: 0 1 auto;
 
-      .btn-share .share-text {
-        display: none;
-      }
+          .avatar-wrapper {
+            width: 34px;
+            height: 34px;
+          }
+        }
 
-      .btn-settings .settings-text {
-        display: none;
-      }
+        .user-details {
+          display: none;
+        }
 
-      .btn-contact .contact-text {
-        display: none;
-      }
+        .btn-share .share-text {
+          display: none;
+        }
 
-      .btn-logout {
-        padding: 0.4rem 0.8rem;
-        font-size: 0.78rem;
+        .btn-settings .settings-text {
+          display: none;
+        }
 
-        .logout-text {
+        .btn-contact .contact-text {
+          display: none;
+        }
+
+        .btn-share,
+        .btn-settings,
+        .btn-contact,
+        .btn-logout {
+          padding: 0.35rem 0.5rem;
+          min-width: 2.2rem;
+          justify-content: center;
+        }
+
+        .btn-logout {
+          font-size: 0.78rem;
+
+          .logout-text {
+            display: none;
+          }
+        }
+
+        .irish-investor-toggle .irish-toggle-label {
           display: none;
         }
       }
+    }
+  }
 
-      .irish-investor-toggle .irish-toggle-label {
+  @media (max-width: 420px) {
+    .nav-right .user-menu {
+      .user-info {
         display: none;
       }
     }
