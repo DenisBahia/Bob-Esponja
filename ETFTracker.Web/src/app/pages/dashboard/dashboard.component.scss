@@ -455,16 +455,23 @@
       width: 100%;
 
       .user-menu {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
         width: 100%;
         min-width: 0;
         box-sizing: border-box;
-        justify-content: space-between;
+        justify-content: flex-start;
         gap: 0.45rem;
         padding: 0.35rem 0.45rem;
 
         .user-info {
+          display: flex;
+          align-items: center;
           min-width: 0;
-          flex: 0 1 auto;
+          width: 100%;
+          flex: 0 0 100%;
+          margin-bottom: 0.1rem;
 
           .avatar-wrapper {
             width: 34px;
@@ -473,7 +480,16 @@
         }
 
         .user-details {
-          display: none;
+          display: flex;
+          min-width: 0;
+
+          .user-name {
+            font-size: 0.86rem;
+          }
+
+          .user-email {
+            font-size: 0.72rem;
+          }
         }
 
         .btn-share .share-text {
@@ -508,14 +524,6 @@
         .irish-investor-toggle .irish-toggle-label {
           display: none;
         }
-      }
-    }
-  }
-
-  @media (max-width: 420px) {
-    .nav-right .user-menu {
-      .user-info {
-        display: none;
       }
     }
   }
