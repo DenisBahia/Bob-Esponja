@@ -1,15 +1,7 @@
 <div class="dashboard-container">
 
-  <!-- ── Sticky header: viewing-as banner + top nav ── -->
+  <!-- ── Sticky header: top nav + viewing-as banner ── -->
   <div class="sticky-header">
-    <!-- Viewing-as banner (shown only when viewing another user's portfolio) -->
-    <div *ngIf="sharingCtx.isViewingAsOther()" class="viewing-as-banner">
-      <span class="viewing-as-label">
-        👁 Viewing <strong>{{ sharingCtx.viewingAs()?.ownerName || sharingCtx.viewingAs()?.ownerEmail }}</strong>'s portfolio
-        <span *ngIf="sharingCtx.isReadOnly()" class="readonly-chip">🔒 Read-only</span>
-      </span>
-      <button class="btn-stop-viewing" (click)="stopViewingAs()">↩ Back to my portfolio</button>
-    </div>
 
     <!-- Top nav / user menu -->
     <nav class="top-nav" *ngIf="auth.user() as user">
@@ -76,6 +68,15 @@
         </div>
       </div>
     </nav>
+
+    <!-- Viewing-as banner (shown only when viewing another user's portfolio) -->
+    <div *ngIf="sharingCtx.isViewingAsOther()" class="viewing-as-banner">
+      <span class="viewing-as-label">
+        👁 Viewing <strong>{{ sharingCtx.viewingAs()?.ownerName || sharingCtx.viewingAs()?.ownerEmail }}</strong>'s portfolio
+        <span *ngIf="sharingCtx.isReadOnly()" class="readonly-chip">🔒 Read-only</span>
+      </span>
+      <button class="btn-stop-viewing" (click)="stopViewingAs()">↩ Back to my portfolio</button>
+    </div>
   </div>
 
   <div *ngIf="loading" class="loading">

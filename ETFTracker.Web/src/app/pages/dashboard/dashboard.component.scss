@@ -2241,6 +2241,9 @@ th.sortable {
   font-size: 0.85rem;
   color: #c9a96e;
   line-height: 1.5;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  min-width: 0;
 
   strong { color: #f89b29; font-weight: 600; }
 }
