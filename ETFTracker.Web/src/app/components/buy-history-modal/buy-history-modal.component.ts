@@ -178,10 +178,12 @@ export class BuyHistoryModalComponent implements OnInit {
   }
 
   formatCurrency(value: number): string {
-    return new Intl.NumberFormat('de-IE', {
-      style: 'currency', currency: 'EUR',
-      minimumFractionDigits: 2, maximumFractionDigits: 2
-    }).format(value);
+    const sign = value < 0 ? '-' : '';
+    const abs = Math.abs(value);
+    return `${sign}$${abs.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
   }
 
   formatDate(dateString: string): string {

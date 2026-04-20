@@ -342,11 +342,46 @@
       font-size: 0.95rem;
       font-weight: 600;
       color: var(--text-secondary);
+      overflow-wrap: anywhere;
     }
 
     .shared-email {
       font-size: 0.8rem;
       color: var(--text-secondary);
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+  }
+}
+
+@media (max-width: 640px) {
+  .modal-backdrop {
+    padding: 0.6rem;
+  }
+
+  .modal-panel {
+    max-height: 90vh;
+  }
+
+  .modal-header,
+  .modal-tabs,
+  .tab-content {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .shared-item {
+    flex-wrap: wrap;
+    align-items: flex-start;
+
+    .shared-info {
+      flex: 1 1 calc(100% - 56px);
+    }
+
+    > .btn {
+      flex: 1 0 100%;
+      justify-content: center;
+      margin-top: 0.2rem;
     }
   }
 }

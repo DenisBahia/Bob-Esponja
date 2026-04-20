@@ -67,8 +67,9 @@
   justify-content: space-between;
   gap: 1rem;
   padding: 0.7rem 2.5rem;
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.15) 100%);
-  border-bottom: 1px solid rgba(16, 185, 129, 0.3);
+  background: linear-gradient(135deg, #1E293B 0%, #1E293B 100%);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.28);
 
   .viewing-as-label {
     font-size: 0.9rem;
@@ -352,6 +353,10 @@
         }
       }
 
+      .user-quick-actions {
+        display: none;
+      }
+
       // ── Irish Investor Toggle ──────────────────────────────────────────────
       .irish-investor-toggle {
         flex-shrink: 0;
@@ -421,12 +426,18 @@
     }
   }
 
+  .btn-logout-mobile {
+    display: none;
+  }
+
   @media (max-width: 1024px) {
     width: 100%;
     box-sizing: border-box;
     padding: 0.8rem 0.75rem;
     flex-wrap: wrap;
     gap: 0.75rem;
+    align-items: center;
+    justify-content: space-between;
 
     .nav-left,
     .nav-right {
@@ -434,9 +445,9 @@
     }
 
     .nav-left {
-      width: 100%;
+      width: auto;
       display: flex;
-      justify-content: center;
+      justify-content: flex-start;
     }
 
     .nav-left .app-brand {
@@ -447,6 +458,18 @@
       }
 
       .app-brand__slogan {
+        display: none;
+      }
+    }
+
+    .btn-logout-mobile {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: auto;
+      padding: 0.35rem 0.6rem;
+
+      .logout-text {
         display: none;
       }
     }
@@ -476,6 +499,14 @@
           .avatar-wrapper {
             width: 34px;
             height: 34px;
+          }
+
+          .user-quick-actions {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            margin-left: auto;
+            flex-shrink: 0;
           }
         }
 
@@ -513,12 +544,11 @@
           justify-content: center;
         }
 
-        .btn-logout {
-          font-size: 0.78rem;
-
-          .logout-text {
-            display: none;
-          }
+        > .btn-share,
+        > .btn-settings,
+        > .btn-contact,
+        > .btn-logout {
+          display: none;
         }
 
         .irish-investor-toggle .irish-toggle-label {
@@ -1706,6 +1736,7 @@ th.sortable {
             align-items: flex-start;
             gap: 0.65rem;
             padding: 0.75rem;
+            min-width: 0;
             border-radius: 8px;
             background: var(--bg-surface);
             border: 1px solid var(--border);
@@ -1739,9 +1770,9 @@ th.sortable {
               .legend-name {
                 font-size: 0.74rem;
                 color: var(--text-muted);
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
+                white-space: normal;
+                overflow-wrap: anywhere;
+                line-height: 1.35;
               }
 
               .legend-metrics {
@@ -2070,7 +2101,7 @@ th.sortable {
         }
 
         .allocation-legend {
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: 1fr;
           width: 100%;
         }
       }
@@ -2128,6 +2159,48 @@ th.sortable {
 
     &:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
   }
+}
+
+.logout-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 2100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.logout-confirm-modal {
+  width: 100%;
+  max-width: 420px;
+  background: #111d35;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 12px;
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.42);
+  padding: 1.25rem 1.25rem 1rem;
+
+  h3 {
+    margin: 0 0 0.45rem;
+    color: #fff;
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+
+  p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+    line-height: 1.5;
+  }
+}
+
+.logout-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1rem;
 }
 
 // ── MY GOAL SECTION ──────────────────────────────────────────────────────────

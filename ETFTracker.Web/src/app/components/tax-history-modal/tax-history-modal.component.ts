@@ -79,8 +79,12 @@ export class TaxHistoryModalComponent implements OnInit {
   }
 
   formatCurrency(v: number): string {
-    return new Intl.NumberFormat('de-IE', { style: 'currency', currency: 'EUR',
-      minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
+    const sign = v < 0 ? '-' : '';
+    const abs = Math.abs(v);
+    return `${sign}$${abs.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
   }
 
   formatDate(d: string): string {

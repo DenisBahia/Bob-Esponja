@@ -18,6 +18,10 @@
           <img src="logo_light.png" alt="Portify logo" class="app-brand__logo" />
         </div>
       </div>
+      <button class="btn-logout btn-logout-mobile" (click)="openLogoutConfirm()" title="Sign out">
+        <span class="logout-icon">🚪</span>
+        <span class="logout-text">Sign out</span>
+      </button>
       <div class="nav-right">
         <div class="user-menu">
           <div class="user-info">
@@ -30,6 +34,20 @@
             <div class="user-details">
               <span class="user-name">{{ user.name || user.githubUsername || user.email }}</span>
               <span class="user-email" *ngIf="user.email && (user.name || user.githubUsername)">{{ user.email }}</span>
+            </div>
+            <div class="user-quick-actions">
+              <button class="btn-share" (click)="showShareModal = true" title="Share profile / view shared profiles">
+                <span>🔗</span>
+                <span class="share-text">Sharing</span>
+              </button>
+              <button class="btn-settings" (click)="openUserSettings()" title="User Settings — investor profile & default tax rates">
+                <span>⚙️</span>
+                <span class="settings-text">Settings</span>
+              </button>
+              <a class="btn-contact" href="mailto:contact@prt-fy.com?subject=Portify%20Support" title="Contact support">
+                <span>✉️</span>
+                <span class="contact-text">Contact</span>
+              </a>
             </div>
           </div>
           <button class="btn-share" (click)="showShareModal = true" title="Share profile / view shared profiles">
@@ -45,7 +63,7 @@
             <span>✉️</span>
             <span class="contact-text">Contact</span>
           </a>
-          <button class="btn-logout" (click)="auth.logout()" title="Sign out">
+          <button class="btn-logout" (click)="openLogoutConfirm()" title="Sign out">
             <span class="logout-icon">🚪</span>
             <span class="logout-text">Sign out</span>
           </button>
@@ -76,6 +94,7 @@
         🎯 My Goal
       </button>
       <button class="main-menu-btn"
+              *ngIf="canViewProjections"
               [class.active]="activeMainSection === 'projections'"
               (click)="setMainSection('projections')">
         📈 Projections
@@ -496,7 +515,7 @@
       <ng-container *ngIf="!goalLoading && userGoal">
         <p class="goal-source-hint" *ngIf="userGoal.sourceVersionId">
           Seeded from version #{{ userGoal.sourceVersionId }} — last saved {{ userGoal.savedAt | date:'dd/MM/yyyy HH:mm' }}.
-          You can edit the target values below; the chart updates live.
+          Target values below are read-only.
         </p>
 
         <!-- Inner tab bar -->
@@ -525,13 +544,13 @@
           </div>
         </ng-container>
 
-        <!-- Editable table (always visible, below tab component) -->
+        <!-- Read-only table (always visible, below tab component) -->
         <div class="goal-table-wrapper">
           <table class="goal-table">
             <thead>
               <tr>
                 <th>Year</th>
-                <th>Target Value (€)</th>
+                <th>Target Value ($)</th>
               </tr>
             </thead>
             <tbody>
@@ -544,23 +563,21 @@
                     min="0"
                     step="1000"
                     [value]="point.targetValue"
-                    (input)="onGoalValueChange(i, $any($event.target).value)" />
+                    readonly
+                    disabled />
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <!-- Save edits button -->
-        <div class="goal-save-row" *ngIf="!sharingCtx.isReadOnly()">
-          <button class="btn btn-primary" (click)="saveGoalEdits()" [disabled]="goalSaving">
-            {{ goalSaving ? 'Saving…' : '💾 Save changes' }}
-          </button>
+        <div class="goal-save-row">
+          <span class="param-hint">Goal values are currently read-only.</span>
         </div>
       </ng-container>
     </div>
 
-    <div *ngIf="activeMainSection === 'projections'">
+    <div *ngIf="canViewProjections && activeMainSection === 'projections'">
       <!-- Yearly Projections -->
       <div class="projection-section">
         <h2>Yearly Projections</h2>
@@ -573,7 +590,7 @@
         </div>
 
         <div class="param-group start-amount-group">
-          <label for="startAmount">Start Amount (€)</label>
+          <label for="startAmount">Start Amount ($)</label>
           <div class="start-amount-input-row">
             <input id="startAmount" type="number" step="1" min="0"
                    [placeholder]="dashboard ? (dashboard.header.totalHoldingsAmount | number:'1.0-0') : '0'"
@@ -596,7 +613,7 @@
         </div>
 
         <div class="param-group">
-          <label for="monthlyBuy">Monthly Buy (€)</label>
+          <label for="monthlyBuy">Monthly Buy ($)</label>
           <input id="monthlyBuy" type="number" step="10" min="0"
                  [(ngModel)]="projectionSettings.monthlyBuyAmount" />
         </div>
@@ -887,6 +904,17 @@
   </div>
 
   <!-- Modals -->
+  <div *ngIf="showLogoutConfirmModal" class="logout-confirm-overlay" (click)="cancelLogoutConfirm()">
+    <div class="logout-confirm-modal" (click)="$event.stopPropagation()">
+      <h3>Sign out?</h3>
+      <p>Are you sure you want to sign out now?</p>
+      <div class="logout-confirm-actions">
+        <button class="btn btn-secondary" (click)="cancelLogoutConfirm()">Cancel</button>
+        <button class="btn btn-primary" (click)="confirmLogout()">Sign out</button>
+      </div>
+    </div>
+  </div>
+
   <app-add-transaction-modal
     *ngIf="showAddTransactionModal"
     [isIrishInvestor]="isIrishInvestor"

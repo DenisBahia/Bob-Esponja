@@ -58,6 +58,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   selectedHoldingId: number | null = null;
   showShareModal = false;
   showUserSettingsModal = false;
+  showLogoutConfirmModal = false;
 
   // User tax defaults (loaded on init, drives pre-fill across the app)
   userTaxDefaults: UserTaxDefaultsDto | null = null;
@@ -311,8 +312,19 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.isIrishInvestor = saved === null ? true : saved === 'true';
   }
 
+  get canViewProjections(): boolean {
+    return !this.sharingCtx.isReadOnly();
+  }
+
+  private enforceReadOnlyNavigation(): void {
+    if (!this.canViewProjections && this.activeMainSection === 'projections') {
+      this.activeMainSection = 'portfolio';
+    }
+  }
+
   ngOnInit(): void {
     console.log('Dashboard component initialized');
+    this.enforceReadOnlyNavigation();
     this.loadDashboard();
     this.initProjection();
     this.loadPortfolioEvolution();
@@ -376,6 +388,9 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   onStartedViewingAs(): void {
+    // Keep UX snappy on mobile: close modal immediately when switching profile context.
+    this.showShareModal = false;
+
     // Immediately clear stale data so the user sees loading state right away
     this.dashboard = null;
     this.projection = null;
@@ -397,6 +412,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.evolutionChart?.destroy(); this.evolutionChart = null;
     this.goalChart?.destroy(); this.goalChart = null;
     this.goalMonthlyChart?.destroy(); this.goalMonthlyChart = null;
+    this.enforceReadOnlyNavigation();
     this.cdr.detectChanges();
     this.loadDashboard();
     this.initProjection();
@@ -426,6 +442,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.evolutionChart?.destroy(); this.evolutionChart = null;
     this.goalChart?.destroy(); this.goalChart = null;
     this.goalMonthlyChart?.destroy(); this.goalMonthlyChart = null;
+    this.enforceReadOnlyNavigation();
     this.cdr.detectChanges();
     this.loadDashboard();
     this.initProjection();
@@ -632,10 +649,10 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
           },
           y: {
             ...DARK_SCALE_DEFAULTS,
-            title: { display: true, text: 'Total Value (€)', font: { weight: 'bold' }, color: '#8da0bf' },
+            title: { display: true, text: 'Total Value ($)', font: { weight: 'bold' }, color: '#8da0bf' },
             ticks: {
               color: '#8da0bf',
-              callback: (value) => `€${Number(value).toLocaleString('de-IE', { maximumFractionDigits: 0 })}`
+              callback: (value) => `$${Number(value).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
             }
           }
         },
@@ -793,6 +810,9 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   setMainSection(section: 'portfolio' | 'goal' | 'projections'): void {
+    if (section === 'projections' && !this.canViewProjections) {
+      return;
+    }
     if (this.activeMainSection === section) return;
 
     this.activeMainSection = section;
@@ -1175,10 +1195,10 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
           },
           y: {
             ...DARK_SCALE_DEFAULTS,
-            title: { display: true, text: 'Target Value (€)', font: { weight: 'bold' }, color: '#8da0bf' },
+            title: { display: true, text: 'Target Value ($)', font: { weight: 'bold' }, color: '#8da0bf' },
             ticks: {
               color: '#8da0bf',
-              callback: (value) => `€${Number(value).toLocaleString('de-IE', { maximumFractionDigits: 0 })}`
+              callback: (value) => `$${Number(value).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
             }
           }
         },
@@ -1522,10 +1542,10 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
           },
           y: {
             ...DARK_SCALE_DEFAULTS,
-            title: { display: true, text: 'Target Value (€)', font: { weight: 'bold' }, color: '#8da0bf' },
+            title: { display: true, text: 'Target Value ($)', font: { weight: 'bold' }, color: '#8da0bf' },
             ticks: {
               color: '#8da0bf',
-              callback: (value) => `€${Number(value).toLocaleString('de-IE', { maximumFractionDigits: 0 })}`
+              callback: (value) => `$${Number(value).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
             }
           }
         },
@@ -1626,10 +1646,10 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
           },
           y: {
             ...DARK_SCALE_DEFAULTS,
-            title: { display: true, text: 'Value (€)', font: { weight: 'bold' }, color: '#8da0bf' },
+            title: { display: true, text: 'Value ($)', font: { weight: 'bold' }, color: '#8da0bf' },
             ticks: {
               color: '#8da0bf',
-              callback: (value) => `€${Number(value).toLocaleString('de-IE', { maximumFractionDigits: 0 })}`
+              callback: (value) => `$${Number(value).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
             }
           }
         },
@@ -1714,10 +1734,10 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
           },
           y: {
             ...DARK_SCALE_DEFAULTS,
-            title: { display: true, text: 'Total Value (€)', font: { weight: 'bold' }, color: '#8da0bf' },
+            title: { display: true, text: 'Total Value ($)', font: { weight: 'bold' }, color: '#8da0bf' },
             ticks: {
               color: '#8da0bf',
-              callback: (value) => `€${Number(value).toLocaleString('de-IE', { maximumFractionDigits: 0 })}`
+              callback: (value) => `$${Number(value).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
             }
           }
         },
@@ -1804,12 +1824,12 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   formatCurrency(value: number): string {
-    return new Intl.NumberFormat('de-IE', {
-      style: 'currency',
-      currency: 'EUR',
+    const sign = value < 0 ? '-' : '';
+    const abs = Math.abs(value);
+    return `${sign}$${abs.toLocaleString('en-US', {
       minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(value);
+      maximumFractionDigits: 2,
+    })}`;
   }
 
   formatPercent(value: number): string {
@@ -1911,6 +1931,21 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   onTaxPaid(): void {
     this.loadTaxSummary();
     this.cdr.markForCheck();
+  }
+
+  openLogoutConfirm(): void {
+    this.showLogoutConfirmModal = true;
+    this.cdr.markForCheck();
+  }
+
+  cancelLogoutConfirm(): void {
+    this.showLogoutConfirmModal = false;
+    this.cdr.markForCheck();
+  }
+
+  confirmLogout(): void {
+    this.showLogoutConfirmModal = false;
+    this.auth.logout();
   }
 
   // ── Tax Summary Section ────────────────────────────────────────────────────
