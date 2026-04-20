@@ -37,6 +37,9 @@ public class JwtService
             new("githubUsername",  user.GitHubUsername  ?? ""),
         };
 
+        if (user.LastLoginAt.HasValue)
+            claims.Add(new("lastLoginAt", user.LastLoginAt.Value.ToString("O")));
+
         var token = new JwtSecurityToken(
             issuer:            issuer,
             audience:          audience,

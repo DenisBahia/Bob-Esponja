@@ -59,6 +59,7 @@ public class AuthController : ControllerBase
             LastName     = NormalizeOptionalName(dto.LastName),
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
             CreatedAt    = now,
+            LastLoginAt  = now,
             UpdatedAt    = now
         };
         _db.Users.Add(user);
@@ -83,6 +84,11 @@ public class AuthController : ControllerBase
         if (user == null || string.IsNullOrEmpty(user.PasswordHash)
             || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
             return Unauthorized(new { error = "invalid_credentials", message = "Invalid email or password." });
+
+        var now = DateTime.UtcNow;
+        user.LastLoginAt = now;
+        user.UpdatedAt = now;
+        await _db.SaveChangesAsync(ct);
 
         var token = _jwtService.GenerateToken(user);
         return Ok(new { token });
@@ -190,6 +196,7 @@ public class AuthController : ControllerBase
         name          = User.FindFirst("name")?.Value,
         avatarUrl     = User.FindFirst("avatarUrl")?.Value,
         githubUsername = User.FindFirst("githubUsername")?.Value,
+        lastLoginAt   = User.FindFirst("lastLoginAt")?.Value,
     });
 
     // ── Shared handler ─────────────────────────────────────────────────────────
@@ -253,6 +260,7 @@ public class AuthController : ControllerBase
                     GitHubId       = githubId,
                     GitHubUsername = githubUsername,
                     CreatedAt      = now,
+                    LastLoginAt    = now,
                     UpdatedAt      = now
                 };
                 _db.Users.Add(user);
@@ -263,6 +271,7 @@ public class AuthController : ControllerBase
                 user.GitHubUsername ??= githubUsername;
                 user.AvatarUrl      ??= avatarUrl;
                 user.Email          ??= email;
+                user.LastLoginAt     = now;
                 user.UpdatedAt       = now;
             }
         }
@@ -293,6 +302,7 @@ public class AuthController : ControllerBase
                     AvatarUrl = avatarUrl,
                     GoogleId  = googleId,
                     CreatedAt = now,
+                    LastLoginAt = now,
                     UpdatedAt = now
                 };
                 _db.Users.Add(user);
@@ -302,6 +312,7 @@ public class AuthController : ControllerBase
                 user.GoogleId  = googleId;
                 user.AvatarUrl ??= avatarUrl;
                 user.Email     ??= email;
+                user.LastLoginAt = now;
                 user.UpdatedAt  = now;
             }
         }
@@ -313,13 +324,13 @@ public class AuthController : ControllerBase
         {
             var emailLower = user.Email.ToLowerInvariant();
             var pendingShares = await _db.ProfileShares
-                .Where(s => s.GuestEmail == emailLower && s.GuestUserId == null && s.Status == ETFTracker.Api.Models.ShareStatus.Pending)
+                .Where(s => s.GuestEmail == emailLower && s.GuestUserId == null && s.Status == ShareStatus.Pending)
                 .ToListAsync(ct);
 
             foreach (var share in pendingShares)
             {
                 share.GuestUserId = user.Id;
-                share.Status      = ETFTracker.Api.Models.ShareStatus.Active;
+                share.Status      = ShareStatus.Active;
                 share.UpdatedAt   = now;
             }
 

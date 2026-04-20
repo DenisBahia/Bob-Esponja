@@ -12,6 +12,7 @@ export interface CurrentUser {
   name: string;
   avatarUrl: string;
   githubUsername: string;
+  lastLoginAt: string | null;
 }
 
 interface JwtPayload {
@@ -20,6 +21,7 @@ interface JwtPayload {
   name: string;
   avatarUrl: string;
   githubUsername: string;
+  lastLoginAt?: string;
   exp: number;
 }
 
@@ -74,6 +76,7 @@ export class AuthService {
         name:          payload.name,
         avatarUrl:     payload.avatarUrl,
         githubUsername: payload.githubUsername,
+        lastLoginAt:   payload.lastLoginAt || null,
       };
     } catch {
       localStorage.removeItem(TOKEN_KEY);

@@ -45,6 +45,8 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<User>()
             .Property(u => u.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
         modelBuilder.Entity<User>()
+            .Property(u => u.LastLoginAt).HasColumnName("last_login_at");
+        modelBuilder.Entity<User>()
             .Property(u => u.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
         modelBuilder.Entity<User>()
             .HasIndex(u => u.Email)
