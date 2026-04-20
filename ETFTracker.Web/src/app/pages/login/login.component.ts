@@ -17,7 +17,7 @@ const AUTH_API = `${environment.apiBase}/api/auth`;
     <div class="login-container">
       <div class="login-card">
 
-        <div class="brand">
+        <div class="brand" (click)="goToLanding()" (keydown.enter)="goToLanding()" (keydown.space)="goToLanding()" tabindex="0" role="button" aria-label="Go to landing page">
           <img src="logo_light.png" alt="Portify logo" class="brand-logo" />
         </div>
 
@@ -98,7 +98,13 @@ const AUTH_API = `${environment.apiBase}/api/auth`;
       text-align: center;
       box-shadow: var(--shadow-lg);
     }
-    .brand { margin-bottom: 1.5rem; }
+    .brand {
+      margin-bottom: 1.5rem;
+      cursor: pointer;
+      width: fit-content;
+      margin-left: auto;
+      margin-right: auto;
+    }
     .brand-logo {
       height: 56px;
       width: auto;
@@ -286,6 +292,10 @@ export class LoginComponent implements OnInit {
 
   loginWithGitHub(): void { this.auth.loginWithGitHub(); }
   loginWithGoogle(): void  { this.auth.loginWithGoogle(); }
+
+  goToLanding(): void {
+    this.router.navigate(['/']);
+  }
 
   private getPasswordMinLength(): number {
     return this.isRegister ? 8 : 1;
