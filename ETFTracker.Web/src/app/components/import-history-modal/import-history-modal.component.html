@@ -1,0 +1,208 @@
+<div class="modal-overlay" (click)="onCancel()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+
+    <!-- ── Header ──────────────────────────────────────────────────────────── -->
+    <div class="modal-header">
+      <div class="header-title">
+        <span class="header-icon">📥</span>
+        <h2>Import History (CSV)</h2>
+      </div>
+      <button class="close-btn" (click)="onCancel()" [disabled]="step === 'importing'">×</button>
+    </div>
+
+    <!-- ── Step: Upload ────────────────────────────────────────────────────── -->
+    <div *ngIf="step === 'upload'" class="step-body">
+
+      <!-- Template download -->
+      <div class="template-hint">
+        <span class="hint-icon">📄</span>
+        <span>Download the template to see the expected format:</span>
+        <button class="btn-link" type="button" (click)="downloadTemplate()">
+          Download CSV template ↓
+        </button>
+      </div>
+
+      <!-- Drop zone -->
+      <div
+        class="drop-zone"
+        [class.drag-over]="dragOver"
+        (dragover)="onDragOver($event)"
+        (dragleave)="onDragLeave()"
+        (drop)="onDrop($event)"
+        (click)="fileInput.click()">
+        <input #fileInput type="file" accept=".csv" hidden (change)="onFileInput($event)" />
+        <span class="drop-icon">☁️</span>
+        <span class="drop-main">Drag & drop your CSV here</span>
+        <span class="drop-sub">or click to browse</span>
+        <span *ngIf="fileName" class="drop-file">{{ fileName }}</span>
+      </div>
+
+      <!-- Validation errors -->
+      <div *ngIf="validationErrors.length > 0" class="validation-errors">
+        <div class="ve-header">
+          <span>⚠️ {{ validationErrors.length }} issue(s) found — fix your file and re-upload</span>
+        </div>
+        <table class="ve-table">
+          <thead>
+            <tr>
+              <th>Row</th>
+              <th>Column</th>
+              <th>Issue</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let e of validationErrors">
+              <td>{{ e.rowIndex === 0 ? '—' : e.rowIndex }}</td>
+              <td><code>{{ e.column }}</code></td>
+              <td>{{ e.message }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Footer -->
+      <div class="modal-footer">
+        <button class="btn btn-secondary" type="button" (click)="onCancel()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- ── Step: Resolving ISINs ────────────────────────────────────────────── -->
+    <div *ngIf="step === 'resolving'" class="step-body step-resolving">
+      <span class="spinner-lg"></span>
+      <p>Resolving ISIN codes…</p>
+    </div>
+
+    <!-- ── Step: Preview ──────────────────────────────────────────────────── -->
+    <div *ngIf="step === 'preview'" class="step-body step-preview">
+
+      <!-- Summary counters -->
+      <div class="preview-summary">
+        <span class="badge badge-ready">✅ {{ readyCount }} ready</span>
+        <span class="badge badge-pick" *ngIf="pendingCount > 0">⚠️ {{ pendingCount }} need ticker</span>
+        <span class="badge badge-error" *ngIf="errorCount > 0">❌ {{ errorCount }} error(s)</span>
+      </div>
+
+      <!-- Global error from backend -->
+      <div *ngIf="errorMessage" class="error-message">{{ errorMessage }}</div>
+
+      <!-- Preview table -->
+      <div class="table-wrapper">
+        <table class="preview-table">
+          <thead>
+            <tr>
+              <th class="sortable" (click)="sortBy('rowIndex')"># {{ sortIcon('rowIndex') }}</th>
+              <th class="sortable" (click)="sortBy('operation')">Op {{ sortIcon('operation') }}</th>
+              <th class="sortable" (click)="sortBy('date')">Date {{ sortIcon('date') }}</th>
+              <th class="sortable" (click)="sortBy('ticker')">Ticker {{ sortIcon('ticker') }}</th>
+              <th class="sortable" (click)="sortBy('quantity')">Qty {{ sortIcon('quantity') }}</th>
+              <th class="sortable" (click)="sortBy('price')">Price {{ sortIcon('price') }}</th>
+              <th class="sortable" (click)="sortBy('status')">Status {{ sortIcon('status') }}</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of sortedRows">
+              <td class="col-index">{{ row.rowIndex }}</td>
+              <td>
+                <span class="op-badge" [class.op-buy]="row.operation === 'BUY'" [class.op-sell]="row.operation === 'SELL'">
+                  {{ row.operation }}
+                </span>
+              </td>
+              <td>{{ row.date }}</td>
+              <td class="col-ticker">
+
+                <!-- ISIN with multiple results → dropdown picker -->
+                <select
+                  *ngIf="row.status === 'pick' && row.tickerOptions.length > 1"
+                  class="ticker-select"
+                  [ngModel]="row.resolvedTicker ?? ''"
+                  (ngModelChange)="onTickerSelected(row, $event)"
+                  name="ticker-{{ row.rowIndex }}">
+                  <option value="">— pick ticker —</option>
+                  <option *ngFor="let t of row.tickerOptions" [value]="t.symbol">
+                    {{ t.symbol }} · {{ t.longName || t.shortName }} ({{ t.exchange }})
+                  </option>
+                </select>
+
+                <!-- Ready → show resolved ticker -->
+                <span *ngIf="row.status === 'ready'">{{ row.resolvedTicker }}</span>
+
+                <!-- Error → inline ticker search (like the add-buy modal) -->
+                <div *ngIf="row.status === 'error'" class="row-search-wrap">
+                  <div class="row-search-input-wrap">
+                    <input
+                      type="text"
+                      class="row-search-input"
+                      [placeholder]="row.tickerOrIsin"
+                      [ngModel]="row.searchQuery"
+                      (ngModelChange)="onRowSearchChange(row, $event)"
+                      (focus)="row.showSearchDropdown = row.searchResults.length > 0; cdr.markForCheck()"
+                      autocomplete="off"
+                      title="{{ row.statusMessage }}" />
+                    <span *ngIf="row.searchLoading" class="row-search-spinner"></span>
+                  </div>
+                  <div *ngIf="row.showSearchDropdown && row.searchResults.length > 0" class="row-search-dropdown">
+                    <button
+                      *ngFor="let r of row.searchResults"
+                      type="button"
+                      class="row-search-option"
+                      (click)="selectRowSearchResult(row, r)">
+                      <span class="opt-icon">{{ getQuoteTypeIcon(r.quoteType) }}</span>
+                      <span class="opt-body">
+                        <span class="opt-symbol">{{ r.symbol }}</span>
+                        <span class="opt-name">{{ r.longName || r.shortName || '—' }}</span>
+                      </span>
+                      <span class="opt-exchange">{{ r.exchange }}</span>
+                    </button>
+                  </div>
+                </div>
+
+              </td>
+              <td class="col-num">{{ row.quantity }}</td>
+              <td class="col-num">{{ row.price }}</td>
+              <td class="col-status">
+                <span *ngIf="row.status === 'ready'" class="pill pill-ready">Ready</span>
+                <span *ngIf="row.status === 'pick'" class="pill pill-pick">Pick ticker</span>
+                <span *ngIf="row.status === 'error'" class="pill pill-error">Not found</span>
+              </td>
+              <td>
+                <button class="btn-delete" type="button" title="Remove this row" (click)="deleteRow(row)">✕</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Footer -->
+      <div class="modal-footer">
+        <button class="btn btn-secondary" type="button" (click)="onCancel()">Cancel</button>
+        <button
+          class="btn btn-primary"
+          type="button"
+          [disabled]="!canConfirm"
+          [title]="!canConfirm ? 'Resolve all rows before importing' : ''"
+          (click)="onConfirmImport()">
+          Confirm Import ({{ activeRows.length }} rows)
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Step: Importing ─────────────────────────────────────────────────── -->
+    <div *ngIf="step === 'importing'" class="step-body step-resolving">
+      <span class="spinner-lg"></span>
+      <p>Importing transactions… please wait.</p>
+    </div>
+
+    <!-- ── Step: Done ──────────────────────────────────────────────────────── -->
+    <div *ngIf="step === 'done'" class="step-body step-done">
+      <span class="done-icon">🎉</span>
+      <h3>Import Complete!</h3>
+      <p>{{ importedCount }} transaction(s) successfully imported.</p>
+      <div class="modal-footer">
+        <button class="btn btn-primary" type="button" (click)="onDone()">Close</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+

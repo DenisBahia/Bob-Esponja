@@ -127,7 +127,7 @@ export class AddTransactionModalComponent {
 
   private validateForm(): boolean {
     if (!this.ticker.trim()) {
-      this.error = 'Please enter a ticker';
+      this.error = 'Please enter a ticker or ISIN';
       this.cdr.markForCheck();
       return false;
     }

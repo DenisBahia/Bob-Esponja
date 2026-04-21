@@ -206,6 +206,40 @@ public class HoldingsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Atomically imports a batch of buy/sell transactions from a CSV upload.
+    /// All rows are processed in date-ascending order within a single DB transaction.
+    /// If any row fails the entire import is rolled back.
+    /// </summary>
+    [HttpPost("import")]
+    public async Task<ActionResult<ImportTransactionsResultDto>> ImportTransactions(
+        [FromBody] ImportTransactionsRequestDto dto, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (_sharingContext.IsReadOnly())
+                return StatusCode(403, new { message = "This profile is shared as read-only. You cannot import transactions." });
+
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (dto.Rows is not { Count: > 0 })
+                return BadRequest(new { message = "No rows provided." });
+
+            var result = await _holdingsService.ImportTransactionsAsync(GetUserId(), dto, cancellationToken);
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error importing transactions");
+            return StatusCode(500, new { message = "Error importing transactions. No changes were saved." });
+        }
+    }
+
     /// <summary>Deletes a transaction and recalculates the holding.</summary>
     [HttpDelete("transactions/{transactionId}")]
     public async Task<ActionResult> DeleteTransaction(int transactionId, CancellationToken cancellationToken = default)

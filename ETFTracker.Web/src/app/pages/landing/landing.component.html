@@ -242,6 +242,14 @@
         <h3>Price Source Transparency</h3>
         <p>Each holding displays a source badge — Eodhd (premium), Yahoo Finance, or Cache — so you always know where the price data came from. Dashboard loads gracefully even when prices are temporarily unavailable.</p>
       </div>
+
+      <div class="feature-card reveal" style="--delay:0.15s">
+        <div class="feature-card__icon feature-card__icon--green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </div>
+        <h3>CSV Import</h3>
+        <p>Import your entire transaction history in seconds. Drop a CSV file, resolve any unrecognised tickers with a live search, preview every row before committing, and bulk-import hundreds of buys and sells at once — no manual entry required.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -898,6 +906,109 @@
           <text x="52" y="448" fill="#4d6080" font-family="Inter,sans-serif" font-size="8.5">🟢 Green border = realised gain  ·  🔴 Red border = realised loss  ·  Tax status is tracked per sell event</text>
         </svg>
       </div>
+
+      <!-- ── Slide 6: CSV Import ── -->
+      <div class="preview__slide" [class.active]="activeSlide === 6">
+        <svg viewBox="0 0 900 520" xmlns="http://www.w3.org/2000/svg" class="preview__svg">
+          <rect width="900" height="520" fill="#080c14"/>
+          <rect width="900" height="46" fill="#111d35"/>
+          <line x1="0" y1="46" x2="900" y2="46" stroke="#1f2e4a" stroke-width="1"/>
+          <text x="18" y="28" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="13" font-weight="700">📊 Portify</text>
+
+          <!-- Blurred background -->
+          <rect width="900" height="520" fill="rgba(0,0,0,0.5)"/>
+
+          <!-- Import Modal -->
+          <rect x="40" y="30" width="820" height="458" rx="14" fill="#111d35" stroke="#1f2e4a" stroke-width="1.5"/>
+
+          <!-- Modal header -->
+          <rect x="40" y="30" width="820" height="52" rx="14" fill="#141f35"/>
+          <rect x="40" y="62" width="820" height="20" fill="#141f35"/>
+          <text x="62" y="62" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="13" font-weight="700">📥 Import Transaction History</text>
+          <circle cx="842" cy="56" r="12" fill="#1a2a45"/>
+          <text x="837" y="61" fill="#8da0bf" font-family="Inter,sans-serif" font-size="11">✕</text>
+          <line x1="40" y1="82" x2="860" y2="82" stroke="#1f2e4a" stroke-width="1"/>
+
+          <!-- Template hint bar -->
+          <text x="62" y="104" fill="#8da0bf" font-family="Inter,sans-serif" font-size="9">💡 Need a template?</text>
+          <text x="148" y="104" fill="#10B981" font-family="Inter,sans-serif" font-size="9" font-weight="600" text-decoration="underline">Download CSV template</text>
+
+          <!-- Drop zone -->
+          <rect x="62" y="114" width="776" height="100" rx="12" fill="rgba(16,185,129,0.04)" stroke="#10B981" stroke-width="1.5" stroke-dasharray="6 4"/>
+          <text x="450" y="150" text-anchor="middle" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="13">📂</text>
+          <text x="450" y="170" text-anchor="middle" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="11" font-weight="600">Drop your CSV here or click to browse</text>
+          <text x="450" y="186" text-anchor="middle" fill="#8da0bf" font-family="Inter,sans-serif" font-size="9">Supports buy &amp; sell transactions · transactions.csv</text>
+          <text x="450" y="202" text-anchor="middle" fill="#10B981" font-family="Inter,sans-serif" font-size="9" font-weight="600">transactions.csv</text>
+
+          <!-- Summary badges -->
+          <rect x="62" y="226" width="110" height="26" rx="13" fill="rgba(16,185,129,0.12)" stroke="rgba(16,185,129,0.3)" stroke-width="1"/>
+          <text x="87" y="243" fill="#10B981" font-family="Inter,sans-serif" font-size="9" font-weight="700">✓ 12 Ready</text>
+          <rect x="180" y="226" width="110" height="26" rx="13" fill="rgba(248,155,41,0.12)" stroke="rgba(248,155,41,0.3)" stroke-width="1"/>
+          <text x="200" y="243" fill="#f89b29" font-family="Inter,sans-serif" font-size="9" font-weight="700">⚠ 2 Need review</text>
+          <rect x="298" y="226" width="90" height="26" rx="13" fill="rgba(240,82,82,0.1)" stroke="rgba(240,82,82,0.3)" stroke-width="1"/>
+          <text x="316" y="243" fill="#f05252" font-family="Inter,sans-serif" font-size="9" font-weight="700">✕ 0 Errors</text>
+
+          <!-- Preview table -->
+          <rect x="62" y="262" width="776" height="28" fill="rgba(31,46,74,0.6)"/>
+          <text x="78" y="280" fill="#4d6080" font-family="Inter,sans-serif" font-size="7.5">#</text>
+          <text x="100" y="280" fill="#4d6080" font-family="Inter,sans-serif" font-size="7.5">TYPE</text>
+          <text x="160" y="280" fill="#4d6080" font-family="Inter,sans-serif" font-size="7.5">TICKER / ASSET</text>
+          <text x="340" y="280" fill="#4d6080" font-family="Inter,sans-serif" font-size="7.5">DATE</text>
+          <text x="430" y="280" fill="#4d6080" font-family="Inter,sans-serif" font-size="7.5">QTY</text>
+          <text x="510" y="280" fill="#4d6080" font-family="Inter,sans-serif" font-size="7.5">PRICE</text>
+          <text x="610" y="280" fill="#4d6080" font-family="Inter,sans-serif" font-size="7.5">TOTAL</text>
+          <text x="720" y="280" fill="#4d6080" font-family="Inter,sans-serif" font-size="7.5">STATUS</text>
+
+          <!-- Row 1 – ready -->
+          <rect x="62" y="290" width="776" height="36" fill="rgba(16,185,129,0.04)"/>
+          <text x="78" y="312" fill="#4d6080" font-family="Inter,sans-serif" font-size="9">1</text>
+          <rect x="100" y="298" width="38" height="18" rx="4" fill="rgba(16,185,129,0.15)"/>
+          <text x="106" y="311" fill="#10B981" font-family="Inter,sans-serif" font-size="8" font-weight="700">BUY</text>
+          <text x="160" y="312" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="9" font-weight="600">VWCE</text>
+          <text x="340" y="312" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="9">2024-01-15</text>
+          <text x="430" y="312" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="9">25</text>
+          <text x="510" y="312" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="9">€98.20</text>
+          <text x="610" y="312" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="9">€2,455.00</text>
+          <rect x="720" y="298" width="52" height="18" rx="9" fill="rgba(16,185,129,0.12)"/>
+          <text x="730" y="311" fill="#10B981" font-family="Inter,sans-serif" font-size="8" font-weight="600">Ready</text>
+          <line x1="62" y1="326" x2="838" y2="326" stroke="#1f2e4a" stroke-width="0.5"/>
+
+          <!-- Row 2 – needs ticker pick -->
+          <text x="78" y="348" fill="#4d6080" font-family="Inter,sans-serif" font-size="9">2</text>
+          <rect x="100" y="336" width="38" height="18" rx="4" fill="rgba(16,185,129,0.15)"/>
+          <text x="106" y="349" fill="#10B981" font-family="Inter,sans-serif" font-size="8" font-weight="700">BUY</text>
+          <!-- inline search input for unresolved ticker -->
+          <rect x="160" y="334" width="160" height="24" rx="6" fill="#0d1526" stroke="rgba(240,82,82,0.5)" stroke-width="1"/>
+          <text x="170" y="350" fill="#4d6080" font-family="Inter,sans-serif" font-size="9">S&amp;P 500 ETF…</text>
+          <text x="340" y="348" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="9">2024-03-10</text>
+          <text x="430" y="348" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="9">10</text>
+          <text x="510" y="348" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="9">€480.00</text>
+          <text x="610" y="348" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="9">€4,800.00</text>
+          <rect x="720" y="336" width="78" height="18" rx="9" fill="rgba(248,155,41,0.12)"/>
+          <text x="727" y="349" fill="#f89b29" font-family="Inter,sans-serif" font-size="8" font-weight="600">Pick ticker</text>
+          <line x1="62" y1="362" x2="838" y2="362" stroke="#1f2e4a" stroke-width="0.5"/>
+
+          <!-- Row 3 – ready sell -->
+          <rect x="62" y="362" width="776" height="36" fill="rgba(16,185,129,0.04)"/>
+          <text x="78" y="384" fill="#4d6080" font-family="Inter,sans-serif" font-size="9">3</text>
+          <rect x="100" y="370" width="38" height="18" rx="4" fill="rgba(240,82,82,0.15)"/>
+          <text x="105" y="383" fill="#f05252" font-family="Inter,sans-serif" font-size="8" font-weight="700">SELL</text>
+          <text x="160" y="384" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="9" font-weight="600">CSPX</text>
+          <text x="340" y="384" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="9">2025-06-22</text>
+          <text x="430" y="384" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="9">5</text>
+          <text x="510" y="384" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="9">€545.00</text>
+          <text x="610" y="384" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="9">€2,725.00</text>
+          <rect x="720" y="370" width="52" height="18" rx="9" fill="rgba(16,185,129,0.12)"/>
+          <text x="730" y="383" fill="#10B981" font-family="Inter,sans-serif" font-size="8" font-weight="600">Ready</text>
+          <line x1="62" y1="398" x2="838" y2="398" stroke="#1f2e4a" stroke-width="0.5"/>
+
+          <!-- Footer buttons -->
+          <rect x="62" y="440" width="120" height="34" rx="8" fill="#172040" stroke="#1f2e4a" stroke-width="1"/>
+          <text x="94" y="461" fill="#8da0bf" font-family="Inter,sans-serif" font-size="10" font-weight="600">← Back</text>
+          <rect x="706" y="440" width="132" height="34" rx="8" fill="#10B981"/>
+          <text x="730" y="461" fill="#fff" font-family="Inter,sans-serif" font-size="11" font-weight="700">Import 14 rows →</text>
+        </svg>
+      </div>
     </div>
   </div>
 </section>
@@ -1317,7 +1428,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </div>
         <h3>Add your investments</h3>
-        <p>Enter the ticker, number of shares and purchase price. Prices are fetched automatically in the background.</p>
+        <p>Enter the ticker, shares and purchase price manually — or <strong>drop a CSV file</strong> to import your full history in one go. Prices are fetched automatically in the background.</p>
       </div>
 
       <div class="how__connector reveal" style="--delay:0.1s"></div>

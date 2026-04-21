@@ -70,6 +70,18 @@ export interface UpdateTransactionDto {
   purchaseDate: string; // "YYYY-MM-DD"
 }
 
+export interface ImportTransactionRowDto {
+  operation: string;  // "BUY" | "SELL"
+  ticker: string;
+  quantity: number;
+  price: number;
+  date: string;       // "YYYY-MM-DD"
+}
+
+export interface ImportTransactionsResultDto {
+  imported: number;
+}
+
 export interface ProjectionSettingsDto {
   yearlyReturnPercent: number;
   monthlyBuyAmount: number;
@@ -336,6 +348,10 @@ export class ApiService {
 
   addTransaction(transaction: CreateTransactionDto): Observable<any> {
     return this.http.post(`${this.apiUrl}/holdings/transaction`, transaction);
+  }
+
+  importTransactions(rows: ImportTransactionRowDto[]): Observable<ImportTransactionsResultDto> {
+    return this.http.post<ImportTransactionsResultDto>(`${this.apiUrl}/holdings/import`, { rows });
   }
 
   deleteTransaction(transactionId: number): Observable<void> {

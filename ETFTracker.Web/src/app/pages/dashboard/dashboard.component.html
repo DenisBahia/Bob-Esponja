@@ -192,6 +192,7 @@
 
         <div class="action-buttons">
           <button class="btn btn-primary" (click)="onAddTransactionClick()" *ngIf="!sharingCtx.isReadOnly()">+ Add New Buy</button>
+          <button class="btn btn-secondary btn-import" (click)="onImportHistoryClick()" *ngIf="!sharingCtx.isReadOnly()" title="Import transaction history from CSV">📥 Import CSV</button>
           <div *ngIf="sharingCtx.isReadOnly()" class="readonly-notice">🔒 Read-only view — you cannot add transactions</div>
         </div>
 
@@ -967,5 +968,12 @@
     *ngIf="showUserSettingsModal"
     (closed)="onUserSettingsClosed($event)">
   </app-user-settings-modal>
+
+  <!-- Import History Modal -->
+  <app-import-history-modal
+    *ngIf="showImportHistoryModal"
+    (imported)="onImportDone()"
+    (cancelled)="onImportCancelled()">
+  </app-import-history-modal>
 </div>
 

@@ -9,6 +9,7 @@ import { SellModalComponent } from '../../components/sell-modal/sell-modal.compo
 import { ShareProfileModalComponent } from '../../components/share-profile-modal/share-profile-modal.component';
 import { TaxHistoryModalComponent } from '../../components/tax-history-modal/tax-history-modal.component';
 import { UserSettingsModalComponent } from '../../components/user-settings-modal/user-settings-modal.component';
+import { ImportHistoryModalComponent } from '../../components/import-history-modal/import-history-modal.component';
 import { SharingContextService } from '../../services/sharing-context.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -42,7 +43,7 @@ const DARK_SCALE_DEFAULTS = {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, AddTransactionModalComponent, BuyHistoryModalComponent, SellModalComponent, ShareProfileModalComponent, TaxHistoryModalComponent, UserSettingsModalComponent],
+  imports: [CommonModule, FormsModule, AddTransactionModalComponent, BuyHistoryModalComponent, SellModalComponent, ShareProfileModalComponent, TaxHistoryModalComponent, UserSettingsModalComponent, ImportHistoryModalComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -55,6 +56,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   showAddTransactionModal = false;
   showBuyHistoryModal = false;
+  showImportHistoryModal = false;
   selectedHoldingId: number | null = null;
   showShareModal = false;
   showUserSettingsModal = false;
@@ -1864,6 +1866,22 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   onAddTransactionClick(): void {
     this.showAddTransactionModal = true;
+  }
+
+  onImportHistoryClick(): void {
+    this.showImportHistoryModal = true;
+    this.cdr.markForCheck();
+  }
+
+  onImportDone(): void {
+    this.showImportHistoryModal = false;
+    this.refreshPortfolioData();
+    this.cdr.markForCheck();
+  }
+
+  onImportCancelled(): void {
+    this.showImportHistoryModal = false;
+    this.cdr.markForCheck();
   }
 
   private refreshPortfolioData(): void {

@@ -12,6 +12,15 @@ public interface ISellService
 
     Task<SellRecordDto> ConfirmSellAsync(int holdingId, int userId, decimal qty, decimal sellPrice,
         DateOnly sellDate, bool isIrishInvestor, decimal taxRate, CancellationToken ct = default);
+
+    /// <summary>
+    /// Same as ConfirmSellAsync but does NOT start its own DB transaction.
+    /// Must be called inside an already-active transaction (e.g. from ImportTransactionsAsync).
+    /// TaxEvent creation is skipped here and should be handled by the caller after commit.
+    /// </summary>
+    Task ConfirmSellNoTxAsync(int holdingId, int userId, decimal qty, decimal sellPrice,
+        DateOnly sellDate, bool isIrishInvestor, decimal taxRate, CancellationToken ct = default);
+
     Task<List<SellRecordDto>> GetSellHistoryAsync(int holdingId, int userId, CancellationToken ct = default);
 }
 
@@ -191,6 +200,95 @@ public class SellService : ISellService
         {
             await tx.RollbackAsync(ct);
             throw;
+        }
+    }
+
+    public async Task ConfirmSellNoTxAsync(int holdingId, int userId, decimal qty,
+        decimal sellPrice, DateOnly sellDate, bool isIrishInvestor, decimal taxRate,
+        CancellationToken ct = default)
+    {
+        var holding = await GetHoldingOrThrowAsync(holdingId, userId, ct);
+        var (lots, _) = await ComputeLotsAsync(holding, qty, sellPrice, sellDate, isIrishInvestor, ct);
+
+        var totalProfit = lots.Sum(l => l.ProfitOnLot);
+        var cgtPaid = Math.Max(0, totalProfit) * taxRate / 100m;
+        var utcNow = new DateTime(DateTime.UtcNow.Ticks, DateTimeKind.Utc);
+
+        // Persist SellRecord (no transaction started here — caller owns it)
+        var sellRecord = new SellRecord
+        {
+            HoldingId = holdingId,
+            SellDate = sellDate,
+            SellPrice = sellPrice,
+            Quantity = qty,
+            TotalProfit = totalProfit,
+            CgtPaid = cgtPaid,
+            TaxRateUsed = taxRate,
+            IsIrishInvestor = isIrishInvestor,
+            CreatedAt = utcNow
+        };
+        _db.SellRecords.Add(sellRecord);
+        await _db.SaveChangesAsync(ct);
+
+        var allTxns = await _db.Transactions
+            .Where(t => t.HoldingId == holdingId)
+            .ToDictionaryAsync(t => t.Id, ct);
+
+        foreach (var lot in lots)
+        {
+            _db.SellLotAllocations.Add(new SellLotAllocation
+            {
+                SellRecordId = sellRecord.Id,
+                BuyTransactionId = lot.BuyTransactionId,
+                QuantityConsumed = lot.QuantityConsumed,
+                OriginalCostPerUnit = lot.OriginalCostPerUnit,
+                AdjustedCostPerUnit = lot.AdjustedCostPerUnit,
+                DeemedDisposalDate = lot.DeemedDisposalDate,
+                DeemedDisposalPricePerUnit = lot.DeemedDisposalPricePerUnit,
+                ProfitOnLot = lot.ProfitOnLot,
+                CreatedAt = utcNow
+            });
+        }
+        await _db.SaveChangesAsync(ct);
+
+        // Recalculate holding remaining quantity/cost
+        var allConsumed = await _db.SellLotAllocations
+            .Where(sla => allTxns.Keys.Contains(sla.BuyTransactionId))
+            .GroupBy(sla => sla.BuyTransactionId)
+            .Select(g => new { TxnId = g.Key, Consumed = g.Sum(sla => sla.QuantityConsumed) })
+            .ToListAsync(ct);
+        var consumedMap = allConsumed.ToDictionary(x => x.TxnId, x => x.Consumed);
+
+        decimal remQty = 0m, remCost = 0m;
+        foreach (var (txnId, txn) in allTxns)
+        {
+            var consumed = consumedMap.TryGetValue(txnId, out var c) ? c : 0m;
+            var remaining = txn.Quantity - consumed;
+            if (remaining > 0) { remQty += remaining; remCost += remaining * txn.PurchasePrice; }
+        }
+
+        holding.Quantity = remQty;
+        holding.AverageCost = remQty > 0 ? remCost / remQty : 0m;
+        holding.UpdatedAt = utcNow;
+        _db.Holdings.Update(holding);
+        await _db.SaveChangesAsync(ct);
+
+        // Schedule TaxEvent creation for after outer commit (tracked via a post-commit action in caller)
+        // Store on sellRecord for the caller to use
+        sellRecord.TotalProfit = totalProfit;   // already set, just making intent clear
+
+        // Build and save the tax event inline (caller is responsible for overall transaction)
+        try
+        {
+            var taxEvent = BuildSellTaxEvent(
+                userId, holdingId, sellRecord.Id,
+                sellDate, sellPrice, totalProfit, cgtPaid, taxRate);
+            _db.TaxEvents.Add(taxEvent);
+            await _db.SaveChangesAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to create TaxEvent inside import for sell record {SellRecordId}", sellRecord.Id);
         }
     }
 

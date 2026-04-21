@@ -14,6 +14,7 @@ public interface IHoldingsService
     Task DeleteTransactionAsync(int transactionId, int userId, CancellationToken cancellationToken = default);
     Task UpdateTransactionAsync(int transactionId, int userId, UpdateTransactionDto dto, CancellationToken cancellationToken = default);
     Task<PortfolioEvolutionDto> GetPortfolioEvolutionAsync(int userId, CancellationToken cancellationToken = default);
+    Task<ImportTransactionsResultDto> ImportTransactionsAsync(int userId, ImportTransactionsRequestDto dto, CancellationToken cancellationToken = default);
 }
 
 public class HoldingsService : IHoldingsService
@@ -21,14 +22,16 @@ public class HoldingsService : IHoldingsService
     private readonly AppDbContext _context;
     private readonly IPriceService _priceService;
     private readonly IDeemedDisposalService _deemedDisposalService;
+    private readonly ISellService _sellService;
     private readonly ILogger<HoldingsService> _logger;
 
     public HoldingsService(AppDbContext context, IPriceService priceService,
-        IDeemedDisposalService deemedDisposalService, ILogger<HoldingsService> logger)
+        IDeemedDisposalService deemedDisposalService, ISellService sellService, ILogger<HoldingsService> logger)
     {
         _context = context;
         _priceService = priceService;
         _deemedDisposalService = deemedDisposalService;
+        _sellService = sellService;
         _logger = logger;
     }
 
@@ -779,4 +782,127 @@ public class HoldingsService : IHoldingsService
             }
         }
     }
+
+    public async Task<ImportTransactionsResultDto> ImportTransactionsAsync(
+        int userId, ImportTransactionsRequestDto dto, CancellationToken cancellationToken = default)
+    {
+        if (dto.Rows == null || dto.Rows.Count == 0)
+            throw new ArgumentException("No rows provided.");
+
+        // Fetch user tax settings
+        var userSettings = await _context.ProjectionSettings
+            .FirstOrDefaultAsync(ps => ps.UserId == userId, cancellationToken);
+        var isIrishInvestor = userSettings?.IsIrishInvestor ?? true;
+        var taxRate = isIrishInvestor
+            ? (userSettings?.ExitTaxPercent ?? 41m)
+            : (userSettings?.CgtPercent ?? 33m);
+
+        // Sort rows by date ascending for correct FIFO processing
+        var rows = dto.Rows.OrderBy(r => r.Date).ToList();
+
+        // Collect tickers processed so we can run side-effects after commit
+        var buyTickers = new List<(string Ticker, DateOnly PurchaseDate)>();
+
+        await using var tx = await _context.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var utcNow = new DateTime(DateTime.UtcNow.Ticks, DateTimeKind.Utc);
+
+            foreach (var row in rows)
+            {
+                var ticker = row.Ticker.ToUpperInvariant();
+                var op = row.Operation.ToUpperInvariant();
+
+                if (op == "BUY")
+                {
+                    // Get or create holding
+                    var holding = await _context.Holdings
+                        .FirstOrDefaultAsync(h => h.UserId == userId && h.Ticker == ticker, cancellationToken);
+
+                    if (holding == null)
+                    {
+                        var etfName = await _priceService.GetEtfDescriptionAsync(ticker, cancellationToken);
+                        holding = new Holding
+                        {
+                            UserId = userId,
+                            Ticker = ticker,
+                            EtfName = etfName,
+                            Quantity = 0,
+                            AverageCost = 0,
+                            CreatedAt = utcNow,
+                            UpdatedAt = utcNow
+                        };
+                        _context.Holdings.Add(holding);
+                        await _context.SaveChangesAsync(cancellationToken);
+                    }
+
+                    _context.Transactions.Add(new Transaction
+                    {
+                        HoldingId = holding.Id,
+                        Quantity = row.Quantity,
+                        PurchasePrice = row.Price,
+                        PurchaseDate = row.Date,
+                        CreatedAt = utcNow,
+                        UpdatedAt = utcNow
+                    });
+                    await _context.SaveChangesAsync(cancellationToken);
+
+                    await RecalculateHoldingFromRemainingLotsAsync(holding, cancellationToken);
+                    await _context.SaveChangesAsync(cancellationToken);
+
+                    buyTickers.Add((ticker, row.Date));
+                }
+                else if (op == "SELL")
+                {
+                    var holding = await _context.Holdings
+                        .FirstOrDefaultAsync(h => h.UserId == userId && h.Ticker == ticker, cancellationToken);
+
+                    if (holding == null)
+                        throw new ArgumentException(
+                            $"Cannot sell '{ticker}': no existing holding found. Ensure BUY rows for this ticker precede the SELL row.");
+
+                    await _sellService.ConfirmSellNoTxAsync(
+                        holding.Id, userId,
+                        row.Quantity, row.Price, row.Date,
+                        isIrishInvestor, taxRate, cancellationToken);
+                }
+                else
+                {
+                    throw new ArgumentException($"Unknown operation '{row.Operation}'. Expected BUY or SELL.");
+                }
+            }
+
+            await tx.CommitAsync(cancellationToken);
+        }
+        catch
+        {
+            await tx.RollbackAsync(cancellationToken);
+            throw;
+        }
+
+        // ── Post-commit side-effects (non-fatal) ────────────────────────────────
+        foreach (var (ticker, purchaseDate) in buyTickers.DistinctBy(x => x.Ticker))
+        {
+            try
+            {
+                await BackfillHistoricalPricesIfNeededAsync(ticker, purchaseDate, cancellationToken);
+                if (isIrishInvestor)
+                {
+                    var holding = await _context.Holdings
+                        .FirstOrDefaultAsync(h => h.UserId == userId && h.Ticker == ticker, cancellationToken);
+                    if (holding != null)
+                        await _deemedDisposalService.CheckAndCreateDeemedDisposalEventsAsync(
+                            holding.Id, userId, isIrishInvestor, cancellationToken);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Non-fatal post-import side-effect failed for ticker {Ticker}", ticker);
+            }
+        }
+
+        return new ImportTransactionsResultDto { Imported = rows.Count };
+    }
 }
+
+

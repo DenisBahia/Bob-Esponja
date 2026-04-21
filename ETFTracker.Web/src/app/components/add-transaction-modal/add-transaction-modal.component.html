@@ -11,7 +11,7 @@
 
     <form (ngSubmit)="onSubmit()" class="form">
       <div class="form-group ticker-group">
-        <label for="ticker">Ticker *</label>
+        <label for="ticker">Ticker / ISIN *</label>
         <div class="ticker-input-wrap">
           <input
             id="ticker"
@@ -20,7 +20,7 @@
             (ngModelChange)="onTickerChange($event)"
             (focus)="showDropdown = searchResults.length > 0"
             name="ticker"
-            placeholder="Search by name or ticker (e.g., Apple, VWRL)"
+            placeholder="Search by name, ticker or ISIN (e.g., VWRL, IE00B3RBWM25)"
             autocomplete="off"
             required>
 
@@ -63,8 +63,9 @@
         <div class="ticker-support-header">
           <span class="ticker-support-icon">🔍</span>
           <span>
-            Supports any ticker from
-            <a href="https://finance.yahoo.com/lookup/" target="_blank" rel="noopener noreferrer">Yahoo Finance Lookup ↗</a>
+            Supports ticker, ISIN or name search via
+            <a href="https://finance.yahoo.com/lookup/" target="_blank" rel="noopener noreferrer">Yahoo Finance ↗</a>.
+            Multiple results for an ISIN? Pick the exchange you want.
           </span>
         </div>
         <div class="asset-types-grid">

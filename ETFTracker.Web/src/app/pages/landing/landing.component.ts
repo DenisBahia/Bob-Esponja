@@ -23,6 +23,7 @@ export class LandingComponent implements OnInit, OnDestroy {
     { label: 'Buy History' },
     { label: 'Sell History' },
     { label: 'Portfolio Sharing' },
+    { label: '📥 CSV Import' },
   ];
 
   private slideInterval: ReturnType<typeof setInterval> | null = null;
