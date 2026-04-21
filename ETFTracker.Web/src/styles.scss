@@ -78,3 +78,12 @@ input, textarea, select {
     background: var(--text-muted);
   }
 }
+
+/* Prevent auto-zoom on mobile by ensuring font-size is 16px */
+@media screen and (max-width: 768px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
