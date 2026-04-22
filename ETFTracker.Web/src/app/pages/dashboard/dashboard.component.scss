@@ -905,6 +905,58 @@ th.sortable {
               }
             }
 
+        // ── Paired Monthly Buy / Target Total group ─────────────────
+        .paired-param-group {
+          display: flex;
+          flex-direction: column;
+          gap: 0.4rem;
+
+          &__hint {
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+          }
+
+          &__fields {
+            display: flex;
+            align-items: flex-end;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+          }
+
+          &__or {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            padding-bottom: 0.6rem;
+            letter-spacing: 0.05em;
+          }
+        }
+
+        .btn-calc-monthly { display: none; }
+
+        .param-group {
+          &--active {
+            input[type='number'] {
+              border-color: var(--accent);
+              box-shadow: 0 0 0 2px var(--accent-glow);
+            }
+          }
+
+          input.derived-value {
+            color: var(--accent);
+            font-style: italic;
+          }
+
+          .param-hint {
+            font-size: 0.65rem;
+            color: var(--accent);
+            font-style: italic;
+          }
+        }
+
             .setting-toggle {
               display: inline-flex;
               align-items: center;
@@ -1011,6 +1063,12 @@ th.sortable {
 
                 &:active {
                   transform: scale(0.96);
+                }
+
+                &:disabled {
+                  opacity: 0.35;
+                  cursor: not-allowed;
+                  pointer-events: none;
                 }
               }
             }

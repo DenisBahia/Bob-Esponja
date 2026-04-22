@@ -99,6 +99,9 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     taxFreeAllowancePerYear: 0,
     deemedDisposalPercent: 41,
   };
+  /** UI-only: drives the Monthly Buy derivation. Not sent to API directly. */
+  targetTotalAmount: number | null = null;
+
   projectionLoading = false;
   projectionSaving = false;
   showSiaNumbers = false;
@@ -2045,6 +2048,61 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
       this.projectionSettings.startAmount = Math.round(this.dashboard.header.totalHoldingsAmount);
       this.cdr.markForCheck();
     }
+  }
+
+  /** Called when the user edits Monthly Buy manually — clears the Target Total field. */
+  onMonthlyBuyChange(): void {
+    this.targetTotalAmount = null;
+    this.cdr.markForCheck();
+  }
+
+  /** Called when the user edits Target Total Amount — just clears the derived flag. */
+  onTargetTotalChange(): void {
+    this.cdr.markForCheck();
+  }
+
+  /** Called when the user clicks the "Calculate" button next to Target Total. */
+  calculateMonthlyBuyFromTarget(): void {
+    if (!this.targetTotalAmount || this.targetTotalAmount <= 0) return;
+    const derived = this.deriveMonthlyBuyForTarget(this.targetTotalAmount);
+    this.projectionSettings.monthlyBuyAmount = Math.max(0, Math.round(derived));
+    this.cdr.markForCheck();
+  }
+
+  /**
+   * Given a target end portfolio value, reverse-engineers the flat monthly buy amount
+   * needed to reach it using the same compound-growth model as the backend.
+   *
+   * f(M) is linear in M, so:  M = (target - f(0)) / (f(1) - f(0))
+   */
+  private deriveMonthlyBuyForTarget(target: number): number {
+    const s = this.projectionSettings;
+    const P = s.startAmount ?? this.dashboard?.header.totalHoldingsAmount ?? 0;
+    const R = s.yearlyReturnPercent / 100;
+    const I = s.annualBuyIncreasePercent / 100;
+    const N = s.projectionYears;
+
+    const today = new Date();
+    const currentMonth = today.getMonth() + 1; // 1-based
+    // Conservative: assume no buy this month yet
+    const monthsRemaining = 13 - currentMonth;
+    const partialGrowth = Math.pow(1 + R, monthsRemaining / 12);
+    const annualGrowth = 1 + R;
+
+    const endOfYear = (baseM: number): number => {
+      let val = (P + monthsRemaining * baseM) * partialGrowth;
+      for (let i = 1; i <= N; i++) {
+        const increaseFactor = Math.pow(1 + I, i);
+        val = (val + 12 * baseM * increaseFactor) * annualGrowth;
+      }
+      return val;
+    };
+
+    const f0 = endOfYear(0);
+    const f1 = endOfYear(1);
+    const slope = f1 - f0;
+    if (slope === 0) return 0;
+    return (target - f0) / slope;
   }
 
 }

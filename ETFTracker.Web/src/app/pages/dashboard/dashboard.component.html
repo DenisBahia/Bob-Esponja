@@ -628,10 +628,38 @@
                  [(ngModel)]="projectionSettings.yearlyReturnPercent" />
         </div>
 
-        <div class="param-group">
-          <label for="monthlyBuy">Monthly Buy ($)</label>
-          <input id="monthlyBuy" type="number" step="10" min="0"
-                 [(ngModel)]="projectionSettings.monthlyBuyAmount" />
+        <!-- Monthly Buy / Target Total — fill in ONE of the two fields -->
+        <div class="paired-param-group">
+          <div class="paired-param-group__hint">Fill in one or the other ↓</div>
+          <div class="paired-param-group__fields">
+            <div class="param-group" [class.param-group--active]="!targetTotalAmount">
+              <label for="monthlyBuy">Monthly Buy ($)</label>
+              <input id="monthlyBuy" type="number" step="10" min="0"
+                     [(ngModel)]="projectionSettings.monthlyBuyAmount"
+                     (ngModelChange)="onMonthlyBuyChange()"
+                     [class.derived-value]="!!targetTotalAmount"
+                     [title]="targetTotalAmount ? 'Derived from Target Total Amount' : ''" />
+              <span class="param-hint" *ngIf="targetTotalAmount">⚡ Derived from target</span>
+            </div>
+
+            <div class="paired-param-group__or">OR</div>
+
+            <div class="param-group start-amount-group" [class.param-group--active]="!!targetTotalAmount">
+              <label for="targetTotal">Target Total ($)</label>
+              <div class="start-amount-input-row">
+                <input id="targetTotal" type="number" step="1000" min="0"
+                       [(ngModel)]="targetTotalAmount"
+                       (ngModelChange)="onTargetTotalChange()"
+                       placeholder="e.g. 500 000" />
+                <button class="btn-copy-portfolio"
+                        [disabled]="!targetTotalAmount || targetTotalAmount <= 0"
+                        (click)="calculateMonthlyBuyFromTarget()"
+                        title="Calculate required Monthly Buy to reach this target">
+                  ⚡
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="param-group">
