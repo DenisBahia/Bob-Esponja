@@ -552,7 +552,7 @@
           </div>
         </ng-container>
 
-        <!-- Read-only table (always visible, below tab component) -->
+        <!-- Goal table (editable unless viewing a read-only shared portfolio) -->
         <div class="goal-table-wrapper">
           <table class="goal-table">
             <thead>
@@ -571,8 +571,9 @@
                     min="0"
                     step="1000"
                     [value]="point.targetValue"
-                    readonly
-                    disabled />
+                    [readonly]="sharingCtx.isReadOnly()"
+                    [disabled]="sharingCtx.isReadOnly()"
+                    (input)="!sharingCtx.isReadOnly() && onGoalValueChange(i, $any($event.target).value)" />
                 </td>
               </tr>
             </tbody>
@@ -580,7 +581,14 @@
         </div>
 
         <div class="goal-save-row">
-          <span class="param-hint">Goal values are currently read-only.</span>
+          <ng-container *ngIf="sharingCtx.isReadOnly(); else editableGoalActions">
+            <span class="param-hint">🔒 Goal values are read-only (shared portfolio).</span>
+          </ng-container>
+          <ng-template #editableGoalActions>
+            <button class="btn btn-primary btn-sm" (click)="saveGoalEdits()" [disabled]="goalSaving">
+              {{ goalSaving ? 'Saving…' : '💾 Save changes' }}
+            </button>
+          </ng-template>
         </div>
       </ng-container>
     </div>
