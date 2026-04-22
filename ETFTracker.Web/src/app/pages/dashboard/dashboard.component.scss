@@ -843,7 +843,7 @@ th.sortable {
       .projection-params {
         display: flex;
         flex-wrap: wrap;
-        align-items: flex-end;
+        align-items: flex-start;
         gap: 1rem;
         margin-bottom: 1.75rem;
         padding: 1.25rem;
@@ -1112,7 +1112,7 @@ th.sortable {
           .tax-section-fields {
             display: flex;
             flex-wrap: wrap;
-            align-items: flex-end;
+            align-items: flex-start;
             gap: 1rem;
           }
         }
