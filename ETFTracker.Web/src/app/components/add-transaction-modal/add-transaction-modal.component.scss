@@ -335,6 +335,42 @@
     }
   }
 
+  // ── Toggle switch (Deemed Disposal Due) ──────────────────────────────────────
+  .toggle-switch {
+    cursor: pointer;
+    flex-shrink: 0;
+
+    .toggle-track {
+      display: flex;
+      align-items: center;
+      width: 44px;
+      height: 24px;
+      border-radius: 12px;
+      background: #2d3a52;
+      border: 1px solid #3a4f6e;
+      transition: background 0.25s, border-color 0.25s;
+      padding: 2px;
+
+      .toggle-thumb {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #E5E7EB;
+        transition: transform 0.25s, background 0.25s;
+      }
+    }
+
+    &.active .toggle-track {
+      background: #14532d;
+      border-color: #16a34a;
+
+      .toggle-thumb {
+        transform: translateX(20px);
+        background: #4ade80;
+      }
+    }
+  }
+
   @keyframes spin {
     to { transform: rotate(360deg); }
   }
