@@ -92,14 +92,14 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     annualBuyIncreasePercent: 3,
     projectionYears: 10,
     inflationPercent: 2,
-    cgtPercent: 33,
-    exitTaxPercent: 41,
+    cgtPercent: 38,
+    exitTaxPercent: 38,
     excludePreExistingFromTax: false,
     siaAnnualPercent: 0,
     startAmount: null,
     isIrishInvestor: true,
-    taxFreeAllowancePerYear: 0,
-    deemedDisposalPercent: 41,
+    taxFreeAllowancePerYear: 1270,
+    deemedDisposalPercent: 38,
     deemedDisposalEnabled: true,
   };
   /** UI-only: drives the Monthly Buy derivation. Not sent to API directly. */
@@ -736,7 +736,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.lineChart = null;
     this.apiService.getProjection().subscribe({
       next: (data) => {
-        this.projectionSettings = { ...data.settings, deemedDisposalPercent: data.settings.deemedDisposalPercent ?? 41 };
+        this.projectionSettings = { ...data.settings, deemedDisposalPercent: data.settings.deemedDisposalPercent ?? 38 };
         // Sync the toggle from the persisted server value
         this.isIrishInvestor = data.settings.isIrishInvestor;
         localStorage.setItem('isIrishInvestor', String(this.isIrishInvestor));
@@ -769,6 +769,14 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
         this.cdr.markForCheck();
       }
     });
+  }
+
+  onToggleDeemedDisposal(): void {
+    this.projectionSettings.deemedDisposalEnabled = !this.projectionSettings.deemedDisposalEnabled;
+    if (this.projectionSettings.deemedDisposalEnabled) {
+      this.projectionSettings.taxFreeAllowancePerYear = 0;
+    }
+    this.cdr.markForCheck();
   }
 
   saveProjectionSettings(): void {

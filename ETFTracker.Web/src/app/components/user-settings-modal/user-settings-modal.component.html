@@ -17,12 +17,12 @@
           <span class="toggle-label">🍀 Irish Investor</span>
           <span class="toggle-desc">
             Enables Deemed Disposal, Exit Tax and SIA calculations.
-            Hides CGT and Tax-Free Allowance fields.
+            Hides the non-Irish CGT field.
           </span>
         </div>
         <div class="toggle-switch"
              [class.active]="defaults.isIrishInvestor"
-             (click)="defaults.isIrishInvestor = !defaults.isIrishInvestor"
+             (click)="toggleIrishInvestor()"
              title="Toggle Irish investor mode">
           <span class="toggle-track"><span class="toggle-thumb"></span></span>
         </div>
@@ -59,6 +59,13 @@
           </div>
           <input id="deemedDisposal" type="number" min="0" max="100" step="0.5"
                  [(ngModel)]="defaults.deemedDisposalPercent" />
+        </div>
+
+        <div class="field-row">
+          <label for="irishAllowance">Annual Tax-Free Allowance</label>
+          <div class="field-hint">Annual CGT allowance deducted before CGT is applied. Not applied to Deemed Disposal or Exit Tax. 0 = disabled.</div>
+          <input id="irishAllowance" type="number" min="0" step="100"
+                 [(ngModel)]="defaults.taxFreeAllowancePerYear" />
         </div>
 
         <hr class="settings-divider" />

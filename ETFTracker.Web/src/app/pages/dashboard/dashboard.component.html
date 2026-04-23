@@ -602,7 +602,7 @@
       <ng-container *ngIf="!goalLoading && userGoal">
         <p class="goal-source-hint" *ngIf="userGoal.sourceVersionId">
           Seeded from version #{{ userGoal.sourceVersionId }} — last saved {{ userGoal.savedAt | date:'dd/MM/yyyy HH:mm' }}.
-          Target values below are read-only.
+          <span *ngIf="sharingCtx.isReadOnly()">Target values below are read-only.</span>
         </p>
 
         <!-- Inner tab bar -->
@@ -759,42 +759,41 @@
                  [(ngModel)]="projectionSettings.inflationPercent" />
         </div>
 
+        <div class="tax-section-separator"></div>
+
         <!-- Tax Section: Deemed Disposal / Exit Tax (CGT for non-Irish investors) -->
         <div class="tax-section">
           <div class="tax-section-header">{{ isIrishInvestor ? 'Deemed Disposal / Exit Tax' : 'CGT' }}</div>
           <div class="tax-section-fields">
-            <div class="param-group" *ngIf="isIrishInvestor">
-              <label for="cgt">Deemed Disposal %</label>
-              <input id="cgt" type="number" step="0.1" min="0" max="100"
-                     [(ngModel)]="projectionSettings.cgtPercent" />
-            </div>
-
             <div class="param-group">
               <label for="exitTax">{{ isIrishInvestor ? 'CGT / Exit Tax %' : 'CGT %' }}</label>
               <input id="exitTax" type="number" step="0.1" min="0" max="100"
                      [(ngModel)]="projectionSettings.exitTaxPercent" />
             </div>
 
-            <!-- Deemed Disposal toggle — Irish investors only -->
+            <!-- Apply Deemed Disposal toggle — Irish investors only -->
             <div class="param-group toggle-param" *ngIf="isIrishInvestor">
               <label>
-                Deemed Disposal
-                <span class="badge-info" title="When enabled, the projection automatically applies Exit Tax every 8 years on unrealised gains. Disable to model a world without deemed disposal.">ⓘ</span>
+                Apply Deemed Disposal
+                <span class="badge-info" title="When on, Exit Tax is applied every 8 years on unrealised gains.">ⓘ</span>
               </label>
               <div class="toggle-switch" [class.active]="projectionSettings.deemedDisposalEnabled"
-                   (click)="projectionSettings.deemedDisposalEnabled = !projectionSettings.deemedDisposalEnabled">
+                   (click)="onToggleDeemedDisposal()">
                 <span class="toggle-track"><span class="toggle-thumb"></span></span>
               </div>
               <span class="param-hint">When on, Exit Tax is applied every 8 years on unrealised gains.</span>
             </div>
 
-            <!-- Tax-Free Allowance — non-Irish investors only -->
-            <div class="param-group" *ngIf="!isIrishInvestor">
+            <!-- Tax-Free Allowance — applies to CGT only (not deemed disposal / exit tax) -->
+            <div class="param-group">
               <label for="taxFreeAllowance">Annual Tax-Free Allowance</label>
               <input id="taxFreeAllowance" type="number" step="100" min="0"
                      [(ngModel)]="projectionSettings.taxFreeAllowancePerYear"
-                     placeholder="0" />
-              <span class="param-hint">Deducted from taxable gains each year before CGT is applied. 0 = disabled.</span>
+                     placeholder="0"
+                     [disabled]="isIrishInvestor && projectionSettings.deemedDisposalEnabled" />
+              <span class="param-hint" *ngIf="isIrishInvestor && projectionSettings.deemedDisposalEnabled">Disabled while Apply Deemed Disposal is on.</span>
+              <span class="param-hint" *ngIf="isIrishInvestor && !projectionSettings.deemedDisposalEnabled">Deducted from taxable gains each year before CGT is applied. Not applied to Deemed Disposal or Exit Tax. 0 = disabled.</span>
+              <span class="param-hint" *ngIf="!isIrishInvestor">Deducted from taxable gains each year before CGT is applied. 0 = disabled.</span>
             </div>
           </div>
         </div>

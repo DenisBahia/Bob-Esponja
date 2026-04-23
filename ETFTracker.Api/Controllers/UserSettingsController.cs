@@ -43,11 +43,11 @@ public class UserSettingsController : ControllerBase
                 return Ok(new UserTaxDefaultsDto
                 {
                     IsIrishInvestor = true,
-                    ExitTaxPercent = 41m,
-                    DeemedDisposalPercent = 41m,
+                    ExitTaxPercent = 38m,
+                    DeemedDisposalPercent = 38m,
                     SiaAnnualPercent = 0m,
-                    CgtPercent = 33m,
-                    TaxFreeAllowancePerYear = 0m,
+                    CgtPercent = 38m,
+                    TaxFreeAllowancePerYear = 1270m,
                 });
 
             return Ok(MapToDto(settings));
