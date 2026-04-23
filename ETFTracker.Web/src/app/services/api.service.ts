@@ -520,6 +520,10 @@ export class ApiService {
     return this.http.put<{ marked: number }>(url, {});
   }
 
+  markYearPaid(year: number): Observable<{ year: number; status: string }> {
+    return this.http.put<{ year: number; status: string }>(`${this.apiUrl}/tax-events/mark-year-paid/${year}`, {});
+  }
+
   recalculateTaxYear(year: number): Observable<RecalculateTaxYearResultDto> {
     return this.http.post<RecalculateTaxYearResultDto>(`${this.apiUrl}/tax-events/recalculate-year?year=${year}`, {});
   }

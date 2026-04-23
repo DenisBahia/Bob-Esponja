@@ -100,7 +100,10 @@
         </div>
         <div class="summary-row cgt-pending-note" *ngIf="isCgtSell">
           <span>{{ taxDueLabel }}</span>
-          <strong class="cgt-pending">€0 <small>(calculated at year-end)</small></strong>
+          <span class="cgt-pending-wrap">
+            <strong class="cgt-due">{{ formatCurrency(cgtDuePreview) }}</strong>
+            <small class="cgt-pending-note-text">estimated — adjusted by recalculations</small>
+          </span>
         </div>
       </div>
 

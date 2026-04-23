@@ -2646,6 +2646,16 @@ th.sortable {
     font-size: 0.78rem;
     text-transform: uppercase;
     letter-spacing: 0.03em;
+
+    .th-note {
+      display: block;
+      font-size: 0.65rem;
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
+      color: rgba(229, 231, 235, 0.38);
+      margin-top: 1px;
+    }
   }
   td {
     padding: 0.55rem 0.75rem;
@@ -2786,6 +2796,14 @@ th.sortable {
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+
+  .tax-ov-sublabel {
+    text-transform: none;
+    font-size: 0.68rem;
+    color: rgba(229, 231, 235, 0.4);
+    letter-spacing: 0;
+    display: inline;
+  }
 }
 
 .tax-ov-value {
@@ -2819,9 +2837,11 @@ th.sortable {
   padding: 0.6rem 0.8rem;
   background: var(--bg-elevated);
   border: 1px solid var(--border);
-  border-bottom: none;
   border-radius: 10px 10px 0 0;
   font-size: 0.88rem;
+  user-select: none;
+
+  &:hover { background: var(--bg-card); }
 
   strong { color: var(--text-primary); font-size: 0.95rem; }
 }
@@ -2837,6 +2857,12 @@ th.sortable {
   border: 1px solid rgba(248, 155, 41, 0.3);
   border-radius: 6px;
   padding: 0.15rem 0.55rem;
+}
+
+.tax-holding-toggle {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-left: 0.4rem;
 }
 
 .tax-events-table-wrap {
@@ -2949,3 +2975,73 @@ th.sortable {
   line-height: 1.45;
   em { font-style: italic; color: var(--accent); }
 }
+
+.tax-allowance-section {
+  margin: 1rem 0 1.25rem;
+  background: rgba(16, 185, 129, 0.06);
+  border: 1px solid rgba(16, 185, 129, 0.18);
+  border-radius: 10px;
+  padding: 1rem 1.2rem;
+}
+
+.tax-allowance-header {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.35rem;
+  strong { color: #10B981; }
+}
+
+.tax-allowance-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.tax-allowance-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  align-items: baseline;
+  padding: 0.4rem 0.6rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  strong { color: var(--text-primary); }
+}
+
+.tax-allowance-year {
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 3rem;
+}
+
+.tax-allowance-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.tax-allowance-deduct {
+  color: #f89b29;
+}
+
+.tax-allowance-result strong {
+  color: var(--positive);
+}
+
+.tax-allowance-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 0.6rem;
+  border-top: 1px solid rgba(16, 185, 129, 0.2);
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  strong {
+    color: var(--positive);
+    font-size: 1rem;
+  }
+}
+

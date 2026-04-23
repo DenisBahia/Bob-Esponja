@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy, AfterViewChecked, ChangeDetectionStrategy, ChangeDetectorRef, ElementRef, ViewChild } from '@angular/core';
+import { Observable } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, DashboardDto, HoldingDto, ProjectionResultDto, ProjectionSettingsDto, PortfolioEvolutionDto, ProjectionVersionSummaryDto, ProjectionVersionDetailDto, ProjectionDataPointDto, SaveVersionRequestDto, UserGoalDto, GoalDataPointDto, UpsertGoalRequestDto, TaxSummaryDto, TaxEventDto, TaxYearAllowanceSummaryDto, UserTaxDefaultsDto, TaxYearSummaryDto, ExitTaxPotDto, RecalculateTaxYearResultDto } from '../../services/api.service';
@@ -49,7 +50,7 @@ const DARK_SCALE_DEFAULTS = {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
-  activeMainSection: 'portfolio' | 'goal' | 'projections' = 'portfolio';
+  activeMainSection: 'portfolio' | 'tax' | 'goal' | 'projections' = 'portfolio';
   dashboard: DashboardDto | null = null;
   loading = true;
   error: string | null = null;
@@ -79,6 +80,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   taxMarkingAllYear: number | null = null;
   recalculating = false;
   taxBannerMessage: string | null = null;
+  private collapsedHoldings = new Set<number>();
 
   @ViewChild('allocationChart') allocationChartRef!: ElementRef<HTMLCanvasElement>;
   private pieChart: Chart | null = null;
@@ -828,7 +830,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.cdr.markForCheck();
   }
 
-  setMainSection(section: 'portfolio' | 'goal' | 'projections'): void {
+  setMainSection(section: 'portfolio' | 'tax' | 'goal' | 'projections'): void {
     if (section === 'projections' && !this.canViewProjections) {
       return;
     }
@@ -858,6 +860,10 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
 
     if (section === 'goal' && !this.userGoal && !this.goalLoading) {
       this.loadGoal();
+    }
+
+    if (section === 'tax' && !this.taxSummary && !this.taxSummaryLoading) {
+      this.loadTaxSummary();
     }
 
     this.cdr.markForCheck();
@@ -1992,6 +1998,10 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
       next: (s) => {
         this.taxSummary = s;
         this.taxSummaryLoading = false;
+        // Collapse all holdings by default
+        this.collapsedHoldings = new Set<number>(
+          s.events.map((e: any) => e.holdingId)
+        );
         this.cdr.markForCheck();
       },
       error: () => {
@@ -2005,7 +2015,14 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     if (this.sharingCtx.isReadOnly()) return;
     this.taxMarkingAllYear = year ?? 0;
     this.cdr.markForCheck();
-    this.apiService.markAllTaxEventsPaid(year).subscribe({
+
+    // When a specific year is provided, use the dedicated year-level endpoint
+    // so the AnnualTaxSummary status is updated and reflected in the CGT by Year table.
+    const call$ = (year != null)
+      ? this.apiService.markYearPaid(year) as Observable<unknown>
+      : this.apiService.markAllTaxEventsPaid() as Observable<unknown>;
+
+    call$.subscribe({
       next: () => {
         this.taxMarkingAllYear = null;
         this.loadTaxSummary();
@@ -2052,9 +2069,30 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   getTaxPendingCurrentYear(): number {
     if (!this.taxSummary) return 0;
     const y = this.getTaxCurrentYear();
+    // If the CGT year is already marked Paid, nothing is pending
+    const cgtYear = this.taxSummary.cgtByYear?.find((r: any) => r.year === y);
+    if (cgtYear?.status === 'Paid') return 0;
+    // If allowance is configured, use the after-allowance value from allowanceByYear
+    if (this.taxSummary.annualTaxFreeAllowance > 0 && this.taxSummary.allowanceByYear) {
+      const row = this.taxSummary.allowanceByYear.find((r: any) => r.year === y);
+      if (row) return row.taxAfterAllowance;
+    }
+    // Fall back to raw sum of pending events for the year
     return this.taxSummary.events
       .filter(e => e.status === 'Pending' && new Date(e.eventDate).getFullYear() === y)
       .reduce((s, e) => s + e.taxAmount, 0);
+  }
+
+  toggleHoldingCollapsed(holdingId: number): void {
+    if (this.collapsedHoldings.has(holdingId)) {
+      this.collapsedHoldings.delete(holdingId);
+    } else {
+      this.collapsedHoldings.add(holdingId);
+    }
+  }
+
+  isHoldingCollapsed(holdingId: number): boolean {
+    return this.collapsedHoldings.has(holdingId);
   }
 
   getTaxEventsByHolding(): { holdingId: number; ticker: string; etfName: string | null; events: TaxEventDto[] }[] {

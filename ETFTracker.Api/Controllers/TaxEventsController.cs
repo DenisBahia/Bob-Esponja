@@ -102,6 +102,12 @@ public class TaxEventsController : ControllerBase
                           && sr.TaxType == "CGT")
                 .ToListAsync(ct);
 
+            // Load AnnualTaxSummary statuses so we can reflect "Paid" on the year rows
+            var annualSummaries = await _db.AnnualTaxSummaries
+                .Where(a => a.UserId == UserId && a.TaxType == "CGT" && a.HoldingId == null)
+                .ToListAsync(ct);
+            var annualSummaryStatuses = annualSummaries.ToDictionary(a => a.TaxYear, a => a.Status);
+
             var cgtByYear = cgtSells
                 .GroupBy(sr => sr.SellDate.Year)
                 .Select(g => new TaxYearSummaryDto
@@ -113,7 +119,7 @@ public class TaxEventsController : ControllerBase
                     TaxFreeAllowance = annualAllowance,
                     TaxableGain = Math.Max(0, g.Sum(r => r.TotalProfit) - annualAllowance),
                     TaxDue = Math.Max(0, g.Sum(r => r.TotalProfit) - annualAllowance) * (projSettings?.CgtPercent ?? 33m) / 100m,
-                    Status = "Pending"
+                    Status = annualSummaryStatuses.TryGetValue(g.Key, out var s) ? s : "Pending"
                 })
                 .OrderBy(y => y.Year)
                 .ToList();
@@ -179,9 +185,9 @@ public class TaxEventsController : ControllerBase
                         TaxAfterAllowance = yr.TaxDue
                     });
                 }
-                // After-allowance total = CGT (from cgtByYear) + non-CGT pending events
+                // After-allowance total = CGT pending (from cgtByYear) + non-CGT pending events
                 var nonCgtPending = dtos.Where(e => e.Status == "Pending" && e.TaxSubType != "CGT").Sum(e => e.TaxAmount);
-                totalPendingAfterAllowance = cgtByYear.Sum(y => y.TaxDue) + nonCgtPending;
+                totalPendingAfterAllowance = cgtByYear.Where(y => y.Status == "Pending").Sum(y => y.TaxDue) + nonCgtPending;
             }
             else
             {
@@ -190,11 +196,13 @@ public class TaxEventsController : ControllerBase
 
             // TotalPending: use CgtByYear for CGT portion (accurate year-level calc) + non-CGT events
             var nonCgtPendingTotal = dtos.Where(e => e.Status == "Pending" && e.TaxSubType != "CGT").Sum(e => e.TaxAmount);
-            var cgtPendingTotal = cgtByYear.Sum(y => y.TaxDue);  // already nets losses + allowance
+            var cgtPendingTotal = cgtByYear.Where(y => y.Status == "Pending").Sum(y => y.TaxDue);  // already nets losses + allowance
 
             return Ok(new TaxSummaryDto
             {
-                TotalPaid = dtos.Where(e => e.Status == "Paid").Sum(e => e.TaxAmount),
+                // TotalPaid = non-CGT paid events (DeemedDisposals etc.) + CGT years snapshotted PaidTaxAmount
+                TotalPaid = dtos.Where(e => e.Status == "Paid" && e.TaxSubType != "CGT").Sum(e => e.TaxAmount)
+                          + annualSummaries.Where(a => a.Status == "Paid").Sum(a => a.PaidTaxAmount),
                 TotalPending = cgtPendingTotal + nonCgtPendingTotal,
                 IsIrishInvestor = isIrishInvestor,
                 NextDeemedDisposalDate = nextDd,
@@ -372,6 +380,50 @@ public class TaxEventsController : ControllerBase
         }
     }
 
+    /// <summary>Mark an entire CGT year as paid via the AnnualTaxSummary record.
+    /// Creates the record if it does not exist yet.</summary>
+    [HttpPut("mark-year-paid/{year:int}")]
+    public async Task<ActionResult<object>> MarkYearPaid(int year, CancellationToken ct = default)
+    {
+        try
+        {
+            if (_sharingContext.IsReadOnly())
+                return StatusCode(403, new { message = "Read-only profile." });
+
+            var existing = await _db.AnnualTaxSummaries
+                .FirstOrDefaultAsync(a => a.UserId == UserId && a.TaxYear == year
+                                       && a.TaxType == "CGT" && a.HoldingId == null, ct);
+
+            if (existing != null)
+            {
+                existing.PaidTaxAmount = existing.TaxDue;
+                existing.Status = "Paid";
+                existing.RecalculatedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                _db.AnnualTaxSummaries.Add(new AnnualTaxSummary
+                {
+                    UserId = UserId,
+                    TaxYear = year,
+                    TaxType = "CGT",
+                    HoldingId = null,
+                    Status = "Paid",
+                    PaidTaxAmount = 0m,
+                    RecalculatedAt = DateTime.UtcNow
+                });
+            }
+
+            await _db.SaveChangesAsync(ct);
+            return Ok(new { year, status = "Paid" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error marking year {Year} as paid", year);
+            return StatusCode(500, new { message = "Error updating year status" });
+        }
+    }
+
     // ── Helpers ─────────────────────────────────────────────────────────────────
 
     private async Task UpsertAnnualSummaryAsync(
@@ -405,6 +457,12 @@ public class TaxEventsController : ControllerBase
         }
         else
         {
+            // If TaxDue changed, the previous "Paid" mark is stale — reset to Pending
+            if (Math.Round(existing.TaxDue, 2) != Math.Round(taxDue, 2))
+            {
+                existing.Status = "Pending";
+                existing.PaidTaxAmount = 0m;
+            }
             existing.TotalProfits = profits;
             existing.TotalLosses = losses;
             existing.NetGain = netGain;

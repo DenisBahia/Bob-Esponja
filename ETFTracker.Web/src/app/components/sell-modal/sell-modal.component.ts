@@ -46,7 +46,6 @@ export class SellModalComponent implements OnInit {
 
   get cgtDuePreview(): number {
     if (!this.preview) return 0;
-    if (this.preview.taxType === 'CGT') return 0;
     const profit = this.preview.totalProfit;
     return Math.max(0, profit) * this.editableTaxRate / 100;
   }

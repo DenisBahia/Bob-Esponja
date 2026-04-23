@@ -171,6 +171,25 @@ public class SellService : ISellService
                 _logger.LogWarning(ex, "Failed to create TaxEvent for sell record {SellRecordId}", sellRecord.Id);
             }
 
+            // Reset the AnnualTaxSummary for this sell year to Pending — the tax due has changed.
+            try
+            {
+                var summaries = await _db.AnnualTaxSummaries
+                    .Where(a => a.UserId == userId && a.TaxYear == sellDate.Year)
+                    .ToListAsync(ct);
+                foreach (var s in summaries.Where(s => s.Status == "Paid"))
+                {
+                    s.Status = "Pending";
+                    s.PaidTaxAmount = 0m;
+                }
+                if (summaries.Any(s => s.Status == "Pending"))
+                    await _db.SaveChangesAsync(ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to reset AnnualTaxSummary after sell for year {Year}", sellDate.Year);
+            }
+
             return new SellRecordDto
             {
                 Id = sellRecord.Id,

@@ -21,10 +21,12 @@ public class AnnualTaxSummary
     public decimal TaxRateUsed { get; set; }
     /// <summary>"Pending" | "Paid"</summary>
     public string Status { get; set; } = "Pending";
+    /// <summary>Snapshot of TaxDue at the time the user last clicked Mark Paid.
+    /// Used to compute deltas when TaxDue changes after a recalculation.</summary>
+    public decimal PaidTaxAmount { get; set; }
     public DateTime RecalculatedAt { get; set; }
 
     // Navigation
     public User? User { get; set; }
     public Holding? Holding { get; set; }
 }
-

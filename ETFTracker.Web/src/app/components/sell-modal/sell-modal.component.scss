@@ -140,6 +140,19 @@ h3 { margin: 0 0 12px; font-size: 0.95rem; color: var(--text-secondary); }
   .positive { color: #10B981; }
   .negative { color: #f05252; }
   .cgt-due { color: #f89b29; font-size: 1rem; }
+
+  .cgt-pending-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.15rem;
+
+    .cgt-pending-note-text {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+  }
 }
 
 .tax-rate-row {

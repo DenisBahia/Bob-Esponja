@@ -260,6 +260,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<AnnualTaxSummary>().Property(a => a.TaxDue).HasColumnName("tax_due").HasColumnType("decimal(12,2)");
         modelBuilder.Entity<AnnualTaxSummary>().Property(a => a.TaxRateUsed).HasColumnName("tax_rate_used").HasColumnType("decimal(5,2)");
         modelBuilder.Entity<AnnualTaxSummary>().Property(a => a.Status).HasColumnName("status").HasMaxLength(20).HasDefaultValue("Pending");
+        modelBuilder.Entity<AnnualTaxSummary>().Property(a => a.PaidTaxAmount).HasColumnName("paid_tax_amount").HasColumnType("decimal(12,2)").HasDefaultValue(0m);
         modelBuilder.Entity<AnnualTaxSummary>().Property(a => a.RecalculatedAt).HasColumnName("recalculated_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
         modelBuilder.Entity<AnnualTaxSummary>()
             .HasOne(a => a.User)
