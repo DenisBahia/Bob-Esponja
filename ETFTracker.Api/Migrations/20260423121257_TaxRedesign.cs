@@ -417,14 +417,14 @@ namespace ETFTracker.Api.Migrations
                 nullable: false,
                 defaultValue: true);
 
-            migrationBuilder.AlterColumn<int>(
-                name: "Status",
-                table: "TaxEvents",
-                type: "integer",
-                nullable: false,
-                oldClrType: typeof(string),
-                oldType: "text",
-                oldDefaultValue: "Pending");
+            // PostgreSQL cannot cast text→integer automatically; use USING expression.
+            migrationBuilder.Sql(
+                """
+                ALTER TABLE "TaxEvents"
+                    ALTER COLUMN "Status" DROP DEFAULT,
+                    ALTER COLUMN "Status" TYPE integer
+                        USING (CASE WHEN "Status" = 'Paid' THEN 1 ELSE 0 END);
+                """);
 
             migrationBuilder.AlterColumn<decimal>(
                 name: "TaxableGain",
@@ -466,13 +466,13 @@ namespace ETFTracker.Api.Migrations
                 oldClrType: typeof(decimal),
                 oldType: "numeric(12,4)");
 
-            migrationBuilder.AlterColumn<int>(
-                name: "EventType",
-                table: "TaxEvents",
-                type: "integer",
-                nullable: false,
-                oldClrType: typeof(string),
-                oldType: "text");
+            // PostgreSQL cannot cast text→integer automatically; use USING expression.
+            migrationBuilder.Sql(
+                """
+                ALTER TABLE "TaxEvents"
+                    ALTER COLUMN "EventType" TYPE integer
+                        USING (CASE WHEN "EventType" = 'DeemedDisposal' THEN 1 ELSE 0 END);
+                """);
 
             migrationBuilder.AlterColumn<DateTime>(
                 name: "CreatedAt",
@@ -1245,14 +1245,13 @@ namespace ETFTracker.Api.Migrations
                 table: "profile_shares",
                 newName: "IX_profile_shares_guest_user_id");
 
-            migrationBuilder.AlterColumn<string>(
-                name: "status",
-                table: "tax_events",
-                type: "text",
-                nullable: false,
-                defaultValue: "Pending",
-                oldClrType: typeof(int),
-                oldType: "integer");
+            migrationBuilder.Sql(
+                """
+                ALTER TABLE "tax_events"
+                    ALTER COLUMN "status" TYPE text
+                        USING (CASE WHEN "status" = 1 THEN 'Paid' ELSE 'Pending' END),
+                    ALTER COLUMN "status" SET DEFAULT 'Pending';
+                """);
 
             migrationBuilder.AlterColumn<decimal>(
                 name: "taxable_gain",
@@ -1294,13 +1293,12 @@ namespace ETFTracker.Api.Migrations
                 oldClrType: typeof(decimal),
                 oldType: "numeric");
 
-            migrationBuilder.AlterColumn<string>(
-                name: "event_type",
-                table: "tax_events",
-                type: "text",
-                nullable: false,
-                oldClrType: typeof(int),
-                oldType: "integer");
+            migrationBuilder.Sql(
+                """
+                ALTER TABLE "tax_events"
+                    ALTER COLUMN "event_type" TYPE text
+                        USING (CASE WHEN "event_type" = 1 THEN 'DeemedDisposal' ELSE 'Sell' END);
+                """);
 
             migrationBuilder.AlterColumn<DateTime>(
                 name: "created_at",

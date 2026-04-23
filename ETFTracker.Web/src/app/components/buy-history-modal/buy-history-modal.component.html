@@ -128,7 +128,7 @@
               <td class="price">{{ formatCurrency(record.sellPrice) }}</td>
               <td class="price">{{ formatCurrency(record.quantity * record.sellPrice) }}</td>
               <td class="price" [ngClass]="record.totalProfit >= 0 ? 'gain' : 'loss'">{{ formatCurrency(record.totalProfit) }}</td>
-              <td class="price" [title]="getSellTaxPaidLabel(record)">{{ formatCurrency(record.cgtPaid) }}</td>
+              <td class="price" [title]="getSellTaxPaidLabel(record)">{{ formatCurrency(record.taxAmountSaved) }}</td>
               <td class="price" [title]="getSellTaxPaidLabel(record)">{{ record.taxRateUsed.toFixed(1) }}%</td>
               <td class="action-col">{{ expandedSellId === record.id ? '▲' : '▼' }}</td>
             </tr>
@@ -142,7 +142,7 @@
                       <th>Qty Consumed</th>
                       <th>Original Cost/Unit</th>
                       <th>{{ getLotCostBasisLabel(record) }}</th>
-                      <th *ngIf="record.isIrishInvestor">Deemed Disposal Date</th>
+                      <th *ngIf="record.taxType === 'ExitTax'">Deemed Disposal Date</th>
                       <th>Profit on Lot</th>
                     </tr>
                   </thead>
@@ -152,7 +152,7 @@
                       <td class="quantity">{{ formatQuantity(lot.quantityConsumed) }}</td>
                       <td class="price">{{ formatCurrency(lot.originalCostPerUnit) }}</td>
                       <td class="price">{{ formatCurrency(lot.adjustedCostPerUnit) }}</td>
-                      <td *ngIf="record.isIrishInvestor">{{ lot.deemedDisposalDate ? formatDate(lot.deemedDisposalDate) : '—' }}</td>
+                      <td *ngIf="record.taxType === 'ExitTax'">{{ lot.deemedDisposalDate ? formatDate(lot.deemedDisposalDate) : '—' }}</td>
                       <td class="price" [ngClass]="lot.profitOnLot >= 0 ? 'gain' : 'loss'">{{ formatCurrency(lot.profitOnLot) }}</td>
                     </tr>
                   </tbody>

@@ -78,11 +78,11 @@ export class BuyHistoryModalComponent implements OnInit {
 
   getSellTaxPaidLabel(record?: SellRecordDto): string {
     if (!record) return 'Tax Paid';
-    return record.isIrishInvestor ? 'Exit Tax Paid' : 'CGT Paid';
+    return record.taxType === 'ExitTax' ? 'Exit Tax Paid' : 'CGT Paid';
   }
 
   getLotCostBasisLabel(record: SellRecordDto): string {
-    return record.isIrishInvestor ? 'Adjusted Cost/Unit' : 'Cost Basis/Unit';
+    return record.taxType === 'ExitTax' ? 'Adjusted Cost/Unit' : 'Cost Basis/Unit';
   }
 
   private loadHistory(): void {
