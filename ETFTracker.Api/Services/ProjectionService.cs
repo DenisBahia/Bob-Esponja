@@ -369,9 +369,9 @@ public class ProjectionService : IProjectionService
                 ExcludePreExistingFromTax = dto.ExcludePreExistingFromTax,
                 SiaAnnualPercent = dto.SiaAnnualPercent,
                 StartAmount = (dto.StartAmount.HasValue && dto.StartAmount.Value > 0m) ? dto.StartAmount : null,
-                IsIrishInvestor = dto.IsIrishInvestor,
-                TaxFreeAllowancePerYear = dto.TaxFreeAllowancePerYear,
-                DeemedDisposalPercent = dto.DeemedDisposalPercent,
+                // User-default fields (IsIrishInvestor, TaxFreeAllowancePerYear, DeemedDisposalPercent) are
+                // intentionally left at their default values here. They are managed exclusively via
+                // PUT /api/user-settings/tax-defaults and must not be overwritten by projection saves.
                 DeemedDisposalEnabled = dto.DeemedDisposalEnabled,
                 CreatedAt = utcNow,
                 UpdatedAt = utcNow,
@@ -390,9 +390,9 @@ public class ProjectionService : IProjectionService
             existing.ExcludePreExistingFromTax = dto.ExcludePreExistingFromTax;
             existing.SiaAnnualPercent = dto.SiaAnnualPercent;
             existing.StartAmount = (dto.StartAmount.HasValue && dto.StartAmount.Value > 0m) ? dto.StartAmount : null;
-            existing.IsIrishInvestor = dto.IsIrishInvestor;
-            existing.TaxFreeAllowancePerYear = dto.TaxFreeAllowancePerYear;
-            existing.DeemedDisposalPercent = dto.DeemedDisposalPercent;
+            // NOTE: IsIrishInvestor, TaxFreeAllowancePerYear and DeemedDisposalPercent are user-default
+            // fields managed exclusively via PUT /api/user-settings/tax-defaults.
+            // They must NOT be updated here to prevent projection saves from altering user settings.
             existing.DeemedDisposalEnabled = dto.DeemedDisposalEnabled;
             existing.UpdatedAt = utcNow;
         }

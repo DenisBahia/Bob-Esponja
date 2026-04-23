@@ -495,12 +495,13 @@
         <div class="tax-allowance-section" *ngIf="taxSummary.annualTaxFreeAllowance > 0">
           <div class="tax-allowance-header">
             🎁 Annual Tax-Free Allowance: <strong>{{ formatCurrency(taxSummary.annualTaxFreeAllowance) }}</strong>
+            <span class="tax-allowance-note">CGT is settled at year-end — values below are year-level estimates. Use <em>Recalculate</em> to lock in final figures.</span>
           </div>
           <div class="tax-allowance-rows">
             <div class="tax-allowance-row" *ngFor="let row of taxSummary.allowanceByYear">
               <span class="tax-allowance-year">{{ row.year }}</span>
-              <span class="tax-allowance-stat">Tax due: <strong>{{ formatCurrency(row.taxBeforeAllowance) }}</strong></span>
-              <span class="tax-allowance-stat tax-allowance-deduct">Allowance: −{{ formatCurrency(row.allowanceApplied) }}</span>
+              <span class="tax-allowance-stat">Gross tax: <strong>{{ formatCurrency(row.taxBeforeAllowance) }}</strong></span>
+              <span class="tax-allowance-stat tax-allowance-deduct">Allowance saving: −{{ formatCurrency(row.allowanceApplied) }}</span>
               <span class="tax-allowance-stat tax-allowance-result">After allowance: <strong>{{ formatCurrency(row.taxAfterAllowance) }}</strong></span>
             </div>
           </div>
@@ -553,7 +554,11 @@
                     {{ formatCurrency(event.taxableGain) }}
                   </td>
                   <td>{{ event.taxRateUsed }}%</td>
-                  <td class="te-tax-amt">{{ formatCurrency(event.taxAmount) }}</td>
+                   <td class="te-tax-amt">
+                    {{ formatCurrency(event.taxAmount) }}
+                    <span *ngIf="event.eventType === 'Sell' && event.taxSubType === 'CGT' && event.status === 'Pending'"
+                          class="te-estimate-badge" title="Provisional estimate — final CGT is settled at year-end after netting all gains/losses and applying the annual allowance">~est.</span>
+                  </td>
                   <td>
                     <span class="te-status" [class.te-status--pending]="event.status === 'Pending'"
                           [class.te-status--paid]="event.status === 'Paid'">

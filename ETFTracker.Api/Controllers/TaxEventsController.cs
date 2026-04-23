@@ -56,6 +56,12 @@ public class TaxEventsController : ControllerBase
 
             var dtos = events.Select(MapToDto).ToList();
 
+            // For CGT sell events the DB stores TaxAmount=0 (year-end netting required).
+            // Set a provisional amount so the UI shows a meaningful estimate.
+            var cgtRateForProvisional = projSettings?.CgtPercent ?? 33m;
+            foreach (var dto in dtos.Where(d => d.EventType == "Sell" && d.TaxSubType == "CGT" && d.TaxAmount == 0m && d.TaxableGain > 0))
+                dto.TaxAmount = Math.Round(dto.TaxableGain * dto.TaxRateUsed / 100m, 2);
+
             // NextDeemedDisposalDate — only for Irish investors
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
             DateOnly? nextDd = null;
@@ -153,39 +159,43 @@ public class TaxEventsController : ControllerBase
                 exitTaxPots = exitTaxPots.OrderBy(p => p.Year).ThenBy(p => p.Ticker).ToList();
             }
 
-            // ── Legacy allowance calc (kept for UI backward compat) ───────────
+            // ── Allowance breakdown — sourced from CgtByYear for accuracy ────────
+            // (Individual TaxEvents store TaxAmount=0 for CGT; year-level is correct.)
             var allowanceByYear = new List<TaxYearAllowanceSummaryDto>();
             decimal totalPendingAfterAllowance;
             if (annualAllowance > 0)
             {
-                var pendingByYear = dtos.Where(e => e.Status == "Pending")
-                    .GroupBy(e => e.EventDate.Year).OrderBy(g => g.Key);
-                foreach (var yg in pendingByYear)
+                var cgtRate = projSettings?.CgtPercent ?? 33m;
+                foreach (var yr in cgtByYear)
                 {
-                    var totalGain = yg.Sum(e => e.TaxableGain);
-                    var taxBefore = yg.Sum(e => e.TaxAmount);
-                    var applied = Math.Min(annualAllowance, taxBefore);
-                    var taxAfter = Math.Round(Math.Max(0m, taxBefore - applied), 2);
+                    var taxBefore = Math.Round(Math.Max(0m, yr.NetGain) * cgtRate / 100m, 2);
+                    var allowanceSaving = Math.Round(Math.Min(annualAllowance, Math.Max(0m, yr.NetGain)) * cgtRate / 100m, 2);
                     allowanceByYear.Add(new TaxYearAllowanceSummaryDto
                     {
-                        Year = yg.Key,
-                        TotalTaxableGain = totalGain,
+                        Year = yr.Year,
+                        TotalTaxableGain = yr.NetGain,
                         TaxBeforeAllowance = taxBefore,
-                        AllowanceApplied = applied,
-                        TaxAfterAllowance = taxAfter
+                        AllowanceApplied = allowanceSaving,
+                        TaxAfterAllowance = yr.TaxDue
                     });
                 }
-                totalPendingAfterAllowance = allowanceByYear.Sum(y => y.TaxAfterAllowance);
+                // After-allowance total = CGT (from cgtByYear) + non-CGT pending events
+                var nonCgtPending = dtos.Where(e => e.Status == "Pending" && e.TaxSubType != "CGT").Sum(e => e.TaxAmount);
+                totalPendingAfterAllowance = cgtByYear.Sum(y => y.TaxDue) + nonCgtPending;
             }
             else
             {
                 totalPendingAfterAllowance = dtos.Where(e => e.Status == "Pending").Sum(e => e.TaxAmount);
             }
 
+            // TotalPending: use CgtByYear for CGT portion (accurate year-level calc) + non-CGT events
+            var nonCgtPendingTotal = dtos.Where(e => e.Status == "Pending" && e.TaxSubType != "CGT").Sum(e => e.TaxAmount);
+            var cgtPendingTotal = cgtByYear.Sum(y => y.TaxDue);  // already nets losses + allowance
+
             return Ok(new TaxSummaryDto
             {
                 TotalPaid = dtos.Where(e => e.Status == "Paid").Sum(e => e.TaxAmount),
-                TotalPending = dtos.Where(e => e.Status == "Pending").Sum(e => e.TaxAmount),
+                TotalPending = cgtPendingTotal + nonCgtPendingTotal,
                 IsIrishInvestor = isIrishInvestor,
                 NextDeemedDisposalDate = nextDd,
                 Events = dtos,

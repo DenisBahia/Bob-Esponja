@@ -2926,80 +2926,27 @@ th.sortable {
   &:hover { background: rgba(16, 185, 129, 0.2); }
 }
 
-// Tax-free allowance input hint
-.param-hint {
-  display: block;
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  margin-top: 0.25rem;
-}
-
-// Tax-free allowance overview card
-.tax-ov-card--allowance {
-  background: rgba(16, 185, 129, 0.1);
-  border: 1px solid rgba(16, 185, 129, 0.25);
-}
-
-// Tax-free allowance year breakdown
-.tax-allowance-section {
-  margin: 1rem 0 1.25rem;
-  background: rgba(16, 185, 129, 0.06);
-  border: 1px solid rgba(16, 185, 129, 0.18);
-  border-radius: 10px;
-  padding: 1rem 1.2rem;
-}
-
-.tax-allowance-header {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-  margin-bottom: 0.75rem;
-  strong { color: #10B981; }
-}
-
-.tax-allowance-rows {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
-}
-
-.tax-allowance-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 1.5rem;
-  align-items: baseline;
-  padding: 0.4rem 0.6rem;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 6px;
-  font-size: 0.84rem;
-  color: var(--text-secondary);
-  strong { color: var(--text-primary); }
-}
-
-.tax-allowance-year {
-  font-weight: 700;
-  color: var(--text-primary);
-  min-width: 3rem;
-}
-
-.tax-allowance-deduct {
+// Provisional estimate badge on CGT sell rows
+.te-estimate-badge {
+  display: inline-block;
+  margin-left: 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 600;
   color: #f89b29;
+  background: rgba(248, 155, 41, 0.12);
+  border: 1px solid rgba(248, 155, 41, 0.35);
+  border-radius: 4px;
+  padding: 0.05rem 0.3rem;
+  cursor: help;
+  vertical-align: middle;
 }
 
-.tax-allowance-result strong {
-  color: var(--positive);
-}
-
-.tax-allowance-total {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 0.6rem;
-  border-top: 1px solid rgba(16, 185, 129, 0.2);
-  font-size: 0.88rem;
-  color: var(--text-secondary);
-  strong {
-    color: var(--positive);
-    font-size: 1rem;
-  }
+// Note inside the allowance section header
+.tax-allowance-note {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  font-style: normal;
+  em { font-style: italic; }
 }
