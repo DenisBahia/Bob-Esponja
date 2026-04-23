@@ -21,6 +21,7 @@ public class SellLotBreakdownDto
     public DateOnly? DeemedDisposalDate { get; set; }
     public decimal? DeemedDisposalPricePerUnit { get; set; }
     public decimal ProfitOnLot { get; set; }
+    public bool DeemedDisposalDue { get; set; }
 }
 
 // ── Preview result (not yet saved) ────────────────────────────────────────────
@@ -30,6 +31,9 @@ public class SellPreviewDto
     public decimal TotalProfit { get; set; }
     public decimal CgtDue { get; set; }
     public decimal TaxRateUsed { get; set; }
+    /// <summary>"CGT" | "ExitTax"</summary>
+    public string TaxType { get; set; } = string.Empty;
+    public bool HasLosses { get; set; }
     public List<SellLotBreakdownDto> Lots { get; set; } = new();
 }
 
@@ -42,10 +46,17 @@ public class SellRecordDto
     public decimal SellPrice { get; set; }
     public decimal Quantity { get; set; }
     public decimal TotalProfit { get; set; }
-    public decimal CgtPaid { get; set; }
+    public decimal TaxAmountSaved { get; set; }
     public decimal TaxRateUsed { get; set; }
-    public bool IsIrishInvestor { get; set; }
+    /// <summary>"CGT" | "ExitTax"</summary>
+    public string TaxType { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public List<SellLotBreakdownDto> Lots { get; set; } = new();
 }
 
+// ── Asset-type deemed-disposal default ────────────────────────────────────────
+public class AssetTypeDeemedDisposalDefaultDto
+{
+    public string AssetType { get; set; } = string.Empty;
+    public bool DeemedDisposalDue { get; set; }
+}

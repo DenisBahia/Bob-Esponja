@@ -30,15 +30,18 @@ public class TaxEvent
     /// <summary>Units of the lot subject to this event.</summary>
     public decimal QuantityAtEvent { get; set; }
 
-    /// <summary>Cost basis per unit at the start of this period (original cost or previous deemed-disposal price).</summary>
+    /// <summary>Cost basis per unit at the start of this period.</summary>
     public decimal CostBasisPerUnit { get; set; }
 
-    /// <summary>Market price per unit at the event date (also becomes the new cost basis for the next event).</summary>
+    /// <summary>Market price per unit at the event date.</summary>
     public decimal PricePerUnitAtEvent { get; set; }
 
     public decimal TaxableGain { get; set; }
     public decimal TaxAmount { get; set; }
     public decimal TaxRateUsed { get; set; }
+
+    /// <summary>Sub-type for display and calculation routing. "CGT" | "ExitTax" | "DeemedDisposal"</summary>
+    public string? TaxSubType { get; set; }
 
     public TaxEventStatus Status { get; set; } = TaxEventStatus.Pending;
     public DateTime? PaidAt { get; set; }
@@ -50,4 +53,3 @@ public class TaxEvent
     public Transaction? BuyTransaction { get; set; }
     public SellRecord? SellRecord { get; set; }
 }
-

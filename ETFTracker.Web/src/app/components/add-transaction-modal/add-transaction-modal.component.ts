@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Output, Input, HostListener, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, CreateTransactionDto, TickerSearchResult } from '../../services/api.service';
+import { ApiService, AssetTypeDeemedDisposalDefaultDto, CreateTransactionDto, TickerSearchResult } from '../../services/api.service';
 import { debounceTime, Subject, switchMap, of } from 'rxjs';
 
 @Component({
@@ -22,6 +22,10 @@ export class AddTransactionModalComponent {
   quantity: number = 0;
   purchasePrice: number = 0;
   purchaseDate: string = new Date().toISOString().split('T')[0];
+  deemedDisposalDue: boolean = false;
+
+  // Asset-type defaults cache
+  private assetTypeDefaults: AssetTypeDeemedDisposalDefaultDto[] = [];
 
   // Search
   searchResults: TickerSearchResult[] = [];
@@ -63,6 +67,14 @@ export class AddTransactionModalComponent {
         this.cdr.markForCheck();
       }
     });
+
+    // Pre-load asset-type defaults if Irish investor
+    if (this.isIrishInvestor) {
+      this.apiService.getAssetTypeDefaults().subscribe({
+        next: (defaults) => { this.assetTypeDefaults = defaults; },
+        error: () => {}
+      });
+    }
   }
 
   onTickerChange(value: string): void {
@@ -75,6 +87,13 @@ export class AddTransactionModalComponent {
     this.selectedResult = result;
     this.showDropdown = false;
     this.searchResults = [];
+    // Pre-fill deemedDisposalDue from asset-type defaults
+    if (this.isIrishInvestor && result.quoteType) {
+      const def = this.assetTypeDefaults.find(
+        d => d.assetType.toUpperCase() === result.quoteType!.toUpperCase()
+      );
+      this.deemedDisposalDue = def?.deemedDisposalDue ?? false;
+    }
     this.cdr.markForCheck();
   }
 
@@ -103,11 +122,20 @@ export class AddTransactionModalComponent {
       purchasePrice: this.purchasePrice,
       purchaseDate: this.purchaseDate,
       isIrishInvestor: this.isIrishInvestor,
-      taxRate: this.taxRate
+      taxRate: this.taxRate,
+      deemedDisposalDue: this.isIrishInvestor ? this.deemedDisposalDue : false,
+      assetType: this.selectedResult?.quoteType ?? null
     };
 
     this.apiService.addTransaction(transaction).subscribe({
       next: () => {
+        // Persist the asset-type default preference for next time
+        if (this.isIrishInvestor && this.selectedResult?.quoteType) {
+          this.apiService.upsertAssetTypeDefault({
+            assetType: this.selectedResult.quoteType,
+            deemedDisposalDue: this.deemedDisposalDue
+          }).subscribe({ error: () => {} });
+        }
         this.loading = false;
         this.cdr.markForCheck();
         this.transactionAdded.emit();
@@ -167,5 +195,4 @@ export class AddTransactionModalComponent {
     }
   }
 }
-
 

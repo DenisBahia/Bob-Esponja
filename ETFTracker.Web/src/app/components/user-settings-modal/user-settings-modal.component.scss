@@ -203,6 +203,44 @@
   padding: 2px 6px;
 }
 
+.badge-info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: #60a5fa;
+  cursor: help;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+
+  &:hover { opacity: 1; }
+}
+
+.badge-future {
+  font-size: 0.7rem;
+  font-weight: 500;
+  background: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+.settings-divider {
+  border: none;
+  border-top: 1px solid rgba(229, 231, 235, 0.1);
+  margin: 20px 0 16px;
+}
+
+.section-sub-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #a5b4fc;
+  margin: 0 0 14px;
+}
+
 // ── Messages ─────────────────────────────────────────────────────────────────
 
 .msg-error {

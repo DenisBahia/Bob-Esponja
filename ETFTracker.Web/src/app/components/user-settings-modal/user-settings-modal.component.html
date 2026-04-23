@@ -41,7 +41,9 @@
       <!-- Irish investor fields -->
       <ng-container *ngIf="defaults.isIrishInvestor">
         <div class="field-row">
-          <label for="exitTax">Exit Tax %</label>
+          <label for="exitTax">CGT / Exit Tax %
+            <span class="badge-info" title="Exit Tax applies to ETFs and funds subject to deemed disposal. For other assets it is called CGT and works identically.">ⓘ</span>
+          </label>
           <div class="field-hint">Applied when you sell a holding. Editable at point-of-sale.</div>
           <input id="exitTax" type="number" min="0" max="100" step="0.5"
                  [(ngModel)]="defaults.exitTaxPercent" />
@@ -53,14 +55,17 @@
             <span class="badge-locked">🔒 fixed</span>
           </label>
           <div class="field-hint">
-            Always used for automatic 8-year deemed disposal events. Cannot be changed at point-of-use.
+            Always used for automatic 8-year deemed disposal events. Only applied to buys you flag as deemed disposal due (e.g. ETFs and funds). Can be set per buy.
           </div>
           <input id="deemedDisposal" type="number" min="0" max="100" step="0.5"
                  [(ngModel)]="defaults.deemedDisposalPercent" />
         </div>
 
+        <hr class="settings-divider" />
+        <div class="section-sub-title">SIA — Planned for 2027</div>
+
         <div class="field-row">
-          <label for="sia">SIA Annual %</label>
+          <label for="sia">SIA Annual % <span class="badge-future">(probably from 2027 on)</span></label>
           <div class="field-hint">Standard Investment Account annual charge on total portfolio value. 0 = disabled.</div>
           <input id="sia" type="number" min="0" max="100" step="0.5"
                  [(ngModel)]="defaults.siaAnnualPercent" />

@@ -25,6 +25,8 @@ export interface HoldingDto {
   ytdMetrics: PeriodMetrics;
   totalTaxPaid: number;
   totalTaxPending: number;
+  totalExitTaxPending: number;
+  totalCgtPending: number;
   availableQuantity: number;
   nextDeemedDisposalDate: string | null;
 }
@@ -62,6 +64,8 @@ export interface CreateTransactionDto {
   purchaseDate: string;
   isIrishInvestor: boolean;
   taxRate: number;
+  deemedDisposalDue: boolean;
+  assetType?: string | null;
 }
 
 export interface UpdateTransactionDto {
@@ -101,6 +105,8 @@ export interface ProjectionSettingsDto {
   taxFreeAllowancePerYear: number;
   /** Tax rate for 8-year deemed disposal events. Always from user defaults. */
   deemedDisposalPercent: number;
+  /** When false, deemed disposal loop is skipped in projection. */
+  deemedDisposalEnabled: boolean;
 }
 
 // ── User Tax Defaults ─────────────────────────────────────────────────────────
@@ -213,7 +219,6 @@ export interface SellRequestDto {
   isIrishInvestor: boolean;
   taxRate: number;
 }
-
 export interface SellLotBreakdownDto {
   buyTransactionId: number;
   buyDate: string;
@@ -223,6 +228,7 @@ export interface SellLotBreakdownDto {
   deemedDisposalDate: string | null;
   deemedDisposalPricePerUnit: number | null;
   profitOnLot: number;
+  deemedDisposalDue: boolean;
 }
 
 export interface SellPreviewDto {
@@ -230,6 +236,8 @@ export interface SellPreviewDto {
   totalProfit: number;
   cgtDue: number;
   taxRateUsed: number;
+  taxType: string;  // "CGT" | "ExitTax"
+  hasLosses: boolean;
   lots: SellLotBreakdownDto[];
 }
 
@@ -240,9 +248,9 @@ export interface SellRecordDto {
   sellPrice: number;
   quantity: number;
   totalProfit: number;
-  cgtPaid: number;
+  taxAmountSaved: number;
   taxRateUsed: number;
-  isIrishInvestor: boolean;
+  taxType: string;  // "CGT" | "ExitTax"
   createdAt: string;
   lots: SellLotBreakdownDto[];
 }
@@ -257,6 +265,7 @@ export interface TaxEventDto {
   buyTransactionId: number | null;
   sellRecordId: number | null;
   eventType: 'Sell' | 'DeemedDisposal';
+  taxSubType: string | null;  // "CGT" | "ExitTax" | "DeemedDisposal"
   eventDate: string;         // "YYYY-MM-DD"
   quantityAtEvent: number;
   costBasisPerUnit: number;
@@ -269,12 +278,50 @@ export interface TaxEventDto {
   createdAt: string;
 }
 
+export interface TaxYearSummaryDto {
+  year: number;
+  totalProfits: number;
+  totalLosses: number;
+  netGain: number;
+  taxFreeAllowance: number;
+  taxableGain: number;
+  taxDue: number;
+  status: string;
+}
+
+export interface ExitTaxPotDto {
+  holdingId: number;
+  ticker: string;
+  year: number;
+  totalProfits: number;
+  totalLosses: number;
+  deemedDisposalCreditUsed: number;
+  netTaxableGain: number;
+  taxDue: number;
+  status: string;
+}
+
+export interface RecalculateTaxYearResultDto {
+  year: number;
+  cgtTaxDue: number;
+  exitTaxPots: ExitTaxPotDto[];
+  totalTaxDue: number;
+}
+
+export interface AssetTypeDeemedDisposalDefaultDto {
+  assetType: string;
+  deemedDisposalDue: boolean;
+}
+
 export interface TaxSummaryDto {
   totalPending: number;
   totalPaid: number;
+  isIrishInvestor: boolean;
   nextDeemedDisposalDate: string | null;
   events: TaxEventDto[];
-  // Tax-free allowance
+  cgtByYear: TaxYearSummaryDto[];
+  exitTaxPots: ExitTaxPotDto[];
+  // Legacy
   annualTaxFreeAllowance: number;
   allowanceByYear: TaxYearAllowanceSummaryDto[];
   totalPendingAfterAllowance: number;
@@ -471,6 +518,20 @@ export class ApiService {
       ? `${this.apiUrl}/tax-events/mark-all-paid?year=${year}`
       : `${this.apiUrl}/tax-events/mark-all-paid`;
     return this.http.put<{ marked: number }>(url, {});
+  }
+
+  recalculateTaxYear(year: number): Observable<RecalculateTaxYearResultDto> {
+    return this.http.post<RecalculateTaxYearResultDto>(`${this.apiUrl}/tax-events/recalculate-year?year=${year}`, {});
+  }
+
+  // ── Asset-Type Defaults ─────────────────────────────────────────────────────
+
+  getAssetTypeDefaults(): Observable<AssetTypeDeemedDisposalDefaultDto[]> {
+    return this.http.get<AssetTypeDeemedDisposalDefaultDto[]>(`${this.apiUrl}/asset-type-defaults`);
+  }
+
+  upsertAssetTypeDefault(dto: AssetTypeDeemedDisposalDefaultDto): Observable<AssetTypeDeemedDisposalDefaultDto> {
+    return this.http.post<AssetTypeDeemedDisposalDefaultDto>(`${this.apiUrl}/asset-type-defaults`, dto);
   }
 
   // ── User Settings ──────────────────────────────────────────────────────────

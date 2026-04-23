@@ -31,6 +31,7 @@ builder.Services.AddScoped<ISharingContextService, SharingContextService>();
 builder.Services.AddScoped<IGoalService, GoalService>();
 builder.Services.AddScoped<ISellService, SellService>();
 builder.Services.AddScoped<IDeemedDisposalService, DeemedDisposalService>();
+builder.Services.AddScoped<IAssetTypeDeemedDisposalDefaultService, AssetTypeDeemedDisposalDefaultService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient<PriceService>();
 

@@ -25,6 +25,8 @@ public class ProjectionSettings
     /// <summary>Tax rate applied to 8-year deemed disposal events (Irish investors only).
     /// Defaults to ExitTaxPercent when not explicitly set. User cannot override this at point-of-use.</summary>
     public decimal DeemedDisposalPercent { get; set; } = 41m;
+    /// <summary>When false, deemed disposal loop is skipped in projection. Controlled by toggle in UI.</summary>
+    public bool DeemedDisposalEnabled { get; set; } = true;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 

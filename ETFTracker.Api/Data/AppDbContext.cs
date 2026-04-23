@@ -20,6 +20,8 @@ public class AppDbContext : DbContext
     public DbSet<SellRecord> SellRecords { get; set; }
     public DbSet<SellLotAllocation> SellLotAllocations { get; set; }
     public DbSet<TaxEvent> TaxEvents { get; set; }
+    public DbSet<AssetTypeDeemedDisposalDefault> AssetTypeDeemedDisposalDefaults { get; set; }
+    public DbSet<AnnualTaxSummary> AnnualTaxSummaries { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -119,6 +121,8 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Transaction>()
             .Property(t => t.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
         modelBuilder.Entity<Transaction>()
+            .Property(t => t.DeemedDisposalDue).HasColumnName("deemed_disposal_due").HasDefaultValue(false);
+        modelBuilder.Entity<Transaction>()
             .HasIndex(t => t.HoldingId);
         modelBuilder.Entity<Transaction>()
             .HasIndex(t => t.PurchaseDate);
@@ -183,6 +187,8 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<ProjectionSettings>()
             .Property(ps => ps.DeemedDisposalPercent).HasColumnName("deemed_disposal_percent").HasColumnType("decimal(5,2)").HasDefaultValue(41m);
         modelBuilder.Entity<ProjectionSettings>()
+            .Property(ps => ps.DeemedDisposalEnabled).HasColumnName("deemed_disposal_enabled").HasDefaultValue(true);
+        modelBuilder.Entity<ProjectionSettings>()
             .Property(ps => ps.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
         modelBuilder.Entity<ProjectionSettings>()
             .Property(ps => ps.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
@@ -211,6 +217,9 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.ExitTaxPercent).HasColumnName("exit_tax_percent").HasColumnType("decimal(5,2)");
         modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.ExcludePreExistingFromTax).HasColumnName("exclude_pre_existing_from_tax").HasDefaultValue(false);
         modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.SiaAnnualPercent).HasColumnName("sia_annual_percent").HasColumnType("decimal(5,2)").HasDefaultValue(0m);
+        modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.IsIrishInvestor).HasColumnName("is_irish_investor").HasDefaultValue(false);
+        modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.TaxFreeAllowancePerYear).HasColumnName("tax_free_allowance_per_year").HasColumnType("decimal(15,2)").HasDefaultValue(0m);
+        modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.DeemedDisposalPercent).HasColumnName("deemed_disposal_percent").HasColumnType("decimal(5,2)").HasDefaultValue(41m);
         modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.DataPointsJson).HasColumnName("data_points_json").HasColumnType("text");
         modelBuilder.Entity<ProjectionVersion>().HasIndex(pv => pv.UserId);
         modelBuilder.Entity<ProjectionVersion>()
@@ -219,125 +228,49 @@ public class AppDbContext : DbContext
             .HasForeignKey(pv => pv.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // ProfileShare
-        modelBuilder.Entity<ProfileShare>().ToTable("profile_shares");
-        modelBuilder.Entity<ProfileShare>().HasKey(s => s.Id);
-        modelBuilder.Entity<ProfileShare>().Property(s => s.Id).HasColumnName("id");
-        modelBuilder.Entity<ProfileShare>().Property(s => s.OwnerId).HasColumnName("owner_id");
-        modelBuilder.Entity<ProfileShare>().Property(s => s.GuestEmail).HasColumnName("guest_email").HasMaxLength(256);
-        modelBuilder.Entity<ProfileShare>().Property(s => s.GuestUserId).HasColumnName("guest_user_id");
-        modelBuilder.Entity<ProfileShare>().Property(s => s.IsReadOnly).HasColumnName("is_read_only").HasDefaultValue(true);
-        modelBuilder.Entity<ProfileShare>().Property(s => s.Status).HasColumnName("status").HasDefaultValue(ShareStatus.Pending);
-        modelBuilder.Entity<ProfileShare>().Property(s => s.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
-        modelBuilder.Entity<ProfileShare>().Property(s => s.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
-        modelBuilder.Entity<ProfileShare>()
-            .HasIndex(s => new { s.OwnerId, s.GuestEmail })
-            .IsUnique();
-
-        // SellRecord
-        modelBuilder.Entity<SellRecord>().ToTable("sell_records");
-        modelBuilder.Entity<SellRecord>().HasKey(sr => sr.Id);
-        modelBuilder.Entity<SellRecord>().Property(sr => sr.Id).HasColumnName("id");
-        modelBuilder.Entity<SellRecord>().Property(sr => sr.HoldingId).HasColumnName("holding_id");
-        modelBuilder.Entity<SellRecord>().Property(sr => sr.SellDate).HasColumnName("sell_date").HasColumnType("date");
-        modelBuilder.Entity<SellRecord>().Property(sr => sr.SellPrice).HasColumnName("sell_price").HasColumnType("decimal(12,4)");
-        modelBuilder.Entity<SellRecord>().Property(sr => sr.Quantity).HasColumnName("quantity").HasColumnType("decimal(12,4)");
-        modelBuilder.Entity<SellRecord>().Property(sr => sr.TotalProfit).HasColumnName("total_profit").HasColumnType("decimal(12,2)");
-        modelBuilder.Entity<SellRecord>().Property(sr => sr.CgtPaid).HasColumnName("cgt_paid").HasColumnType("decimal(12,2)");
-        modelBuilder.Entity<SellRecord>().Property(sr => sr.TaxRateUsed).HasColumnName("tax_rate_used").HasColumnType("decimal(5,2)");
-        modelBuilder.Entity<SellRecord>().Property(sr => sr.IsIrishInvestor).HasColumnName("is_irish_investor");
-        modelBuilder.Entity<SellRecord>().Property(sr => sr.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
-        modelBuilder.Entity<SellRecord>().HasIndex(sr => sr.HoldingId);
-        modelBuilder.Entity<SellRecord>()
-            .HasOne(sr => sr.Holding)
-            .WithMany(h => h.SellRecords)
-            .HasForeignKey(sr => sr.HoldingId)
+        // AssetTypeDeemedDisposalDefault
+        modelBuilder.Entity<AssetTypeDeemedDisposalDefault>().ToTable("asset_type_deemed_disposal_defaults");
+        modelBuilder.Entity<AssetTypeDeemedDisposalDefault>().HasKey(a => a.Id);
+        modelBuilder.Entity<AssetTypeDeemedDisposalDefault>().Property(a => a.Id).HasColumnName("id");
+        modelBuilder.Entity<AssetTypeDeemedDisposalDefault>().Property(a => a.UserId).HasColumnName("user_id");
+        modelBuilder.Entity<AssetTypeDeemedDisposalDefault>().Property(a => a.AssetType).HasColumnName("asset_type").HasMaxLength(50);
+        modelBuilder.Entity<AssetTypeDeemedDisposalDefault>().Property(a => a.DeemedDisposalDue).HasColumnName("deemed_disposal_due").HasDefaultValue(false);
+        modelBuilder.Entity<AssetTypeDeemedDisposalDefault>().Property(a => a.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+        modelBuilder.Entity<AssetTypeDeemedDisposalDefault>().HasIndex(a => new { a.UserId, a.AssetType }).IsUnique();
+        modelBuilder.Entity<AssetTypeDeemedDisposalDefault>()
+            .HasOne(a => a.User)
+            .WithMany()
+            .HasForeignKey(a => a.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // SellLotAllocation
-        modelBuilder.Entity<SellLotAllocation>().ToTable("sell_lot_allocations");
-        modelBuilder.Entity<SellLotAllocation>().HasKey(sla => sla.Id);
-        modelBuilder.Entity<SellLotAllocation>().Property(sla => sla.Id).HasColumnName("id");
-        modelBuilder.Entity<SellLotAllocation>().Property(sla => sla.SellRecordId).HasColumnName("sell_record_id");
-        modelBuilder.Entity<SellLotAllocation>().Property(sla => sla.BuyTransactionId).HasColumnName("buy_transaction_id");
-        modelBuilder.Entity<SellLotAllocation>().Property(sla => sla.QuantityConsumed).HasColumnName("quantity_consumed").HasColumnType("decimal(12,4)");
-        modelBuilder.Entity<SellLotAllocation>().Property(sla => sla.OriginalCostPerUnit).HasColumnName("original_cost_per_unit").HasColumnType("decimal(12,4)");
-        modelBuilder.Entity<SellLotAllocation>().Property(sla => sla.AdjustedCostPerUnit).HasColumnName("adjusted_cost_per_unit").HasColumnType("decimal(12,4)");
-        modelBuilder.Entity<SellLotAllocation>().Property(sla => sla.DeemedDisposalDate).HasColumnName("deemed_disposal_date").HasColumnType("date").IsRequired(false);
-        modelBuilder.Entity<SellLotAllocation>().Property(sla => sla.DeemedDisposalPricePerUnit).HasColumnName("deemed_disposal_price_per_unit").HasColumnType("decimal(12,4)").IsRequired(false);
-        modelBuilder.Entity<SellLotAllocation>().Property(sla => sla.ProfitOnLot).HasColumnName("profit_on_lot").HasColumnType("decimal(12,2)");
-        modelBuilder.Entity<SellLotAllocation>().Property(sla => sla.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
-        modelBuilder.Entity<SellLotAllocation>().HasIndex(sla => sla.SellRecordId);
-        modelBuilder.Entity<SellLotAllocation>().HasIndex(sla => sla.BuyTransactionId);
-        modelBuilder.Entity<SellLotAllocation>()
-            .HasOne(sla => sla.SellRecord)
-            .WithMany(sr => sr.LotAllocations)
-            .HasForeignKey(sla => sla.SellRecordId)
+        // AnnualTaxSummary
+        modelBuilder.Entity<AnnualTaxSummary>().ToTable("annual_tax_summary");
+        modelBuilder.Entity<AnnualTaxSummary>().HasKey(a => a.Id);
+        modelBuilder.Entity<AnnualTaxSummary>().Property(a => a.Id).HasColumnName("id");
+        modelBuilder.Entity<AnnualTaxSummary>().Property(a => a.UserId).HasColumnName("user_id");
+        modelBuilder.Entity<AnnualTaxSummary>().Property(a => a.TaxYear).HasColumnName("tax_year");
+        modelBuilder.Entity<AnnualTaxSummary>().Property(a => a.TaxType).HasColumnName("tax_type").HasMaxLength(20);
+        modelBuilder.Entity<AnnualTaxSummary>().Property(a => a.HoldingId).HasColumnName("holding_id").IsRequired(false);
+        modelBuilder.Entity<AnnualTaxSummary>().Property(a => a.TotalProfits).HasColumnName("total_profits").HasColumnType("decimal(12,2)");
+        modelBuilder.Entity<AnnualTaxSummary>().Property(a => a.TotalLosses).HasColumnName("total_losses").HasColumnType("decimal(12,2)");
+        modelBuilder.Entity<AnnualTaxSummary>().Property(a => a.NetGain).HasColumnName("net_gain").HasColumnType("decimal(12,2)");
+        modelBuilder.Entity<AnnualTaxSummary>().Property(a => a.AllowanceApplied).HasColumnName("allowance_applied").HasColumnType("decimal(12,2)");
+        modelBuilder.Entity<AnnualTaxSummary>().Property(a => a.DeemedDisposalCredit).HasColumnName("deemed_disposal_credit").HasColumnType("decimal(12,2)");
+        modelBuilder.Entity<AnnualTaxSummary>().Property(a => a.TaxableGain).HasColumnName("taxable_gain").HasColumnType("decimal(12,2)");
+        modelBuilder.Entity<AnnualTaxSummary>().Property(a => a.TaxDue).HasColumnName("tax_due").HasColumnType("decimal(12,2)");
+        modelBuilder.Entity<AnnualTaxSummary>().Property(a => a.TaxRateUsed).HasColumnName("tax_rate_used").HasColumnType("decimal(5,2)");
+        modelBuilder.Entity<AnnualTaxSummary>().Property(a => a.Status).HasColumnName("status").HasMaxLength(20).HasDefaultValue("Pending");
+        modelBuilder.Entity<AnnualTaxSummary>().Property(a => a.RecalculatedAt).HasColumnName("recalculated_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+        modelBuilder.Entity<AnnualTaxSummary>()
+            .HasOne(a => a.User)
+            .WithMany()
+            .HasForeignKey(a => a.UserId)
             .OnDelete(DeleteBehavior.Cascade);
-        modelBuilder.Entity<SellLotAllocation>()
-            .HasOne(sla => sla.BuyTransaction)
+        modelBuilder.Entity<AnnualTaxSummary>()
+            .HasOne(a => a.Holding)
             .WithMany()
-            .HasForeignKey(sla => sla.BuyTransactionId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        // TaxEvent
-        modelBuilder.Entity<TaxEvent>().ToTable("tax_events");
-        modelBuilder.Entity<TaxEvent>().HasKey(te => te.Id);
-        modelBuilder.Entity<TaxEvent>().Property(te => te.Id).HasColumnName("id");
-        modelBuilder.Entity<TaxEvent>().Property(te => te.UserId).HasColumnName("user_id");
-        modelBuilder.Entity<TaxEvent>().Property(te => te.HoldingId).HasColumnName("holding_id");
-        modelBuilder.Entity<TaxEvent>().Property(te => te.BuyTransactionId).HasColumnName("buy_transaction_id").IsRequired(false);
-        modelBuilder.Entity<TaxEvent>().Property(te => te.SellRecordId).HasColumnName("sell_record_id").IsRequired(false);
-        modelBuilder.Entity<TaxEvent>().Property(te => te.EventType).HasColumnName("event_type").HasConversion<string>();
-        modelBuilder.Entity<TaxEvent>().Property(te => te.EventDate).HasColumnName("event_date").HasColumnType("date");
-        modelBuilder.Entity<TaxEvent>().Property(te => te.QuantityAtEvent).HasColumnName("quantity_at_event").HasColumnType("decimal(12,4)");
-        modelBuilder.Entity<TaxEvent>().Property(te => te.CostBasisPerUnit).HasColumnName("cost_basis_per_unit").HasColumnType("decimal(12,4)");
-        modelBuilder.Entity<TaxEvent>().Property(te => te.PricePerUnitAtEvent).HasColumnName("price_per_unit_at_event").HasColumnType("decimal(12,4)");
-        modelBuilder.Entity<TaxEvent>().Property(te => te.TaxableGain).HasColumnName("taxable_gain").HasColumnType("decimal(12,2)");
-        modelBuilder.Entity<TaxEvent>().Property(te => te.TaxAmount).HasColumnName("tax_amount").HasColumnType("decimal(12,2)");
-        modelBuilder.Entity<TaxEvent>().Property(te => te.TaxRateUsed).HasColumnName("tax_rate_used").HasColumnType("decimal(5,2)");
-        modelBuilder.Entity<TaxEvent>().Property(te => te.Status).HasColumnName("status").HasConversion<string>().HasDefaultValue(TaxEventStatus.Pending);
-        modelBuilder.Entity<TaxEvent>().Property(te => te.PaidAt).HasColumnName("paid_at").IsRequired(false);
-        modelBuilder.Entity<TaxEvent>().Property(te => te.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
-        modelBuilder.Entity<TaxEvent>().HasIndex(te => te.UserId);
-        modelBuilder.Entity<TaxEvent>().HasIndex(te => te.HoldingId);
-        // Unique: one deemed-disposal event per (buy transaction, anniversary date)
-        modelBuilder.Entity<TaxEvent>().HasIndex(te => new { te.BuyTransactionId, te.EventDate })
-            .HasFilter("buy_transaction_id IS NOT NULL")
-            .IsUnique();
-        modelBuilder.Entity<TaxEvent>()
-            .HasOne(te => te.Holding)
-            .WithMany(h => h.TaxEvents)
-            .HasForeignKey(te => te.HoldingId)
-            .OnDelete(DeleteBehavior.Cascade);
-        modelBuilder.Entity<TaxEvent>()
-            .HasOne(te => te.User)
-            .WithMany()
-            .HasForeignKey(te => te.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
-        modelBuilder.Entity<TaxEvent>()
-            .HasOne(te => te.BuyTransaction)
-            .WithMany()
-            .HasForeignKey(te => te.BuyTransactionId)
-            .OnDelete(DeleteBehavior.SetNull);
-        modelBuilder.Entity<TaxEvent>()
-            .HasOne(te => te.SellRecord)
-            .WithMany()
-            .HasForeignKey(te => te.SellRecordId)
-            .OnDelete(DeleteBehavior.SetNull);
-
-        // UserGoal — one goal per user (upsert semantics)
-        modelBuilder.Entity<UserGoal>().ToTable("user_goals");        modelBuilder.Entity<UserGoal>().HasKey(g => g.Id);
-        modelBuilder.Entity<UserGoal>().Property(g => g.Id).HasColumnName("id");
-        modelBuilder.Entity<UserGoal>().Property(g => g.UserId).HasColumnName("user_id");
-        modelBuilder.Entity<UserGoal>().Property(g => g.SourceVersionId).HasColumnName("source_version_id").IsRequired(false);
-        modelBuilder.Entity<UserGoal>().Property(g => g.SavedAt).HasColumnName("saved_at");
-        modelBuilder.Entity<UserGoal>().Property(g => g.GoalPointsJson).HasColumnName("goal_points_json").HasColumnType("text");
-        modelBuilder.Entity<UserGoal>().HasIndex(g => g.UserId).IsUnique();
-        modelBuilder.Entity<UserGoal>()
-            .HasOne(g => g.User)
-            .WithMany()
-            .HasForeignKey(g => g.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .HasForeignKey(a => a.HoldingId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .IsRequired(false);
     }
 }

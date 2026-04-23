@@ -25,6 +25,8 @@ public class ProjectionSettingsDto
     public decimal TaxFreeAllowancePerYear { get; set; }
     /// <summary>Tax rate for 8-year deemed disposal events. Always from user defaults, not editable at point-of-use.</summary>
     public decimal DeemedDisposalPercent { get; set; }
+    /// <summary>When false, deemed disposal loop is skipped in projection. Controlled by toggle in UI.</summary>
+    public bool DeemedDisposalEnabled { get; set; } = true;
 }
 
 public class ProjectionDataPointDto

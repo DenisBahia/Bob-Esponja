@@ -45,9 +45,9 @@ public class DeemedDisposalService : IDeemedDisposalService
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var threshold = today.AddYears(-8);
 
-        // Load buy transactions that are old enough to have triggered at least one 8-year event
+        // Only process transactions where deemed_disposal_due = true
         var transactions = await _db.Transactions
-            .Where(t => t.HoldingId == holdingId && t.PurchaseDate <= threshold)
+            .Where(t => t.HoldingId == holdingId && t.PurchaseDate <= threshold && t.DeemedDisposalDue)
             .OrderBy(t => t.PurchaseDate)
             .ToListAsync(ct);
 
@@ -130,6 +130,7 @@ public class DeemedDisposalService : IDeemedDisposalService
                     TaxableGain = taxableGain,
                     TaxAmount = taxAmount,
                     TaxRateUsed = taxRate,
+                    TaxSubType = "DeemedDisposal",
                     Status = TaxEventStatus.Pending,
                     CreatedAt = utcNow
                 };

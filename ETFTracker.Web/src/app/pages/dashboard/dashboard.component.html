@@ -369,20 +369,32 @@
       <div class="tax-summary-header">
         <div>
           <h2>🧾 Tax Summary</h2>
-          <p class="tax-summary-sub">All taxable events — deemed disposals and sells — across your portfolio</p>
+          <p class="tax-summary-sub" *ngIf="isIrishInvestor">All taxable events — deemed disposals and sells — across your portfolio</p>
+          <p class="tax-summary-sub" *ngIf="!isIrishInvestor">All taxable sell events across your portfolio</p>
         </div>
-        <div class="tax-summary-actions" *ngIf="!sharingCtx.isReadOnly() && taxSummary && taxSummary.totalPending > 0">
-          <button class="btn-mark-all"
-                  [disabled]="taxMarkingAllYear !== null"
-                  (click)="onMarkAllPaid(getTaxCurrentYear())">
-            {{ taxMarkingAllYear !== null ? 'Marking…' : 'Mark ' + getTaxCurrentYear() + ' as Paid' }}
-          </button>
-          <button class="btn-mark-all btn-mark-all--all"
-                  [disabled]="taxMarkingAllYear !== null"
-                  (click)="onMarkAllPaid()">
-            Mark All as Paid
+        <div class="tax-summary-actions" *ngIf="!sharingCtx.isReadOnly()">
+          <div class="pending-header" *ngIf="taxSummary && taxSummary.totalPending > 0">
+            <button class="btn-mark-all"
+                    [disabled]="taxMarkingAllYear !== null"
+                    (click)="onMarkAllPaid(getTaxCurrentYear())">
+              {{ taxMarkingAllYear !== null ? 'Marking…' : 'Mark ' + getTaxCurrentYear() + ' as Paid' }}
+            </button>
+            <button class="btn-mark-all btn-mark-all--all"
+                    [disabled]="taxMarkingAllYear !== null"
+                    (click)="onMarkAllPaid()">
+              Mark All as Paid
+            </button>
+          </div>
+          <button class="btn-recalc" (click)="recalculateTaxYear(currentYear)"
+                  [disabled]="recalculating" title="Recalculate tax due for {{ currentYear }}">
+            {{ recalculating ? '…' : '🔄 Recalculate ' + currentYear }}
           </button>
         </div>
+      </div>
+
+      <!-- Post-recalculate banner -->
+      <div class="tax-recalc-banner" *ngIf="taxBannerMessage" (click)="taxBannerMessage = null">
+        💡 {{ taxBannerMessage }} <span class="dismiss">✕</span>
       </div>
 
       <div *ngIf="taxSummaryLoading" class="tax-summary-loading">Loading tax events…</div>
@@ -413,6 +425,72 @@
           </div>
         </div>
 
+        <!-- ── CGT by Year table ───────────────────────────────────────── -->
+        <div class="tax-year-section" *ngIf="taxSummary.cgtByYear && taxSummary.cgtByYear.length > 0">
+          <h3 class="tax-section-title">CGT by Year</h3>
+          <table class="tax-year-table">
+            <thead>
+              <tr>
+                <th>Year</th>
+                <th>Profits</th>
+                <th>Losses</th>
+                <th>Net Gain</th>
+                <th *ngIf="!isIrishInvestor">Allowance</th>
+                <th>Taxable Gain</th>
+                <th>Tax Due</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of taxSummary.cgtByYear">
+                <td>{{ row.year }}</td>
+                <td class="positive">{{ formatCurrency(row.totalProfits) }}</td>
+                <td class="negative">{{ row.totalLosses < 0 ? formatCurrency(row.totalLosses) : '—' }}</td>
+                <td [class.negative]="row.netGain < 0" [class.positive]="row.netGain > 0">{{ formatCurrency(row.netGain) }}</td>
+                <td *ngIf="!isIrishInvestor">{{ row.taxFreeAllowance > 0 ? formatCurrency(row.taxFreeAllowance) : '—' }}</td>
+                <td>{{ formatCurrency(row.taxableGain) }}</td>
+                <td class="te-tax-amt">{{ formatCurrency(row.taxDue) }}</td>
+                <td><span class="te-status te-status--pending">{{ row.status }}</span></td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="tax-note" *ngIf="isIrishInvestor">CGT losses can offset profits within the same year. They do not carry forward.</p>
+        </div>
+
+        <!-- ── Exit Tax pots (Irish only) ─────────────────────────────── -->
+        <div class="tax-year-section" *ngIf="isIrishInvestor && taxSummary.exitTaxPots && taxSummary.exitTaxPots.length > 0">
+          <h3 class="tax-section-title">
+            Exit Tax Pots
+            <span class="tooltip-icon" title="Exit Tax losses within this asset and year can offset gains from the same asset in the same year. They cannot reduce Exit Tax on other assets.">ⓘ</span>
+          </h3>
+          <table class="tax-year-table">
+            <thead>
+              <tr>
+                <th>Asset</th>
+                <th>Year</th>
+                <th>Profits</th>
+                <th>Losses</th>
+                <th>DD Credit</th>
+                <th>Taxable Gain</th>
+                <th>Tax Due</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let pot of taxSummary.exitTaxPots">
+                <td>{{ pot.ticker }}</td>
+                <td>{{ pot.year }}</td>
+                <td class="positive">{{ formatCurrency(pot.totalProfits) }}</td>
+                <td class="negative">{{ pot.totalLosses < 0 ? formatCurrency(pot.totalLosses) : '—' }}</td>
+                <td>{{ pot.deemedDisposalCreditUsed > 0 ? formatCurrency(pot.deemedDisposalCreditUsed) : '—' }}</td>
+                <td>{{ formatCurrency(pot.netTaxableGain) }}</td>
+                <td class="te-tax-amt">{{ formatCurrency(pot.taxDue) }}</td>
+                <td><span class="te-status te-status--pending">{{ pot.status }}</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
         <!-- Tax-free allowance year breakdown — shown only when allowance is active -->
         <div class="tax-allowance-section" *ngIf="taxSummary.annualTaxFreeAllowance > 0">
           <div class="tax-allowance-header">
@@ -434,10 +512,11 @@
 
         <!-- Empty state -->
         <div class="tax-empty" *ngIf="taxSummary.events.length === 0">
-          <p>No tax events recorded yet. Events appear automatically when sells are made or 8-year deemed disposal rules are triggered.</p>
+          <p *ngIf="isIrishInvestor">No tax events recorded yet. Events appear automatically when sells are made or 8-year deemed disposal rules are triggered.</p>
+          <p *ngIf="!isIrishInvestor">No tax events recorded yet. Events appear automatically when sells are made.</p>
         </div>
 
-        <!-- Per-holding groups -->
+        <!-- Per-holding groups (Deemed Disposal events) -->
         <div class="tax-holding-group" *ngFor="let group of getTaxEventsByHolding()">
           <div class="tax-holding-header">
             <strong>{{ group.ticker }}</strong>
@@ -691,9 +770,22 @@
             </div>
 
             <div class="param-group">
-              <label for="exitTax">{{ isIrishInvestor ? 'Exit Tax %' : 'CGT %' }}</label>
+              <label for="exitTax">{{ isIrishInvestor ? 'CGT / Exit Tax %' : 'CGT %' }}</label>
               <input id="exitTax" type="number" step="0.1" min="0" max="100"
                      [(ngModel)]="projectionSettings.exitTaxPercent" />
+            </div>
+
+            <!-- Deemed Disposal toggle — Irish investors only -->
+            <div class="param-group toggle-param" *ngIf="isIrishInvestor">
+              <label>
+                Deemed Disposal
+                <span class="badge-info" title="When enabled, the projection automatically applies Exit Tax every 8 years on unrealised gains. Disable to model a world without deemed disposal.">ⓘ</span>
+              </label>
+              <div class="toggle-switch" [class.active]="projectionSettings.deemedDisposalEnabled"
+                   (click)="projectionSettings.deemedDisposalEnabled = !projectionSettings.deemedDisposalEnabled">
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              </div>
+              <span class="param-hint">When on, Exit Tax is applied every 8 years on unrealised gains.</span>
             </div>
 
             <!-- Tax-Free Allowance — non-Irish investors only -->

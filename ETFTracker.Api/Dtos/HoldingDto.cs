@@ -18,16 +18,18 @@ public class HoldingDto
     public decimal TotalValue { get; set; }
     public bool PriceUnavailable { get; set; }
     public string? PriceSource { get; set; }
-    
+
     // Period metrics
     public PeriodMetrics DailyMetrics { get; set; } = new();
     public PeriodMetrics WeeklyMetrics { get; set; } = new();
     public PeriodMetrics MonthlyMetrics { get; set; } = new();
     public PeriodMetrics YtdMetrics { get; set; } = new();
 
-    // Sell / CGT summary
+    // Sell / tax summary
     public decimal TotalTaxPaid { get; set; }
     public decimal TotalTaxPending { get; set; }
+    public decimal TotalExitTaxPending { get; set; }
+    public decimal TotalCgtPending { get; set; }
     public decimal AvailableQuantity { get; set; }
     public DateOnly? NextDeemedDisposalDate { get; set; }
 }
@@ -47,4 +49,3 @@ public class DashboardDto
     public DashboardHeaderDto Header { get; set; } = new();
     public List<HoldingDto> Holdings { get; set; } = new();
 }
-

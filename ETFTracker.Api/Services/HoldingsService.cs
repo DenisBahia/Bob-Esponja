@@ -111,7 +111,9 @@ public class HoldingsService : IHoldingsService
             {
                 HoldingId = g.Key,
                 TotalPaid = g.Where(te => te.Status == TaxEventStatus.Paid).Sum(te => te.TaxAmount),
-                TotalPending = g.Where(te => te.Status == TaxEventStatus.Pending).Sum(te => te.TaxAmount)
+                TotalPending = g.Where(te => te.Status == TaxEventStatus.Pending).Sum(te => te.TaxAmount),
+                TotalExitTaxPending = g.Where(te => te.Status == TaxEventStatus.Pending && te.TaxSubType == "ExitTax").Sum(te => te.TaxAmount),
+                TotalCgtPending = g.Where(te => te.Status == TaxEventStatus.Pending && te.TaxSubType == "CGT").Sum(te => te.TaxAmount)
             })
             .ToDictionaryAsync(x => x.HoldingId, cancellationToken);
 
@@ -123,7 +125,7 @@ public class HoldingsService : IHoldingsService
             .Select(g => new { TxnId = g.Key, Consumed = g.Sum(sla => sla.QuantityConsumed) })
             .ToDictionaryAsync(x => x.TxnId, x => x.Consumed, cancellationToken);
 
-        // Next deemed-disposal date per holding (earliest future anniversary across lots with remaining quantity)
+        // Next deemed-disposal date per holding (only for holdings that have at least one buy with DeemedDisposalDue = true)
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var nextDeemedDisposalByHolding = new Dictionary<int, DateOnly?>();
         foreach (var holding in dbHoldings)
@@ -131,6 +133,7 @@ public class HoldingsService : IHoldingsService
             DateOnly? next = null;
             foreach (var t in holding.Transactions)
             {
+                if (!t.DeemedDisposalDue) continue; // Only deemed-disposal buys attract the 8-year rule
                 // Skip fully sold lots — they no longer attract deemed disposal
                 var consumed = consumedByTxn.TryGetValue(t.Id, out var c) ? c : 0m;
                 if (t.Quantity - consumed <= 0m) continue;
@@ -189,6 +192,8 @@ public class HoldingsService : IHoldingsService
                 PriceSource = priceResult.Source,
                 TotalTaxPaid = taxEventsByHolding.TryGetValue(holding.Id, out var taxData) ? taxData.TotalPaid : 0m,
                 TotalTaxPending = taxEventsByHolding.TryGetValue(holding.Id, out var taxData2) ? taxData2.TotalPending : 0m,
+                TotalExitTaxPending = taxEventsByHolding.TryGetValue(holding.Id, out var taxData3) ? taxData3.TotalExitTaxPending : 0m,
+                TotalCgtPending = taxEventsByHolding.TryGetValue(holding.Id, out var taxData4) ? taxData4.TotalCgtPending : 0m,
                 AvailableQuantity = availableQty,
                 NextDeemedDisposalDate = nextDeemedDisposalByHolding.TryGetValue(holding.Id, out var nd) ? nd : null,
                 DailyMetrics = await CalculatePeriodMetricsAsync(holding.Ticker, holding.Quantity, 1, cancellationToken),
@@ -242,7 +247,8 @@ public class HoldingsService : IHoldingsService
                 CreatedAt = t.CreatedAt,
                 CurrentPrice = currentPrice,
                 VariationEur = variationEur,
-                VariationPercent = variationPercent
+                VariationPercent = variationPercent,
+                DeemedDisposalDue = t.DeemedDisposalDue
             };
         }).ToList();
 
@@ -287,6 +293,7 @@ public class HoldingsService : IHoldingsService
                 Quantity = dto.Quantity,
                 PurchasePrice = dto.PurchasePrice,
                 PurchaseDate = dto.PurchaseDate,
+                DeemedDisposalDue = dto.DeemedDisposalDue,
                 CreatedAt = utcNow,
                 UpdatedAt = utcNow
             };

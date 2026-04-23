@@ -18,6 +18,9 @@ public class ProjectionVersion
     public decimal ExitTaxPercent { get; set; }
     public bool ExcludePreExistingFromTax { get; set; }
     public decimal SiaAnnualPercent { get; set; }
+    public bool IsIrishInvestor { get; set; } = false;
+    public decimal TaxFreeAllowancePerYear { get; set; } = 0m;
+    public decimal DeemedDisposalPercent { get; set; } = 41m;
 
     // Computed data points serialised as JSON at save time (captures portfolio state)
     public string DataPointsJson { get; set; } = "[]";
@@ -25,4 +28,3 @@ public class ProjectionVersion
     // Navigation
     public User? User { get; set; }
 }
-

@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, AfterViewChecked, ChangeDetectionStrategy, ChangeDetectorRef, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, DashboardDto, HoldingDto, ProjectionResultDto, ProjectionSettingsDto, PortfolioEvolutionDto, ProjectionVersionSummaryDto, ProjectionVersionDetailDto, ProjectionDataPointDto, SaveVersionRequestDto, UserGoalDto, GoalDataPointDto, UpsertGoalRequestDto, TaxSummaryDto, TaxEventDto, TaxYearAllowanceSummaryDto, UserTaxDefaultsDto } from '../../services/api.service';
+import { ApiService, DashboardDto, HoldingDto, ProjectionResultDto, ProjectionSettingsDto, PortfolioEvolutionDto, ProjectionVersionSummaryDto, ProjectionVersionDetailDto, ProjectionDataPointDto, SaveVersionRequestDto, UserGoalDto, GoalDataPointDto, UpsertGoalRequestDto, TaxSummaryDto, TaxEventDto, TaxYearAllowanceSummaryDto, UserTaxDefaultsDto, TaxYearSummaryDto, ExitTaxPotDto, RecalculateTaxYearResultDto } from '../../services/api.service';
 import { AuthService, CurrentUser } from '../../services/auth.service';
 import { AddTransactionModalComponent } from '../../components/add-transaction-modal/add-transaction-modal.component';
 import { BuyHistoryModalComponent } from '../../components/buy-history-modal/buy-history-modal.component';
@@ -77,6 +77,8 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   taxSummary: TaxSummaryDto | null = null;
   taxSummaryLoading = false;
   taxMarkingAllYear: number | null = null;
+  recalculating = false;
+  taxBannerMessage: string | null = null;
 
   @ViewChild('allocationChart') allocationChartRef!: ElementRef<HTMLCanvasElement>;
   private pieChart: Chart | null = null;
@@ -98,6 +100,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     isIrishInvestor: true,
     taxFreeAllowancePerYear: 0,
     deemedDisposalPercent: 41,
+    deemedDisposalEnabled: true,
   };
   /** UI-only: drives the Monthly Buy derivation. Not sent to API directly. */
   targetTotalAmount: number | null = null;
@@ -2001,6 +2004,28 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
       },
       error: () => {
         this.taxMarkingAllYear = null;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  recalculateTaxYear(year: number): void {
+    if (this.sharingCtx.isReadOnly()) return;
+    this.recalculating = true;
+    this.taxBannerMessage = null;
+    this.cdr.markForCheck();
+    this.apiService.recalculateTaxYear(year).subscribe({
+      next: (result) => {
+        this.recalculating = false;
+        if (result.totalTaxDue > 0) {
+          this.taxBannerMessage = `Estimated tax due for ${year}: ${this.formatCurrency(result.totalTaxDue)}.`;
+        } else {
+          this.taxBannerMessage = `No tax due for ${year}.`;
+        }
+        this.loadTaxSummary();
+      },
+      error: () => {
+        this.recalculating = false;
         this.cdr.markForCheck();
       }
     });

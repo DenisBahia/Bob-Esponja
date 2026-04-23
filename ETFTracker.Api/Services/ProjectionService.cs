@@ -69,6 +69,7 @@ public class ProjectionService : IProjectionService
                 IsIrishInvestor = dbSettings.IsIrishInvestor,
                 TaxFreeAllowancePerYear = dbSettings.TaxFreeAllowancePerYear,
                 DeemedDisposalPercent = dbSettings.DeemedDisposalPercent,
+                DeemedDisposalEnabled = dbSettings.DeemedDisposalEnabled,
             }
             : new ProjectionSettingsDto
             {
@@ -184,7 +185,7 @@ public class ProjectionService : IProjectionService
             .Where(t => t.Holding!.UserId == userId)
             .ToListAsync(ct);
 
-        var buyLots = new List<(int BuyYear, decimal CostBasis, bool IsReal, decimal CurrentValue)>();
+        var buyLots = new List<(int BuyYear, decimal CostBasis, bool IsReal, decimal CurrentValue, bool DeemedDisposalDue)>();
         var taxCutoffDate = new DateOnly(2026, 1, 1);
 
         foreach (var txn in allTransactions)
@@ -198,17 +199,20 @@ public class ProjectionService : IProjectionService
                 BuyYear: txn.PurchaseDate.Year,
                 CostBasis: txn.Quantity * txn.PurchasePrice,
                 IsReal: true,
-                CurrentValue: txn.Quantity * price
+                CurrentValue: txn.Quantity * price,
+                DeemedDisposalDue: txn.DeemedDisposalDue
             ));
         }
 
         if (monthsRemaining > 0 && settings.MonthlyBuyAmount > 0)
         {
+            // Future projected buys: use DeemedDisposalEnabled to decide
             buyLots.Add((
                 BuyYear: currentYear,
                 CostBasis: monthsRemaining * settings.MonthlyBuyAmount,
                 IsReal: false,
-                CurrentValue: 0m
+                CurrentValue: 0m,
+                DeemedDisposalDue: settings.DeemedDisposalEnabled
             ));
         }
 
@@ -223,17 +227,18 @@ public class ProjectionService : IProjectionService
                     BuyYear: currentYear + i,
                     CostBasis: contributions,
                     IsReal: false,
-                    CurrentValue: 0m
+                    CurrentValue: 0m,
+                    DeemedDisposalDue: settings.DeemedDisposalEnabled
                 ));
             }
         }
 
-        var cgtByYear = new Dictionary<int, decimal>();
+        var deemedDisposalByYear = new Dictionary<int, decimal>();
         decimal exitTaxTotal = 0m;
 
         foreach (var lot in buyLots)
         {
-            decimal cumulativeCgtPaid = 0m;
+            decimal cumulativeDdPaid = 0m;
 
             decimal ProjectedValue(int year)
             {
@@ -243,31 +248,37 @@ public class ProjectionService : IProjectionService
                     return lot.CostBasis * (decimal)Math.Pow((double)(1 + growthRate), year - lot.BuyYear);
             }
 
-            for (int cgtYear = lot.BuyYear + 8; cgtYear < projectionEndYear; cgtYear += 8)
+            // Deemed disposal loop: only if enabled AND the lot has DeemedDisposalDue
+            if (settings.DeemedDisposalEnabled && lot.DeemedDisposalDue)
             {
-                var profit = ProjectedValue(cgtYear) - lot.CostBasis;
-                if (profit > 0)
+                for (int ddYear = lot.BuyYear + 8; ddYear < projectionEndYear; ddYear += 8)
                 {
-                    var cgtAmount = Math.Max(0m, Math.Round(profit * settings.CgtPercent / 100m - cumulativeCgtPaid, 2));
-                    if (cgtAmount > 0)
+                    var profit = ProjectedValue(ddYear) - lot.CostBasis;
+                    if (profit > 0)
                     {
-                        cumulativeCgtPaid += cgtAmount;
-                        if (cgtYear >= currentYear)
+                        var ddAmount = Math.Max(0m, Math.Round(profit * settings.DeemedDisposalPercent / 100m - cumulativeDdPaid, 2));
+                        if (ddAmount > 0)
                         {
-                            cgtByYear.TryGetValue(cgtYear, out var existing);
-                            cgtByYear[cgtYear] = existing + cgtAmount;
+                            cumulativeDdPaid += ddAmount;
+                            if (ddYear >= currentYear)
+                            {
+                                deemedDisposalByYear.TryGetValue(ddYear, out var existing);
+                                deemedDisposalByYear[ddYear] = existing + ddAmount;
+                            }
                         }
                     }
                 }
             }
 
+            // Final-year sell: ExitTax for DeemedDisposalDue lots, CGT for others
             if (projectionEndYear >= lot.BuyYear)
             {
                 var profit = ProjectedValue(projectionEndYear) - lot.CostBasis;
                 if (profit > 0)
                 {
-                    var exitTax = Math.Max(0m, Math.Round(profit * settings.ExitTaxPercent / 100m - cumulativeCgtPaid, 2));
-                    exitTaxTotal += exitTax;
+                    var sellTaxRate = lot.DeemedDisposalDue ? settings.ExitTaxPercent : settings.CgtPercent;
+                    var sellTax = Math.Max(0m, Math.Round(profit * sellTaxRate / 100m - cumulativeDdPaid, 2));
+                    exitTaxTotal += sellTax;
                 }
             }
         }
@@ -287,7 +298,7 @@ public class ProjectionService : IProjectionService
             var year = currentYear + i;
             var inflationFactor = (decimal)Math.Pow((double)(1 + settings.InflationPercent / 100m), i);
 
-            var cgtRaw      = cgtByYear.TryGetValue(year, out var cgt) ? cgt : 0m;
+            var cgtRaw      = deemedDisposalByYear.TryGetValue(year, out var cgt) ? cgt : 0m;
             var exitTaxRaw  = (year == projectionEndYear) ? exitTaxTotal : 0m;
 
             // Apply allowance: deduct from total tax due this year, floored at 0
@@ -361,6 +372,7 @@ public class ProjectionService : IProjectionService
                 IsIrishInvestor = dto.IsIrishInvestor,
                 TaxFreeAllowancePerYear = dto.TaxFreeAllowancePerYear,
                 DeemedDisposalPercent = dto.DeemedDisposalPercent,
+                DeemedDisposalEnabled = dto.DeemedDisposalEnabled,
                 CreatedAt = utcNow,
                 UpdatedAt = utcNow,
             };
@@ -381,6 +393,7 @@ public class ProjectionService : IProjectionService
             existing.IsIrishInvestor = dto.IsIrishInvestor;
             existing.TaxFreeAllowancePerYear = dto.TaxFreeAllowancePerYear;
             existing.DeemedDisposalPercent = dto.DeemedDisposalPercent;
+            existing.DeemedDisposalEnabled = dto.DeemedDisposalEnabled;
             existing.UpdatedAt = utcNow;
         }
 
@@ -414,6 +427,9 @@ public class ProjectionService : IProjectionService
             ExitTaxPercent = settings.ExitTaxPercent,
             ExcludePreExistingFromTax = settings.ExcludePreExistingFromTax,
             SiaAnnualPercent = settings.SiaAnnualPercent,
+            IsIrishInvestor = settings.IsIrishInvestor,
+            TaxFreeAllowancePerYear = settings.TaxFreeAllowancePerYear,
+            DeemedDisposalPercent = settings.DeemedDisposalPercent,
             DataPointsJson = json,
         };
         _context.ProjectionVersions.Add(entity);
@@ -455,6 +471,9 @@ public class ProjectionService : IProjectionService
                 ExitTaxPercent = pv.ExitTaxPercent,
                 ExcludePreExistingFromTax = pv.ExcludePreExistingFromTax,
                 SiaAnnualPercent = pv.SiaAnnualPercent,
+                IsIrishInvestor = pv.IsIrishInvestor,
+                TaxFreeAllowancePerYear = pv.TaxFreeAllowancePerYear,
+                DeemedDisposalPercent = pv.DeemedDisposalPercent,
             },
             DataPoints = System.Text.Json.JsonSerializer.Deserialize<List<ProjectionDataPointDto>>(pv.DataPointsJson)
                          ?? new List<ProjectionDataPointDto>(),
@@ -489,6 +508,9 @@ public class ProjectionService : IProjectionService
                 ExitTaxPercent = entity.ExitTaxPercent,
                 ExcludePreExistingFromTax = entity.ExcludePreExistingFromTax,
                 SiaAnnualPercent = entity.SiaAnnualPercent,
+                IsIrishInvestor = entity.IsIrishInvestor,
+                TaxFreeAllowancePerYear = entity.TaxFreeAllowancePerYear,
+                DeemedDisposalPercent = entity.DeemedDisposalPercent,
             },
             DataPoints = dataPoints,
         };
@@ -529,6 +551,9 @@ public class ProjectionService : IProjectionService
                 ExitTaxPercent = target.ExitTaxPercent,
                 ExcludePreExistingFromTax = target.ExcludePreExistingFromTax,
                 SiaAnnualPercent = target.SiaAnnualPercent,
+                IsIrishInvestor = target.IsIrishInvestor,
+                TaxFreeAllowancePerYear = target.TaxFreeAllowancePerYear,
+                DeemedDisposalPercent = target.DeemedDisposalPercent,
             }
         };
     }

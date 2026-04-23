@@ -56,7 +56,7 @@
               <th>Qty Consumed</th>
               <th>Original Cost</th>
               <th>{{ lotCostBasisLabel }}</th>
-              <th *ngIf="isIrishInvestor">Deemed Disposal</th>
+              <th *ngIf="isIrishInvestor && preview.lots.some(l => l.deemedDisposalDue)">Deemed Disposal</th>
               <th>Profit</th>
             </tr>
           </thead>
@@ -67,7 +67,9 @@
               <td>{{ lot.quantityConsumed.toFixed(4) }}</td>
               <td>{{ formatCurrency(lot.originalCostPerUnit) }}</td>
               <td>{{ formatCurrency(lot.adjustedCostPerUnit) }}</td>
-              <td *ngIf="isIrishInvestor">{{ lot.deemedDisposalDate ? formatDate(lot.deemedDisposalDate) : '—' }}</td>
+              <td *ngIf="isIrishInvestor && preview.lots.some(l => l.deemedDisposalDue)">
+                {{ lot.deemedDisposalDue && lot.deemedDisposalDate ? formatDate(lot.deemedDisposalDate) : '—' }}
+              </td>
               <td [ngClass]="lot.profitOnLot >= 0 ? 'positive' : 'negative'">
                 {{ formatCurrency(lot.profitOnLot) }}
               </td>
@@ -79,7 +81,7 @@
       <!-- Summary -->
       <div class="sell-summary">
         <div class="summary-row">
-          <span>Total Profit</span>
+          <span>Profit / Loss</span>
           <strong [ngClass]="preview.totalProfit >= 0 ? 'positive' : 'negative'">
             {{ formatCurrency(preview.totalProfit) }}
           </strong>
@@ -92,9 +94,13 @@
           <input type="number" [(ngModel)]="editableTaxRate" min="0" max="100" step="0.1"
                  class="tax-rate-input" />
         </div>
-        <div class="summary-row">
+        <div class="summary-row" *ngIf="!isCgtSell">
           <span>{{ taxDueLabel }}</span>
           <strong class="cgt-due">{{ formatCurrency(cgtDuePreview) }}</strong>
+        </div>
+        <div class="summary-row cgt-pending-note" *ngIf="isCgtSell">
+          <span>{{ taxDueLabel }}</span>
+          <strong class="cgt-pending">€0 <small>(calculated at year-end)</small></strong>
         </div>
       </div>
 
@@ -103,6 +109,19 @@
         <button class="btn btn-danger" (click)="confirmSell()" [disabled]="confirming">
           {{ confirming ? 'Confirming…' : 'Confirm Sell' }}
         </button>
+      </div>
+    </div>
+
+    <!-- Step 3: Confirmation -->
+    <div *ngIf="step === 3" class="sell-step sell-confirmation">
+      <div class="confirmation-icon">✅</div>
+      <h3>Sell Recorded</h3>
+      <p class="confirmation-message">{{ confirmationMessage }}</p>
+      <div *ngIf="isCgtSell" class="cgt-note">
+        💡 CGT is calculated at year-end. Use the <strong>Recalculate</strong> button in Tax Summary to update your estimate.
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" (click)="onConfirmationDone()">Done</button>
       </div>
     </div>
 

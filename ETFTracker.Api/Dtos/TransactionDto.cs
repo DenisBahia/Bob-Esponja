@@ -10,6 +10,10 @@ public class CreateTransactionDto
     public bool IsIrishInvestor { get; set; }
     /// <summary>Exit-tax rate (%) to use for deemed-disposal calculations. Typically 41 for Irish ETFs.</summary>
     public decimal TaxRate { get; set; }
+    /// <summary>True = this buy is subject to Deemed Disposal / Exit Tax rules.</summary>
+    public bool DeemedDisposalDue { get; set; } = false;
+    /// <summary>Asset type from ticker search (e.g. "ETF", "EQUITY"). Used to persist asset-type default.</summary>
+    public string? AssetType { get; set; }
 }
 
 public class UpdateTransactionDto
@@ -30,5 +34,5 @@ public class TransactionDto
     public decimal CurrentPrice { get; set; }
     public decimal VariationEur { get; set; }
     public decimal VariationPercent { get; set; }
+    public bool DeemedDisposalDue { get; set; }
 }
-

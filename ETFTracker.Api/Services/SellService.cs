@@ -13,11 +13,6 @@ public interface ISellService
     Task<SellRecordDto> ConfirmSellAsync(int holdingId, int userId, decimal qty, decimal sellPrice,
         DateOnly sellDate, bool isIrishInvestor, decimal taxRate, CancellationToken ct = default);
 
-    /// <summary>
-    /// Same as ConfirmSellAsync but does NOT start its own DB transaction.
-    /// Must be called inside an already-active transaction (e.g. from ImportTransactionsAsync).
-    /// TaxEvent creation is skipped here and should be handled by the caller after commit.
-    /// </summary>
     Task ConfirmSellNoTxAsync(int holdingId, int userId, decimal qty, decimal sellPrice,
         DateOnly sellDate, bool isIrishInvestor, decimal taxRate, CancellationToken ct = default);
 
@@ -37,10 +32,9 @@ public class SellService : ISellService
 
     // ── TaxEvent helper ────────────────────────────────────────────────────────
     private static TaxEvent BuildSellTaxEvent(int userId, int holdingId, int sellRecordId,
-        DateOnly sellDate, decimal sellPrice, decimal totalProfit, decimal cgtPaid, decimal taxRate)
+        DateOnly sellDate, decimal sellPrice, decimal totalProfit, decimal taxAmountSaved,
+        decimal taxRate, string taxType)
     {
-        // Weighted average basis = sellPrice - (totalProfit / totalQty) is implicit;
-        // we record the aggregate sell-level event (one row per sell, not per lot)
         return new TaxEvent
         {
             UserId = userId,
@@ -49,15 +43,23 @@ public class SellService : ISellService
             BuyTransactionId = null,
             EventType = TaxEventType.Sell,
             EventDate = sellDate,
-            QuantityAtEvent = 0,           // not relevant at aggregate level; see lots in sell_records
+            QuantityAtEvent = 0,
             CostBasisPerUnit = 0,
             PricePerUnitAtEvent = sellPrice,
             TaxableGain = totalProfit,
-            TaxAmount = cgtPaid,
+            TaxAmount = taxAmountSaved,
             TaxRateUsed = taxRate,
+            TaxSubType = taxType,
             Status = TaxEventStatus.Pending,
             CreatedAt = new DateTime(DateTime.UtcNow.Ticks, DateTimeKind.Utc)
         };
+    }
+
+    private static string DetermineTaxType(List<SellLotBreakdownDto> lots)
+    {
+        var dddQty = lots.Where(l => l.DeemedDisposalDue).Sum(l => l.QuantityConsumed);
+        var totalQty = lots.Sum(l => l.QuantityConsumed);
+        return (totalQty > 0 && dddQty / totalQty > 0.5m) ? "ExitTax" : "CGT";
     }
 
     // ── Public API ─────────────────────────────────────────────────────────────
@@ -67,17 +69,20 @@ public class SellService : ISellService
         CancellationToken ct = default)
     {
         var holding = await GetHoldingOrThrowAsync(holdingId, userId, ct);
-        var (lots, available) = await ComputeLotsAsync(holding, qty, sellPrice, sellDate, isIrishInvestor, ct);
+        var (lots, available) = await ComputeLotsAsync(holding, qty, sellPrice, sellDate, ct);
 
         var totalProfit = lots.Sum(l => l.ProfitOnLot);
-        var cgtDue = Math.Max(0, totalProfit) * taxRate / 100m;
+        var taxType = DetermineTaxType(lots);
+        var taxDue = taxType == "ExitTax" ? Math.Max(0, totalProfit) * taxRate / 100m : 0m;
 
         return new SellPreviewDto
         {
             AvailableQuantity = available,
             TotalProfit = totalProfit,
-            CgtDue = cgtDue,
+            CgtDue = taxDue,
             TaxRateUsed = taxRate,
+            TaxType = taxType,
+            HasLosses = totalProfit < 0,
             Lots = lots
         };
     }
@@ -87,16 +92,16 @@ public class SellService : ISellService
         CancellationToken ct = default)
     {
         var holding = await GetHoldingOrThrowAsync(holdingId, userId, ct);
-        var (lots, _) = await ComputeLotsAsync(holding, qty, sellPrice, sellDate, isIrishInvestor, ct);
+        var (lots, _) = await ComputeLotsAsync(holding, qty, sellPrice, sellDate, ct);
 
         var totalProfit = lots.Sum(l => l.ProfitOnLot);
-        var cgtPaid = Math.Max(0, totalProfit) * taxRate / 100m;
+        var taxType = DetermineTaxType(lots);
+        var taxAmountSaved = taxType == "ExitTax" ? Math.Max(0, totalProfit) * taxRate / 100m : 0m;
         var utcNow = new DateTime(DateTime.UtcNow.Ticks, DateTimeKind.Utc);
 
         await using var tx = await _db.Database.BeginTransactionAsync(ct);
         try
         {
-            // Persist SellRecord
             var sellRecord = new SellRecord
             {
                 HoldingId = holdingId,
@@ -104,23 +109,21 @@ public class SellService : ISellService
                 SellPrice = sellPrice,
                 Quantity = qty,
                 TotalProfit = totalProfit,
-                CgtPaid = cgtPaid,
+                TaxAmountSaved = taxAmountSaved,
                 TaxRateUsed = taxRate,
-                IsIrishInvestor = isIrishInvestor,
+                TaxType = taxType,
                 CreatedAt = utcNow
             };
             _db.SellRecords.Add(sellRecord);
             await _db.SaveChangesAsync(ct);
 
-            // Persist SellLotAllocations (need sellRecord.Id)
-            // We need the full transaction rows to resolve buy dates
             var allTxns = await _db.Transactions
                 .Where(t => t.HoldingId == holdingId)
                 .ToDictionaryAsync(t => t.Id, ct);
 
             foreach (var lot in lots)
             {
-                var sla = new SellLotAllocation
+                _db.SellLotAllocations.Add(new SellLotAllocation
                 {
                     SellRecordId = sellRecord.Id,
                     BuyTransactionId = lot.BuyTransactionId,
@@ -131,13 +134,10 @@ public class SellService : ISellService
                     DeemedDisposalPricePerUnit = lot.DeemedDisposalPricePerUnit,
                     ProfitOnLot = lot.ProfitOnLot,
                     CreatedAt = utcNow
-                };
-                _db.SellLotAllocations.Add(sla);
+                });
             }
             await _db.SaveChangesAsync(ct);
 
-            // Update Holding: decrement quantity, recalc average cost from remaining unconsumed lots
-            // Load ALL existing consumed qty (including this new sell) for remaining calc
             var allConsumed = await _db.SellLotAllocations
                 .Where(sla => allTxns.Keys.Contains(sla.BuyTransactionId))
                 .GroupBy(sla => sla.BuyTransactionId)
@@ -145,39 +145,29 @@ public class SellService : ISellService
                 .ToListAsync(ct);
             var consumedMap = allConsumed.ToDictionary(x => x.TxnId, x => x.Consumed);
 
-            decimal remQty = 0m;
-            decimal remCost = 0m;
+            decimal remQty = 0m, remCost = 0m;
             foreach (var (txnId, txn) in allTxns)
             {
                 var consumed = consumedMap.TryGetValue(txnId, out var c) ? c : 0m;
                 var remaining = txn.Quantity - consumed;
-                if (remaining > 0)
-                {
-                    remQty += remaining;
-                    remCost += remaining * txn.PurchasePrice;
-                }
+                if (remaining > 0) { remQty += remaining; remCost += remaining * txn.PurchasePrice; }
             }
-
             holding.Quantity = remQty;
             holding.AverageCost = remQty > 0 ? remCost / remQty : 0m;
             holding.UpdatedAt = utcNow;
             _db.Holdings.Update(holding);
             await _db.SaveChangesAsync(ct);
-
             await tx.CommitAsync(ct);
 
-            // Insert TaxEvent for this sell (outside the main tx so ID is available)
             try
             {
-                var taxEvent = BuildSellTaxEvent(
-                    userId, holdingId, sellRecord.Id,
-                    sellDate, sellPrice, totalProfit, cgtPaid, taxRate);
+                var taxEvent = BuildSellTaxEvent(userId, holdingId, sellRecord.Id,
+                    sellDate, sellPrice, totalProfit, taxAmountSaved, taxRate, taxType);
                 _db.TaxEvents.Add(taxEvent);
                 await _db.SaveChangesAsync(ct);
             }
             catch (Exception ex)
             {
-                // Non-fatal: sell is committed, tax event can be recreated
                 _logger.LogWarning(ex, "Failed to create TaxEvent for sell record {SellRecordId}", sellRecord.Id);
             }
 
@@ -189,9 +179,9 @@ public class SellService : ISellService
                 SellPrice = sellPrice,
                 Quantity = qty,
                 TotalProfit = totalProfit,
-                CgtPaid = cgtPaid,
+                TaxAmountSaved = taxAmountSaved,
                 TaxRateUsed = taxRate,
-                IsIrishInvestor = isIrishInvestor,
+                TaxType = taxType,
                 CreatedAt = utcNow,
                 Lots = lots
             };
@@ -208,13 +198,13 @@ public class SellService : ISellService
         CancellationToken ct = default)
     {
         var holding = await GetHoldingOrThrowAsync(holdingId, userId, ct);
-        var (lots, _) = await ComputeLotsAsync(holding, qty, sellPrice, sellDate, isIrishInvestor, ct);
+        var (lots, _) = await ComputeLotsAsync(holding, qty, sellPrice, sellDate, ct);
 
         var totalProfit = lots.Sum(l => l.ProfitOnLot);
-        var cgtPaid = Math.Max(0, totalProfit) * taxRate / 100m;
+        var taxType = DetermineTaxType(lots);
+        var taxAmountSaved = taxType == "ExitTax" ? Math.Max(0, totalProfit) * taxRate / 100m : 0m;
         var utcNow = new DateTime(DateTime.UtcNow.Ticks, DateTimeKind.Utc);
 
-        // Persist SellRecord (no transaction started here — caller owns it)
         var sellRecord = new SellRecord
         {
             HoldingId = holdingId,
@@ -222,9 +212,9 @@ public class SellService : ISellService
             SellPrice = sellPrice,
             Quantity = qty,
             TotalProfit = totalProfit,
-            CgtPaid = cgtPaid,
+            TaxAmountSaved = taxAmountSaved,
             TaxRateUsed = taxRate,
-            IsIrishInvestor = isIrishInvestor,
+            TaxType = taxType,
             CreatedAt = utcNow
         };
         _db.SellRecords.Add(sellRecord);
@@ -251,7 +241,6 @@ public class SellService : ISellService
         }
         await _db.SaveChangesAsync(ct);
 
-        // Recalculate holding remaining quantity/cost
         var allConsumed = await _db.SellLotAllocations
             .Where(sla => allTxns.Keys.Contains(sla.BuyTransactionId))
             .GroupBy(sla => sla.BuyTransactionId)
@@ -266,23 +255,16 @@ public class SellService : ISellService
             var remaining = txn.Quantity - consumed;
             if (remaining > 0) { remQty += remaining; remCost += remaining * txn.PurchasePrice; }
         }
-
         holding.Quantity = remQty;
         holding.AverageCost = remQty > 0 ? remCost / remQty : 0m;
         holding.UpdatedAt = utcNow;
         _db.Holdings.Update(holding);
         await _db.SaveChangesAsync(ct);
 
-        // Schedule TaxEvent creation for after outer commit (tracked via a post-commit action in caller)
-        // Store on sellRecord for the caller to use
-        sellRecord.TotalProfit = totalProfit;   // already set, just making intent clear
-
-        // Build and save the tax event inline (caller is responsible for overall transaction)
         try
         {
-            var taxEvent = BuildSellTaxEvent(
-                userId, holdingId, sellRecord.Id,
-                sellDate, sellPrice, totalProfit, cgtPaid, taxRate);
+            var taxEvent = BuildSellTaxEvent(userId, holdingId, sellRecord.Id,
+                sellDate, sellPrice, totalProfit, taxAmountSaved, taxRate, taxType);
             _db.TaxEvents.Add(taxEvent);
             await _db.SaveChangesAsync(ct);
         }
@@ -303,11 +285,10 @@ public class SellService : ISellService
             .OrderByDescending(sr => sr.SellDate)
             .ToListAsync(ct);
 
-        // Load buy dates for all referenced transactions
         var txnIds = records.SelectMany(r => r.LotAllocations.Select(l => l.BuyTransactionId)).Distinct().ToList();
-        var txnDates = await _db.Transactions
+        var txns = await _db.Transactions
             .Where(t => txnIds.Contains(t.Id))
-            .ToDictionaryAsync(t => t.Id, t => t.PurchaseDate, ct);
+            .ToDictionaryAsync(t => t.Id, ct);
 
         return records.Select(r => new SellRecordDto
         {
@@ -317,20 +298,21 @@ public class SellService : ISellService
             SellPrice = r.SellPrice,
             Quantity = r.Quantity,
             TotalProfit = r.TotalProfit,
-            CgtPaid = r.CgtPaid,
+            TaxAmountSaved = r.TaxAmountSaved,
             TaxRateUsed = r.TaxRateUsed,
-            IsIrishInvestor = r.IsIrishInvestor,
+            TaxType = r.TaxType,
             CreatedAt = r.CreatedAt,
             Lots = r.LotAllocations.Select(l => new SellLotBreakdownDto
             {
                 BuyTransactionId = l.BuyTransactionId,
-                BuyDate = txnDates.TryGetValue(l.BuyTransactionId, out var d) ? d : default,
+                BuyDate = txns.TryGetValue(l.BuyTransactionId, out var t) ? t.PurchaseDate : default,
                 QuantityConsumed = l.QuantityConsumed,
                 OriginalCostPerUnit = l.OriginalCostPerUnit,
-                AdjustedCostPerUnit = r.IsIrishInvestor ? l.AdjustedCostPerUnit : l.OriginalCostPerUnit,
-                DeemedDisposalDate = r.IsIrishInvestor ? l.DeemedDisposalDate : null,
-                DeemedDisposalPricePerUnit = r.IsIrishInvestor ? l.DeemedDisposalPricePerUnit : null,
-                ProfitOnLot = l.ProfitOnLot
+                AdjustedCostPerUnit = r.TaxType == "ExitTax" ? l.AdjustedCostPerUnit : l.OriginalCostPerUnit,
+                DeemedDisposalDate = r.TaxType == "ExitTax" ? l.DeemedDisposalDate : null,
+                DeemedDisposalPricePerUnit = r.TaxType == "ExitTax" ? l.DeemedDisposalPricePerUnit : null,
+                ProfitOnLot = l.ProfitOnLot,
+                DeemedDisposalDue = txns.TryGetValue(l.BuyTransactionId, out var t2) && t2.DeemedDisposalDue
             }).ToList()
         }).ToList();
     }
@@ -346,21 +328,14 @@ public class SellService : ISellService
         return holding;
     }
 
-    /// <summary>
-    /// Runs the FIFO engine.  Returns the per-lot breakdown list and the total available quantity.
-    /// Throws ArgumentException (400) if qty > available.
-    /// </summary>
     private async Task<(List<SellLotBreakdownDto> lots, decimal availableQty)> ComputeLotsAsync(
-        Holding holding, decimal qty, decimal sellPrice, DateOnly sellDate,
-        bool isIrishInvestor, CancellationToken ct)
+        Holding holding, decimal qty, decimal sellPrice, DateOnly sellDate, CancellationToken ct)
     {
-        // 1. Load all buy transactions ordered by purchase date ASC
         var txns = await _db.Transactions
             .Where(t => t.HoldingId == holding.Id)
             .OrderBy(t => t.PurchaseDate)
             .ToListAsync(ct);
 
-        // 2. Load consumed qty per transaction from ALL existing sell lot allocations
         var txnIds = txns.Select(t => t.Id).ToList();
         var consumedMap = await _db.SellLotAllocations
             .Where(sla => txnIds.Contains(sla.BuyTransactionId))
@@ -378,7 +353,6 @@ public class SellService : ISellService
             throw new ArgumentException(
                 $"Insufficient quantity. Requested: {qty}, Available: {totalAvailable}.");
 
-        // Preload price snapshots for the holding ticker (for deemed disposal lookups)
         var ticker = holding.Ticker;
         var lots = new List<SellLotBreakdownDto>();
         decimal remaining = qty;
@@ -394,8 +368,11 @@ public class SellService : ISellService
             var consume = Math.Min(remaining, lotAvail);
             remaining -= consume;
 
-            var (adjustedCost, deemedDate, deemedPrice) = await ResolveLotTaxBasisAsync(
-                ticker, txn.PurchaseDate, txn.PurchasePrice, sellDate, isIrishInvestor, ct);
+            // Per-lot deemed disposal: only adjust cost basis if this specific buy is flagged
+            (decimal adjustedCost, DateOnly? deemedDate, decimal? deemedPrice) =
+                txn.DeemedDisposalDue
+                    ? await ResolveLotTaxBasisAsync(ticker, txn.PurchaseDate, txn.PurchasePrice, sellDate, ct)
+                    : (txn.PurchasePrice, null, null);
 
             var profit = (sellPrice - adjustedCost) * consume;
 
@@ -408,36 +385,27 @@ public class SellService : ISellService
                 AdjustedCostPerUnit = adjustedCost,
                 DeemedDisposalDate = deemedDate,
                 DeemedDisposalPricePerUnit = deemedPrice,
-                ProfitOnLot = profit
+                ProfitOnLot = profit,
+                DeemedDisposalDue = txn.DeemedDisposalDue
             });
         }
 
         return (lots, totalAvailable);
     }
 
-    /// <summary>
-    /// Returns the latest 8-year anniversary of <paramref name="purchaseDate"/> that is strictly
-    /// before <paramref name="sellDate"/>, or null if none has occurred yet.
-    /// </summary>
     private static DateOnly? GetLastAnniversaryBefore(DateOnly purchaseDate, DateOnly sellDate)
     {
         DateOnly? last = null;
         for (int years = 8; ; years += 8)
         {
             DateOnly anniversary;
-            try
-            {
-                anniversary = new DateOnly(purchaseDate.Year + years, purchaseDate.Month, purchaseDate.Day);
-            }
+            try { anniversary = new DateOnly(purchaseDate.Year + years, purchaseDate.Month, purchaseDate.Day); }
             catch
             {
-                // Invalid date (e.g., Feb 29 on non-leap year) — use last day of month
                 var y = purchaseDate.Year + years;
                 var m = purchaseDate.Month;
-                var day = Math.Min(purchaseDate.Day, DateTime.DaysInMonth(y, m));
-                anniversary = new DateOnly(y, m, day);
+                anniversary = new DateOnly(y, m, Math.Min(purchaseDate.Day, DateTime.DaysInMonth(y, m)));
             }
-
             if (anniversary >= sellDate) break;
             last = anniversary;
         }
@@ -445,40 +413,20 @@ public class SellService : ISellService
     }
 
     private async Task<(decimal adjustedCost, DateOnly? deemedDate, decimal? deemedPrice)> ResolveLotTaxBasisAsync(
-        string ticker,
-        DateOnly purchaseDate,
-        decimal originalCost,
-        DateOnly sellDate,
-        bool isIrishInvestor,
-        CancellationToken ct)
+        string ticker, DateOnly purchaseDate, decimal originalCost, DateOnly sellDate, CancellationToken ct)
     {
-        if (!isIrishInvestor)
-            return (originalCost, null, null);
-
         var anniversary = GetLastAnniversaryBefore(purchaseDate, sellDate);
         if (!anniversary.HasValue)
             return (originalCost, null, null);
 
-        var snap = await GetPriceOnOrBeforeAsync(ticker, anniversary.Value, ct);
-        if (!snap.HasValue)
-            return (originalCost, null, null);
-
-        return (snap.Value.price, anniversary.Value, snap.Value.price);
-    }
-
-    private async Task<(decimal price, DateOnly date)?> GetPriceOnOrBeforeAsync(
-        string ticker, DateOnly date, CancellationToken ct)
-    {
-        var cutoff = date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        var cutoff = anniversary.Value.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
         var snap = await _db.PriceSnapshots
             .Where(ps => ps.Ticker == ticker && ps.SnapshotDate <= cutoff)
             .OrderByDescending(ps => ps.SnapshotDate)
             .FirstOrDefaultAsync(ct);
 
-        if (snap == null) return null;
-        return (snap.Price, DateOnly.FromDateTime(snap.SnapshotDate.Date));
+        if (snap == null) return (originalCost, null, null);
+        return (snap.Price, anniversary.Value, snap.Price);
     }
 }
-
-
 
