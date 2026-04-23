@@ -2941,12 +2941,11 @@ th.sortable {
   vertical-align: middle;
 }
 
-// Note inside the allowance section header
+// Note below the allowance section header
 .tax-allowance-note {
-  display: block;
-  margin-top: 0.25rem;
+  margin: 0 0 0.75rem;
   font-size: 0.76rem;
   color: var(--text-muted);
-  font-style: normal;
-  em { font-style: italic; }
+  line-height: 1.45;
+  em { font-style: italic; color: var(--accent); }
 }

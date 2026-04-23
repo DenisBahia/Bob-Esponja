@@ -495,8 +495,8 @@
         <div class="tax-allowance-section" *ngIf="taxSummary.annualTaxFreeAllowance > 0">
           <div class="tax-allowance-header">
             🎁 Annual Tax-Free Allowance: <strong>{{ formatCurrency(taxSummary.annualTaxFreeAllowance) }}</strong>
-            <span class="tax-allowance-note">CGT is settled at year-end — values below are year-level estimates. Use <em>Recalculate</em> to lock in final figures.</span>
           </div>
+          <p class="tax-allowance-note">CGT is settled at year-end — values below are year-level estimates. Use <em>Recalculate</em> to lock in final figures.</p>
           <div class="tax-allowance-rows">
             <div class="tax-allowance-row" *ngFor="let row of taxSummary.allowanceByYear">
               <span class="tax-allowance-year">{{ row.year }}</span>
