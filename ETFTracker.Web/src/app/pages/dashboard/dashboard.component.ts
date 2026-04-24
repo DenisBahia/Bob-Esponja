@@ -63,6 +63,11 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   showUserSettingsModal = false;
   showLogoutConfirmModal = false;
 
+  /** Action to resume after the user saves settings for the first time. */
+  private pendingActionAfterSettings: 'buy' | 'import' | null = null;
+  /** True when settings modal was opened because user has not configured yet. */
+  settingsIsFirstTime = false;
+
   // User tax defaults (loaded on init, drives pre-fill across the app)
   userTaxDefaults: UserTaxDefaultsDto | null = null;
 
@@ -353,12 +358,17 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     if (this.sharingCtx.isViewingAsOther()) {
       return;
     }
+    this.settingsIsFirstTime = false;
+    this.pendingActionAfterSettings = null;
     this.showUserSettingsModal = true;
     this.cdr.markForCheck();
   }
 
   onUserSettingsClosed(saved: UserTaxDefaultsDto | null): void {
     this.showUserSettingsModal = false;
+    const pending = this.pendingActionAfterSettings;
+    this.pendingActionAfterSettings = null;
+    this.settingsIsFirstTime = false;
     if (saved) {
       this.userTaxDefaults = saved;
       // Sync isIrishInvestor toggle and relevant projection settings with new defaults
@@ -383,6 +393,13 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
         error: () => { this.projectionLoading = false; this.cdr.markForCheck(); }
       });
       this.loadTaxSummary();
+
+      // Resume the action that was blocked until settings were configured
+      if (pending === 'buy') {
+        this.showAddTransactionModal = true;
+      } else if (pending === 'import') {
+        this.showImportHistoryModal = true;
+      }
     }
     this.cdr.markForCheck();
   }
@@ -1885,10 +1902,24 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   onAddTransactionClick(): void {
+    if (!this.userTaxDefaults?.isConfigured) {
+      this.pendingActionAfterSettings = 'buy';
+      this.settingsIsFirstTime = true;
+      this.showUserSettingsModal = true;
+      this.cdr.markForCheck();
+      return;
+    }
     this.showAddTransactionModal = true;
   }
 
   onImportHistoryClick(): void {
+    if (!this.userTaxDefaults?.isConfigured) {
+      this.pendingActionAfterSettings = 'import';
+      this.settingsIsFirstTime = true;
+      this.showUserSettingsModal = true;
+      this.cdr.markForCheck();
+      return;
+    }
     this.showImportHistoryModal = true;
     this.cdr.markForCheck();
   }

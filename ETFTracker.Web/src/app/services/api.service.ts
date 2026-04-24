@@ -112,6 +112,7 @@ export interface ProjectionSettingsDto {
 // ── User Tax Defaults ─────────────────────────────────────────────────────────
 
 export interface UserTaxDefaultsDto {
+  isConfigured: boolean;
   isIrishInvestor: boolean;
   // Irish-only
   exitTaxPercent: number;

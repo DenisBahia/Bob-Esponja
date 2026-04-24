@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, UserTaxDefaultsDto } from '../../services/api.service';
@@ -12,6 +12,7 @@ import { ApiService, UserTaxDefaultsDto } from '../../services/api.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UserSettingsModalComponent implements OnInit {
+  @Input() isFirstTime = false;
   @Output() closed = new EventEmitter<UserTaxDefaultsDto | null>();
 
   loading = true;
@@ -20,6 +21,7 @@ export class UserSettingsModalComponent implements OnInit {
   success = false;
 
   defaults: UserTaxDefaultsDto = {
+    isConfigured: false,
     isIrishInvestor: true,
     exitTaxPercent: 38,
     deemedDisposalPercent: 38,

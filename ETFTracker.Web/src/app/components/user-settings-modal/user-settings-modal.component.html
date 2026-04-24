@@ -6,6 +6,15 @@
     <button class="btn-close" (click)="cancel()" title="Close">✕</button>
   </div>
 
+  <!-- First-time setup notice -->
+  <div class="first-time-banner" *ngIf="isFirstTime">
+    <span class="banner-icon">👋</span>
+    <div class="banner-text">
+      <strong>Welcome! Please configure your settings first.</strong>
+      <span>You need to save your investor profile and tax rates before adding buys or importing data.</span>
+    </div>
+  </div>
+
   <div class="modal-body" *ngIf="!loading; else loadingTpl">
 
     <!-- ── Investor Profile ─────────────────────────────────────────────── -->

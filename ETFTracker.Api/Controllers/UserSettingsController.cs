@@ -42,6 +42,7 @@ public class UserSettingsController : ControllerBase
             if (settings == null)
                 return Ok(new UserTaxDefaultsDto
                 {
+                    IsConfigured = false,
                     IsIrishInvestor = true,
                     ExitTaxPercent = 38m,
                     DeemedDisposalPercent = 38m,
@@ -108,6 +109,7 @@ public class UserSettingsController : ControllerBase
 
     private static UserTaxDefaultsDto MapToDto(ProjectionSettings s) => new()
     {
+        IsConfigured = true,
         IsIrishInvestor = s.IsIrishInvestor,
         ExitTaxPercent = s.ExitTaxPercent,
         DeemedDisposalPercent = s.DeemedDisposalPercent,

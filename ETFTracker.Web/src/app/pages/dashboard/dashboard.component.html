@@ -1063,6 +1063,7 @@
   <!-- User Settings Modal -->
   <app-user-settings-modal
     *ngIf="showUserSettingsModal"
+    [isFirstTime]="settingsIsFirstTime"
     (closed)="onUserSettingsClosed($event)">
   </app-user-settings-modal>
 

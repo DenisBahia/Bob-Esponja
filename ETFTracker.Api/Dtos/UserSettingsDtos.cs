@@ -6,6 +6,9 @@ namespace ETFTracker.Api.Dtos;
 /// </summary>
 public class UserTaxDefaultsDto
 {
+    /// <summary>True when the user has explicitly saved settings at least once. False = using system defaults (first-time user).</summary>
+    public bool IsConfigured { get; set; }
+
     /// <summary>True = Irish investor (Exit Tax / Deemed Disposal regime). Hides CGT and tax-free allowance fields.</summary>
     public bool IsIrishInvestor { get; set; }
 
