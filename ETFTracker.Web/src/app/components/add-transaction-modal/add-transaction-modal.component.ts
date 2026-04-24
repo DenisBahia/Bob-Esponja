@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, Input, HostListener, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, EventEmitter, Output, Input, HostListener, ChangeDetectionStrategy, ChangeDetectorRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, AssetTypeDeemedDisposalDefaultDto, CreateTransactionDto, TickerSearchResult } from '../../services/api.service';
@@ -12,7 +12,7 @@ import { debounceTime, Subject, switchMap, of } from 'rxjs';
   styleUrls: ['./add-transaction-modal.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class AddTransactionModalComponent {
+export class AddTransactionModalComponent implements OnInit {
   @Output() transactionAdded = new EventEmitter<void>();
   @Output() cancelled = new EventEmitter<void>();
   @Input() isIrishInvestor = false;
@@ -67,11 +67,14 @@ export class AddTransactionModalComponent {
         this.cdr.markForCheck();
       }
     });
+  }
 
+  ngOnInit(): void {
     // Pre-load asset-type defaults if Irish investor
+    // (must be in ngOnInit so @Input() isIrishInvestor is already set)
     if (this.isIrishInvestor) {
       this.apiService.getAssetTypeDefaults().subscribe({
-        next: (defaults) => { this.assetTypeDefaults = defaults; },
+        next: (defaults) => { this.assetTypeDefaults = defaults; this.cdr.markForCheck(); },
         error: () => {}
       });
     }

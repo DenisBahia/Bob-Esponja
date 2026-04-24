@@ -78,6 +78,8 @@
         </div>
 
         <hr class="settings-divider" />
+        <!-- SIA — hidden until feature is active (planned 2027) -->
+        <ng-container *ngIf="false">
         <div class="section-sub-title">SIA — Planned for 2027</div>
 
         <div class="field-row">
@@ -86,6 +88,7 @@
           <input id="sia" type="number" min="0" max="100" step="0.5"
                  [(ngModel)]="defaults.siaAnnualPercent" />
         </div>
+        </ng-container>
       </ng-container>
 
       <!-- Non-Irish investor fields -->

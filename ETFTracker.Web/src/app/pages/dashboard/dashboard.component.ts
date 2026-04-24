@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, AfterViewChecked, ChangeDetectionStrategy, ChangeDetectorRef, ElementRef, ViewChild } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, concat } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, DashboardDto, HoldingDto, ProjectionResultDto, ProjectionSettingsDto, PortfolioEvolutionDto, ProjectionVersionSummaryDto, ProjectionVersionDetailDto, ProjectionDataPointDto, SaveVersionRequestDto, UserGoalDto, GoalDataPointDto, UpsertGoalRequestDto, TaxSummaryDto, TaxEventDto, TaxYearAllowanceSummaryDto, UserTaxDefaultsDto, TaxYearSummaryDto, ExitTaxPotDto, RecalculateTaxYearResultDto } from '../../services/api.service';
@@ -27,11 +27,6 @@ const PIE_COLORS = [
   '#60a5fa', '#c084fc', '#2dd4bf', '#86efac', '#fcd34d',
 ];
 
-const EXCLUDE_PRE_EXISTING_TAX_TOGGLE_ALLOWLIST = new Set([
-  'demo@sample.com',
-  'denis.bahia@uol.com.br',
-  'denis.bahia.1984@gmail.com',
-]);
 
 // Shared dark-theme Chart.js defaults
 const DARK_SCALE_DEFAULTS = {
@@ -83,6 +78,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   taxSummary: TaxSummaryDto | null = null;
   taxSummaryLoading = false;
   taxMarkingAllYear: number | null = null;
+  taxMarkingExitTaxYear: number | null = null;
   recalculating = false;
   taxBannerMessage: string | null = null;
   private collapsedHoldings = new Set<number>();
@@ -99,22 +95,14 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     annualBuyIncreasePercent: 3,
     projectionYears: 10,
     inflationPercent: 2,
-    cgtPercent: 38,
-    exitTaxPercent: 38,
-    excludePreExistingFromTax: false,
-    siaAnnualPercent: 0,
+    cgtPercent: 33,
     startAmount: null,
-    isIrishInvestor: true,
-    taxFreeAllowancePerYear: 1270,
-    deemedDisposalPercent: 38,
-    deemedDisposalEnabled: true,
   };
   /** UI-only: drives the Monthly Buy derivation. Not sent to API directly. */
   targetTotalAmount: number | null = null;
 
   projectionLoading = false;
   projectionSaving = false;
-  showSiaNumbers = false;
   activeProjectionTab: 'chart' | 'table' | 'versions' = 'chart';
   currentYear = new Date().getFullYear();
 
@@ -155,8 +143,6 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
         case 'years':       av = a.settings.projectionYears;                bv = b.settings.projectionYears; break;
         case 'inflation':   av = a.settings.inflationPercent;               bv = b.settings.inflationPercent; break;
         case 'cgt':         av = a.settings.cgtPercent;                     bv = b.settings.cgtPercent; break;
-        case 'exitTax':     av = a.settings.exitTaxPercent;                 bv = b.settings.exitTaxPercent; break;
-        case 'sia':         av = a.settings.siaAnnualPercent;               bv = b.settings.siaAnnualPercent; break;
         default: return 0;
       }
       if (av < bv) return -dir;
@@ -281,50 +267,25 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   // ── Irish Investor toggle ────────────────────────────────────────────────────
-  isIrishInvestor = true;
 
-  /** Returns settings with Irish-specific taxes zeroed out when not an Irish investor. */
   get effectiveProjectionSettings(): ProjectionSettingsDto {
-    if (this.isIrishInvestor) return this.projectionSettings;
-    return { ...this.projectionSettings, cgtPercent: 0, siaAnnualPercent: 0 };
+    return this.projectionSettings;
   }
 
-  get canManageExcludePreExistingTax(): boolean {
-    const email = this.auth.user()?.email?.trim().toLowerCase();
-    return !!email && EXCLUDE_PRE_EXISTING_TAX_TOGGLE_ALLOWLIST.has(email);
+  /** Derived from userTaxDefaults — used by the tax section of the UI. */
+  get isIrishInvestor(): boolean {
+    return this.userTaxDefaults?.isIrishInvestor ?? false;
   }
 
-  toggleIrishInvestor(): void {
-    this.isIrishInvestor = !this.isIrishInvestor;
-    localStorage.setItem('isIrishInvestor', String(this.isIrishInvestor));
-    this.projectionSettings.isIrishInvestor = this.isIrishInvestor;
-    // Recalculate projection with updated effective settings
-    this.projectionChartRendered = false;
-    this.lineChart?.destroy();
-    this.lineChart = null;
-    this.projectionLoading = true;
-    this.cdr.markForCheck();
-    this.apiService.calculateProjection(this.effectiveProjectionSettings).subscribe({
-      next: (result) => {
-        this.projection = result;
-        this.projectionLoading = false;
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.projectionLoading = false;
-        this.cdr.markForCheck();
-      }
-    });
-  }
-
-  toggleExcludePreExistingFromTax(): void {
-    this.projectionSettings.excludePreExistingFromTax = !this.projectionSettings.excludePreExistingFromTax;
-    this.cdr.markForCheck();
+  get projectionTotals(): { totalBuys: number; yearProfit: number } {
+    const points = this.projection?.dataPoints ?? [];
+    return {
+      totalBuys:  points.reduce((sum, p) => sum + p.totalBuys, 0),
+      yearProfit: points.reduce((sum, p) => sum + p.yearProfit, 0),
+    };
   }
 
   constructor(private apiService: ApiService, private cdr: ChangeDetectorRef, public auth: AuthService, public sharingCtx: SharingContextService) {
-    const saved = localStorage.getItem('isIrishInvestor');
-    this.isIrishInvestor = saved === null ? true : saved === 'true';
   }
 
   get canViewProjections(): boolean {
@@ -371,17 +332,9 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.settingsIsFirstTime = false;
     if (saved) {
       this.userTaxDefaults = saved;
-      // Sync isIrishInvestor toggle and relevant projection settings with new defaults
-      this.isIrishInvestor = saved.isIrishInvestor;
-      localStorage.setItem('isIrishInvestor', String(this.isIrishInvestor));
       this.projectionSettings = {
         ...this.projectionSettings,
-        isIrishInvestor: saved.isIrishInvestor,
-        exitTaxPercent: saved.exitTaxPercent,
-        deemedDisposalPercent: saved.deemedDisposalPercent,
-        siaAnnualPercent: saved.siaAnnualPercent,
         cgtPercent: saved.cgtPercent,
-        taxFreeAllowancePerYear: saved.taxFreeAllowancePerYear,
       };
       // Recalculate projection and refresh tax summary with the updated defaults
       this.projectionChartRendered = false;
@@ -408,9 +361,6 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.apiService.getTaxDefaults().subscribe({
       next: (defaults) => {
         this.userTaxDefaults = defaults;
-        // Sync isIrishInvestor from server (authoritative)
-        this.isIrishInvestor = defaults.isIrishInvestor;
-        localStorage.setItem('isIrishInvestor', String(defaults.isIrishInvestor));
         this.cdr.markForCheck();
       },
       error: () => { /* non-fatal — fall back to localStorage value */ }
@@ -633,36 +583,6 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
       }
     ];
 
-    // Add SIA datasets only when Irish investor mode is on and SIA % is configured
-    if (this.isIrishInvestor && this.projectionSettings.siaAnnualPercent > 0) {
-      datasets.push(
-        {
-          label: 'Projected after tax (SIA)',
-          data: points.map(p => p.afterTaxSia ?? 0),
-          borderColor: '#2ec4b6',
-          backgroundColor: 'rgba(46, 196, 182, 0.07)',
-          fill: false,
-          tension: 0.35,
-          pointRadius: 5,
-          pointHoverRadius: 7,
-          pointBackgroundColor: '#2ec4b6',
-          borderDash: [6, 4],
-        },
-        {
-          label: 'After tax inflation-corrected (SIA)',
-          data: points.map(p => p.afterTaxInflationCorrectedSia ?? 0),
-          borderColor: '#9b5de5',
-          backgroundColor: 'rgba(155, 93, 229, 0.07)',
-          fill: false,
-          tension: 0.35,
-          pointRadius: 5,
-          pointHoverRadius: 7,
-          pointBackgroundColor: '#9b5de5',
-          borderDash: [10, 4],
-        }
-      );
-    }
-
     this.lineChart = new Chart(ctx, {
       type: 'line',
       data: {
@@ -755,29 +675,10 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.lineChart = null;
     this.apiService.getProjection().subscribe({
       next: (data) => {
-        this.projectionSettings = { ...data.settings, deemedDisposalPercent: data.settings.deemedDisposalPercent ?? 38 };
-        // Sync the toggle from the persisted server value
-        this.isIrishInvestor = data.settings.isIrishInvestor;
-        localStorage.setItem('isIrishInvestor', String(this.isIrishInvestor));
-        if (!this.isIrishInvestor) {
-          // Server data was calculated with Irish taxes; recalculate without them
-          this.apiService.calculateProjection(this.effectiveProjectionSettings).subscribe({
-            next: (recalc) => {
-              this.projection = recalc;
-              this.projectionLoading = false;
-              this.cdr.markForCheck();
-            },
-            error: () => {
-              this.projection = data;
-              this.projectionLoading = false;
-              this.cdr.markForCheck();
-            }
-          });
-        } else {
-          this.projection = data;
-          this.projectionLoading = false;
-          this.cdr.markForCheck();
-        }
+        this.projectionSettings = { ...data.settings };
+        this.projection = data;
+        this.projectionLoading = false;
+        this.cdr.markForCheck();
       },
       error: (err: HttpErrorResponse) => {
         console.error('Error loading projection:', err);
@@ -788,14 +689,6 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
         this.cdr.markForCheck();
       }
     });
-  }
-
-  onToggleDeemedDisposal(): void {
-    this.projectionSettings.deemedDisposalEnabled = !this.projectionSettings.deemedDisposalEnabled;
-    if (this.projectionSettings.deemedDisposalEnabled) {
-      this.projectionSettings.taxFreeAllowancePerYear = 0;
-    }
-    this.cdr.markForCheck();
   }
 
   saveProjectionSettings(): void {
@@ -1631,8 +1524,6 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
       { key: 'inflationCorrectedAmount',          label: 'Inflation Corrected',                   dash: [6, 3],  shades: ['#f05252', '#b91c1c', '#f87171', '#7f1d1d'] },
       { key: 'afterTaxTotalAmount',               label: 'After Taxes',                           dash: [4, 4],  shades: ['#4d6080', '#2d4565', '#6d80a0', '#1d2f45'] },
       { key: 'afterTaxInflationCorrectedAmount',  label: 'After Tax + Inflation Corrected',       dash: [8, 3],  shades: ['#f89b29', '#c27416', '#fbba60', '#7c4a0a'] },
-      { key: 'afterTaxSia',                       label: 'After Tax (SIA)',                       dash: [6, 4],  shades: ['#2ec4b6', '#178077', '#5de0d4', '#0e5550'] },
-      { key: 'afterTaxInflationCorrectedSia',     label: 'After Tax + Inflation Corrected (SIA)', dash: [10, 4], shades: ['#9b5de5', '#6d28d9', '#bf8af7', '#4c1d95'] },
     ];
 
     const selectedIds = Array.from(this.selectedVersionIds);
@@ -1644,11 +1535,6 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
       const dataPoints = this.versionCompareData.get(id) ?? [];
 
       LINE_TYPE_CONFIG.forEach((lineType, lineIndex) => {
-        // Skip SIA lines when this version has no meaningful SIA data
-        if (lineType.key === 'afterTaxSia' || lineType.key === 'afterTaxInflationCorrectedSia') {
-          const hasSia = dataPoints.some(p => ((p as any)[lineType.key] ?? 0) > 0);
-          if (!hasSia) return;
-        }
 
         const data = dataPoints.map(p => (p as any)[lineType.key] ?? 0);
         // Colour = metric family hue, shade = version index
@@ -2065,6 +1951,76 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     });
   }
 
+  onMarkIrishYearPaid(year: number): void {
+    if (this.sharingCtx.isReadOnly()) return;
+    this.taxMarkingExitTaxYear = year;
+    this.cdr.markForCheck();
+    // Always call both endpoints — backend handles years with no data gracefully.
+    // Do NOT rely on taxSummary to decide which to call (it may be stale after recent buy/sell).
+    concat(
+      this.apiService.markYearPaid(year),
+      this.apiService.markExitTaxYearPaid(year)
+    ).subscribe({
+      complete: () => { this.taxMarkingExitTaxYear = null; this.loadTaxSummary(); },
+      error: () => { this.taxMarkingExitTaxYear = null; this.cdr.markForCheck(); }
+    });
+  }
+
+  get irishTaxByYear(): { year: number; totalProfits: number; totalLosses: number; netGain: number; ddTaxableGain: number; taxableGain: number; taxDue: number; hasCgt: boolean; hasExit: boolean; status: string }[] {
+    if (!this.taxSummary) return [];
+    const map = new Map<number, { year: number; totalProfits: number; totalLosses: number; netGain: number; ddTaxableGain: number; taxableGain: number; taxDue: number; hasCgt: boolean; hasExit: boolean; cgtPaid: boolean; exitPaid: boolean }>();
+
+    const ensure = (y: number) => {
+      if (!map.has(y)) map.set(y, { year: y, totalProfits: 0, totalLosses: 0, netGain: 0, ddTaxableGain: 0, taxableGain: 0, taxDue: 0, hasCgt: false, hasExit: false, cgtPaid: true, exitPaid: true });
+      return map.get(y)!;
+    };
+
+    // Add CGT rows
+    for (const row of (this.taxSummary.cgtByYear ?? [])) {
+      const r = ensure(row.year);
+      r.hasCgt = true;
+      r.totalProfits += row.totalProfits;
+      r.totalLosses += row.totalLosses;
+      r.netGain += row.netGain;
+      r.taxableGain += row.taxableGain;
+      r.taxDue += row.taxDue;
+      if (row.status !== 'Paid') r.cgtPaid = false;
+    }
+
+    // Add ExitTax pots aggregated by year
+    for (const pot of (this.taxSummary.exitTaxPots ?? [])) {
+      const r = ensure(pot.year);
+      r.hasExit = true;
+      r.totalProfits += pot.totalProfits;
+      r.totalLosses += pot.totalLosses;
+      r.netGain += pot.netTaxableGain;
+      r.taxableGain += pot.netTaxableGain;
+      r.taxDue += pot.taxDue;
+      if (pot.status !== 'Paid') r.exitPaid = false;
+    }
+
+    // Add Deemed Disposal TaxEvents (Irish exit tax on 8-yr rule, stored as TaxEvents not SellRecords)
+    for (const ev of (this.taxSummary.events ?? [])) {
+      if (ev.taxSubType !== 'DeemedDisposal') continue;
+      const y = new Date(ev.eventDate).getFullYear();
+      const r = ensure(y);
+      r.hasExit = true;
+      r.ddTaxableGain += ev.taxableGain ?? 0;  // sum of all DD taxable gains across all assets for this year
+      r.taxableGain += ev.taxableGain ?? 0;
+      r.taxDue += ev.taxAmount ?? 0;
+      if (ev.status !== 'Paid') r.exitPaid = false;
+    }
+
+    return Array.from(map.values())
+      .sort((a, b) => a.year - b.year)
+      .map(r => ({
+        year: r.year, totalProfits: r.totalProfits, totalLosses: r.totalLosses,
+        netGain: r.netGain, ddTaxableGain: r.ddTaxableGain, taxableGain: r.taxableGain, taxDue: r.taxDue,
+        hasCgt: r.hasCgt, hasExit: r.hasExit,
+        status: (!r.hasCgt || r.cgtPaid) && (!r.hasExit || r.exitPaid) ? 'Paid' : 'Pending'
+      }));
+  }
+
   recalculateTaxYear(year: number): void {
     if (this.sharingCtx.isReadOnly()) return;
     this.recalculating = true;
@@ -2100,6 +2056,13 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   getTaxPendingCurrentYear(): number {
     if (!this.taxSummary) return 0;
     const y = this.getTaxCurrentYear();
+    // Irish: use combined irishTaxByYear which covers both CGT and ExitTax
+    if (this.isIrishInvestor) {
+      const row = this.irishTaxByYear.find(r => r.year === y);
+      if (!row) return 0;
+      if (row.status === 'Paid') return 0;
+      return row.taxDue;
+    }
     // If the CGT year is already marked Paid, nothing is pending
     const cgtYear = this.taxSummary.cgtByYear?.find((r: any) => r.year === y);
     if (cgtYear?.status === 'Paid') return 0;

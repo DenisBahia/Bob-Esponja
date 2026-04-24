@@ -214,6 +214,7 @@
                 <tr>
                   <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='ticker'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='ticker'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('ticker')">Ticker</th>
                   <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='etfName'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='etfName'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('etfName')">Asset Name</th>
+                  <th>Type</th>
                   <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='quantity'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='quantity'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('quantity')">Quantity</th>
                   <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='avgCost'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='avgCost'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('avgCost')">Avg Cost</th>
                   <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='currentPrice'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='currentPrice'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('currentPrice')">Current Price</th>
@@ -222,7 +223,7 @@
                   <th>Actions</th>
                 </tr>
                 <tr class="periods-header">
-                  <th colspan="6"></th>
+                  <th colspan="7"></th>
                   <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='totalGainLoss'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='totalGainLoss'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('totalGainLoss')">Total</th>
                   <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='daily'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='daily'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('daily')">Daily</th>
                   <th class="sortable" [ngClass]="{'sort-asc': holdingsSortCol==='weekly'&&holdingsSortDir==='asc','sort-desc': holdingsSortCol==='weekly'&&holdingsSortDir==='desc'}" (click)="sortHoldingsBy('weekly')">Weekly</th>
@@ -235,6 +236,7 @@
                 <tr *ngFor="let holding of sortedHoldings" class="holding-row" [ngClass]="{'price-unavailable': holding.priceUnavailable}">
                   <td class="ticker"><strong>{{ holding.ticker }}</strong></td>
                   <td>{{ holding.etfName }}</td>
+                  <td class="asset-type-badge"><span *ngIf="holding.assetType" class="badge">{{ holding.assetType }}</span></td>
                   <td class="quantity">{{ formatQuantity(holding.quantity) }}</td>
                   <td class="price">{{ formatCurrency(holding.averageCost) }}</td>
                   <td class="price">{{ formatCurrency(holding.currentPrice) }}</td>
@@ -397,52 +399,55 @@
           </div>
         </div>
 
-        <!-- ── CGT by Year table ───────────────────────────────────────── -->
-        <div class="tax-year-section" *ngIf="taxSummary.cgtByYear && taxSummary.cgtByYear.length > 0">
-          <h3 class="tax-section-title">CGT by Year</h3>
+        <!-- ── Tax by Year (Irish only) — CGT + Exit Tax combined ── -->
+        <div class="tax-year-section" *ngIf="isIrishInvestor && irishTaxByYear.length > 0">
+          <h3 class="tax-section-title">Tax by Year</h3>
           <table class="tax-year-table">
             <thead>
               <tr>
                 <th>Year</th>
                 <th>Profits</th>
                 <th>Losses</th>
-                <th>Net Gain</th>
-                <th *ngIf="!isIrishInvestor">Allowance</th>
-                <th>Taxable Gain</th>
-                <th>Tax Due <span class="th-note">(gross, before allowance)</span></th>
+                <th class="tax-col-sep-right">Net Gain</th>
+                <th class="tax-col-sep-right">DD Taxable Gain</th>
+                <th class="tax-col-sep-right">Taxable Gain</th>
+                <th>Tax Due</th>
                 <th>Status</th>
                 <th *ngIf="!sharingCtx.isReadOnly()">Action</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let row of taxSummary.cgtByYear">
+              <tr *ngFor="let row of irishTaxByYear">
                 <td>{{ row.year }}</td>
                 <td class="positive">{{ formatCurrency(row.totalProfits) }}</td>
                 <td class="negative">{{ row.totalLosses < 0 ? formatCurrency(row.totalLosses) : '—' }}</td>
-                <td [class.negative]="row.netGain < 0" [class.positive]="row.netGain > 0">{{ formatCurrency(row.netGain) }}</td>
-                <td *ngIf="!isIrishInvestor">{{ row.taxFreeAllowance > 0 ? formatCurrency(row.taxFreeAllowance) : '—' }}</td>
-                <td>{{ formatCurrency(row.taxableGain) }}</td>
+                <td class="tax-col-sep-right" [class.negative]="row.netGain < 0" [class.positive]="row.netGain > 0">{{ formatCurrency(row.netGain) }}</td>
+                <td class="tax-col-sep-right tax-dd-due">{{ row.ddTaxableGain > 0 ? formatCurrency(row.ddTaxableGain) : '—' }}</td>
+                <td class="tax-col-sep-right">{{ formatCurrency(row.taxableGain) }}</td>
                 <td class="te-tax-amt">{{ formatCurrency(row.taxDue) }}</td>
                 <td><span class="te-status" [class.te-status--pending]="row.status === 'Pending'" [class.te-status--paid]="row.status === 'Paid'">{{ row.status }}</span></td>
                 <td *ngIf="!sharingCtx.isReadOnly()">
                   <button type="button" class="btn-te-paid" *ngIf="row.status !== 'Paid'"
-                          [disabled]="taxMarkingAllYear !== null"
-                          (click)="onMarkAllPaid(row.year)">
-                    {{ taxMarkingAllYear === row.year ? 'Marking…' : 'Mark Paid' }}
+                          [disabled]="taxMarkingExitTaxYear !== null"
+                          (click)="onMarkIrishYearPaid(row.year)">
+                    {{ taxMarkingExitTaxYear === row.year ? 'Marking…' : 'Mark Paid' }}
                   </button>
                   <span class="te-paid-on" *ngIf="row.status === 'Paid'">✓ Paid</span>
                 </td>
               </tr>
             </tbody>
           </table>
-          <p class="tax-note" *ngIf="isIrishInvestor">CGT losses can offset profits within the same year. They do not carry forward.</p>
         </div>
+
+        <!-- ── Separator between Tax by Year and Exit Tax Pots (Irish only) ── -->
+        <hr class="tax-table-separator" *ngIf="isIrishInvestor && irishTaxByYear.length > 0 && taxSummary.exitTaxPots && taxSummary.exitTaxPots.length > 0">
 
         <!-- ── Exit Tax pots (Irish only) ─────────────────────────────── -->
         <div class="tax-year-section" *ngIf="isIrishInvestor && taxSummary.exitTaxPots && taxSummary.exitTaxPots.length > 0">
           <h3 class="tax-section-title">
-            Exit Tax Pots
+            Exit Tax Pots by Year
             <span class="tooltip-icon" title="Exit Tax losses within this asset and year can offset gains from the same asset in the same year. They cannot reduce Exit Tax on other assets.">ⓘ</span>
+            <span class="tax-section-badge tax-section-badge--exit">For assets subject to Deemed Disposal (Exit Tax)</span>
           </h3>
           <table class="tax-year-table">
             <thead>
@@ -451,10 +456,9 @@
                 <th>Year</th>
                 <th>Profits</th>
                 <th>Losses</th>
-                <th>DD Credit</th>
+                <th>DD Taxable Gain</th>
                 <th>Taxable Gain</th>
                 <th>Tax Due</th>
-                <th>Status</th>
               </tr>
             </thead>
             <tbody>
@@ -466,7 +470,80 @@
                 <td>{{ pot.deemedDisposalCreditUsed > 0 ? formatCurrency(pot.deemedDisposalCreditUsed) : '—' }}</td>
                 <td>{{ formatCurrency(pot.netTaxableGain) }}</td>
                 <td class="te-tax-amt">{{ formatCurrency(pot.taxDue) }}</td>
-                <td><span class="te-status te-status--pending">{{ pot.status }}</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- ── Separator between Exit Tax Pots and CGT by Year (Irish only) ── -->
+        <hr class="tax-table-separator" *ngIf="isIrishInvestor && taxSummary.exitTaxPots && taxSummary.exitTaxPots.length > 0 && taxSummary.cgtByYear && taxSummary.cgtByYear.length > 0">
+
+        <!-- ── CGT by Year table (Irish only — shown below other tables) ─── -->
+        <div class="tax-year-section" *ngIf="isIrishInvestor && taxSummary.cgtByYear && taxSummary.cgtByYear.length > 0">
+          <h3 class="tax-section-title">
+            CGT by Year
+            <span class="tax-section-badge tax-section-badge--cgt">For assets not subject to Deemed Disposal</span>
+          </h3>
+          <table class="tax-year-table">
+            <thead>
+              <tr>
+                <th>Year</th>
+                <th>Profits</th>
+                <th>Losses</th>
+                <th>Net Gain</th>
+                <th>Taxable Gain</th>
+                <th>Tax Due <span class="th-note">(net, after allowance)</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of taxSummary.cgtByYear">
+                <td>{{ row.year }}</td>
+                <td class="positive">{{ formatCurrency(row.totalProfits) }}</td>
+                <td class="negative">{{ row.totalLosses < 0 ? formatCurrency(row.totalLosses) : '—' }}</td>
+                <td [class.negative]="row.netGain < 0" [class.positive]="row.netGain > 0">{{ formatCurrency(row.netGain) }}</td>
+                <td>{{ formatCurrency(row.taxableGain) }}</td>
+                <td class="te-tax-amt">{{ formatCurrency(row.taxDue) }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="tax-note">CGT losses can offset profits within the same year. They do not carry forward.</p>
+        </div>
+
+        <!-- ── CGT by Year table (non-Irish) ─────────────────────────── -->
+        <div class="tax-year-section" *ngIf="!isIrishInvestor && taxSummary.cgtByYear && taxSummary.cgtByYear.length > 0">
+          <h3 class="tax-section-title">CGT by Year</h3>
+          <table class="tax-year-table">
+            <thead>
+              <tr>
+                <th>Year</th>
+                <th>Profits</th>
+                <th>Losses</th>
+                <th>Net Gain</th>
+                <th>Allowance</th>
+                <th>Taxable Gain</th>
+                <th>Tax Due <span class="th-note">(net, after allowance)</span></th>
+                <th>Status</th>
+                <th *ngIf="!sharingCtx.isReadOnly()">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of taxSummary.cgtByYear">
+                <td>{{ row.year }}</td>
+                <td class="positive">{{ formatCurrency(row.totalProfits) }}</td>
+                <td class="negative">{{ row.totalLosses < 0 ? formatCurrency(row.totalLosses) : '—' }}</td>
+                <td [class.negative]="row.netGain < 0" [class.positive]="row.netGain > 0">{{ formatCurrency(row.netGain) }}</td>
+                <td>{{ row.taxFreeAllowance > 0 ? formatCurrency(row.taxFreeAllowance) : '—' }}</td>
+                <td>{{ formatCurrency(row.taxableGain) }}</td>
+                <td class="te-tax-amt">{{ formatCurrency(row.taxDue) }}</td>
+                <td><span class="te-status" [class.te-status--pending]="row.status === 'Pending'" [class.te-status--paid]="row.status === 'Paid'">{{ row.status }}</span></td>
+                <td *ngIf="!sharingCtx.isReadOnly()">
+                  <button type="button" class="btn-te-paid" *ngIf="row.status !== 'Paid'"
+                          [disabled]="taxMarkingAllYear !== null"
+                          (click)="onMarkAllPaid(row.year)">
+                    {{ taxMarkingAllYear === row.year ? 'Marking…' : 'Mark Paid' }}
+                  </button>
+                  <span class="te-paid-on" *ngIf="row.status === 'Paid'">✓ Paid</span>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -731,56 +808,14 @@
 
         <div class="tax-section-separator"></div>
 
-        <!-- Tax Section: Deemed Disposal / Exit Tax (CGT for non-Irish investors) -->
+        <!-- Tax Section: CGT -->
         <div class="tax-section">
-          <div class="tax-section-header">{{ isIrishInvestor ? 'Deemed Disposal / Exit Tax' : 'CGT' }}</div>
+          <div class="tax-section-header">CGT</div>
           <div class="tax-section-fields">
             <div class="param-group">
-              <label for="exitTax">{{ isIrishInvestor ? 'CGT / Exit Tax %' : 'CGT %' }}</label>
-              <input id="exitTax" type="number" step="0.1" min="0" max="100"
-                     [(ngModel)]="projectionSettings.exitTaxPercent" />
-            </div>
-
-            <!-- Apply Deemed Disposal toggle — Irish investors only -->
-            <div class="param-group toggle-param" *ngIf="isIrishInvestor">
-              <label>
-                Apply Deemed Disposal
-                <span class="badge-info" title="When on, Exit Tax is applied every 8 years on unrealised gains.">ⓘ</span>
-              </label>
-              <div class="toggle-switch" [class.active]="projectionSettings.deemedDisposalEnabled"
-                   (click)="onToggleDeemedDisposal()">
-                <span class="toggle-track"><span class="toggle-thumb"></span></span>
-              </div>
-              <span class="param-hint">When on, Exit Tax is applied every 8 years on unrealised gains.</span>
-            </div>
-
-            <!-- Tax-Free Allowance — applies to CGT only (not deemed disposal / exit tax) -->
-            <div class="param-group">
-              <label for="taxFreeAllowance">Annual Tax-Free Allowance</label>
-              <input id="taxFreeAllowance" type="number" step="100" min="0"
-                     [(ngModel)]="projectionSettings.taxFreeAllowancePerYear"
-                     placeholder="0"
-                     [disabled]="isIrishInvestor && projectionSettings.deemedDisposalEnabled" />
-              <span class="param-hint" *ngIf="isIrishInvestor && projectionSettings.deemedDisposalEnabled">Disabled while Apply Deemed Disposal is on.</span>
-              <span class="param-hint" *ngIf="isIrishInvestor && !projectionSettings.deemedDisposalEnabled">Deducted from taxable gains each year before CGT is applied. Not applied to Deemed Disposal or Exit Tax. 0 = disabled.</span>
-              <span class="param-hint" *ngIf="!isIrishInvestor">Deducted from taxable gains each year before CGT is applied. 0 = disabled.</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="tax-section-separator"></div>
-
-        <!-- Tax Section: SIA (Alternative) — Irish investors only -->
-        <div class="tax-section" *ngIf="isIrishInvestor">
-          <div class="tax-section-header">
-            SIA Tax (Alternative)
-            <span class="sia-tooltip" title="Replaces Deemed Disposal &amp; Exit Tax — charged yearly on total portfolio value, not just profits.">ℹ️</span>
-          </div>
-          <div class="tax-section-fields">
-            <div class="param-group">
-              <label for="siaAnnual">SIA Annual %</label>
-              <input id="siaAnnual" type="number" step="0.01" min="0" max="100"
-                     [(ngModel)]="projectionSettings.siaAnnualPercent" />
+              <label for="cgt">CGT %</label>
+              <input id="cgt" type="number" step="0.1" min="0" max="100"
+                     [(ngModel)]="projectionSettings.cgtPercent" />
             </div>
           </div>
         </div>
@@ -851,12 +886,6 @@
           <p>Calculating projection…</p>
         </div>
         <div class="projection-table-wrapper" *ngIf="projection && !projectionLoading">
-          <div class="table-controls" *ngIf="isIrishInvestor && projectionSettings.siaAnnualPercent > 0">
-            <label class="checkbox-label show-sia-checkbox" for="showSiaNumbers">
-              <input id="showSiaNumbers" type="checkbox" [(ngModel)]="showSiaNumbers" />
-              Show SIA numbers
-            </label>
-          </div>
           <table class="projection-table">
             <thead>
               <tr>
@@ -869,9 +898,6 @@
                 <th>Tax Due</th>
                 <th>After Tax Balance</th>
                 <th>After Tax Balance Inflation-Corrected</th>
-                <th *ngIf="showSiaNumbers" class="sia-col-header">SIA</th>
-                <th *ngIf="showSiaNumbers" class="sia-col-header">After Tax (SIA)</th>
-                <th *ngIf="showSiaNumbers" class="sia-col-header">After Tax Infl.-Corrected (SIA)</th>
               </tr>
             </thead>
             <tbody>
@@ -884,19 +910,24 @@
                 </td>
                 <td class="value-col eoy-col">{{ formatCurrency(point.totalAmount) }}</td>
                 <td class="value-col inflation-col">{{ formatCurrency(point.inflationCorrectedAmount) }}</td>
-                <td class="value-col tax-col" [ngClass]="(point.taxPaid + point.exitTaxPaid) > 0 ? 'tax-due' : ''">
-                  {{ (point.taxPaid + point.exitTaxPaid) > 0 ? formatCurrency(point.taxPaid + point.exitTaxPaid) : '—' }}
-                  <span *ngIf="point.exitTaxPaid > 0" class="exit-tax-badge"
-                        [title]="isIrishInvestor ? ('Includes exit tax of ' + formatCurrency(point.exitTaxPaid)) : ('Includes CGT of ' + formatCurrency(point.exitTaxPaid))">
-                    {{ isIrishInvestor ? 'ET' : 'CGT' }}</span>
+                <td class="value-col tax-col" [ngClass]="point.taxPaid > 0 ? 'tax-due' : ''">
+                  {{ point.taxPaid > 0 ? formatCurrency(point.taxPaid) : '—' }}
                 </td>
                 <td class="value-col after-tax-col">{{ formatCurrency(point.afterTaxTotalAmount) }}</td>
                 <td class="value-col after-tax-inflation-col">{{ formatCurrency(point.afterTaxInflationCorrectedAmount) }}</td>
-                <td *ngIf="showSiaNumbers" class="value-col sia-col">{{ formatCurrency(point.siaTax ?? 0) }}</td>
-                <td *ngIf="showSiaNumbers" class="value-col sia-col">{{ formatCurrency(point.afterTaxSia ?? 0) }}</td>
-                <td *ngIf="showSiaNumbers" class="value-col sia-col">{{ formatCurrency(point.afterTaxInflationCorrectedSia ?? 0) }}</td>
               </tr>
             </tbody>
+            <tfoot class="projection-totals-row">
+              <tr>
+                <td><strong>Total</strong></td>
+                <td>—</td>
+                <td class="value-col buys-col"><strong>{{ formatCurrency(projectionTotals.totalBuys) }}</strong></td>
+                <td class="value-col profit-col" [ngClass]="projectionTotals.yearProfit >= 0 ? 'positive' : 'negative'">
+                  <strong>{{ formatCurrency(projectionTotals.yearProfit) }}</strong>
+                </td>
+                <td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       </div>
@@ -926,9 +957,6 @@
                   <th class="sortable" title="Projection years" [ngClass]="{'sort-asc': versionsSortCol==='years'&&versionsSortDir==='asc','sort-desc': versionsSortCol==='years'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('years')">Years</th>
                   <th class="sortable" title="Inflation %" [ngClass]="{'sort-asc': versionsSortCol==='inflation'&&versionsSortDir==='asc','sort-desc': versionsSortCol==='inflation'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('inflation')">Inflation %</th>
                   <th class="sortable" title="Capital Gains Tax %" [ngClass]="{'sort-asc': versionsSortCol==='cgt'&&versionsSortDir==='asc','sort-desc': versionsSortCol==='cgt'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('cgt')">CGT %</th>
-                  <th class="sortable" title="Exit Tax %" [ngClass]="{'sort-asc': versionsSortCol==='exitTax'&&versionsSortDir==='asc','sort-desc': versionsSortCol==='exitTax'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('exitTax')">Exit Tax %</th>
-                  <th title="Exclude pre-existing holdings from tax">Excl. Pre-ex.</th>
-                  <th class="sortable" title="SIA annual tax %" [ngClass]="{'sort-asc': versionsSortCol==='sia'&&versionsSortDir==='asc','sort-desc': versionsSortCol==='sia'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('sia')">SIA %</th>
                   <th></th>
                 </tr>
               </thead>
@@ -953,9 +981,6 @@
                   <td class="version-stat-col">{{ v.settings.projectionYears }}y</td>
                   <td class="version-stat-col">{{ v.settings.inflationPercent }}%</td>
                   <td class="version-stat-col">{{ v.settings.cgtPercent }}%</td>
-                  <td class="version-stat-col">{{ v.settings.exitTaxPercent }}%</td>
-                  <td class="version-stat-col version-bool-col">{{ v.settings.excludePreExistingFromTax ? '✓' : '—' }}</td>
-                  <td class="version-stat-col">{{ v.settings.siaAnnualPercent > 0 ? v.settings.siaAnnualPercent + '%' : '—' }}</td>
                   <td class="version-delete-col">
                     <ng-container *ngIf="!sharingCtx.isReadOnly()">
                       <button class="btn-save-as-goal"
@@ -1023,7 +1048,7 @@
   <app-add-transaction-modal
     *ngIf="showAddTransactionModal"
     [isIrishInvestor]="isIrishInvestor"
-    [taxRate]="isIrishInvestor ? projectionSettings.exitTaxPercent : projectionSettings.cgtPercent"
+    [taxRate]="projectionSettings.cgtPercent"
     (transactionAdded)="onTransactionAdded()"
     (cancelled)="onTransactionCancelled()">
   </app-add-transaction-modal>
@@ -1039,7 +1064,7 @@
     *ngIf="showSellModal && selectedSellHolding"
     [holding]="selectedSellHolding"
     [isIrishInvestor]="isIrishInvestor"
-    [projectionSettings]="projectionSettings"
+    [userTaxDefaults]="userTaxDefaults"
     (sold)="onSellConfirmed()"
     (cancelled)="onSellModalClosed()">
   </app-sell-modal>

@@ -37,10 +37,10 @@ public class TaxEventsController : ControllerBase
     {
         try
         {
-            var projSettings = await _db.ProjectionSettings
+            var projSettings = await _db.UserSettings
                 .FirstOrDefaultAsync(ps => ps.UserId == UserId, ct);
             var isIrishInvestor = projSettings?.IsIrishInvestor ?? false;
-            var annualAllowance = (!isIrishInvestor && (projSettings?.TaxFreeAllowancePerYear ?? 0) > 0)
+            var annualAllowance = ((projSettings?.TaxFreeAllowancePerYear ?? 0) > 0)
                 ? projSettings!.TaxFreeAllowancePerYear
                 : 0m;
 
@@ -126,6 +126,7 @@ public class TaxEventsController : ControllerBase
 
             // ── Exit Tax pots (Irish only, per asset per year) ────────────────
             var exitTaxPots = new List<ExitTaxPotDto>();
+            var exitAnnualSummaryList = new List<AnnualTaxSummary>();
             if (isIrishInvestor)
             {
                 var exitSells = await _db.SellRecords
@@ -134,21 +135,36 @@ public class TaxEventsController : ControllerBase
                               && sr.TaxType == "ExitTax")
                     .ToListAsync(ct);
 
+                exitAnnualSummaryList = await _db.AnnualTaxSummaries
+                    .Where(a => a.UserId == UserId && a.TaxType == "ExitTax")
+                    .ToListAsync(ct);
+                var exitAnnualStatuses = exitAnnualSummaryList
+                    .ToDictionary(a => (a.HoldingId, a.TaxYear), a => a.Status);
+
                 foreach (var group in exitSells.GroupBy(sr => new { sr.HoldingId, Year = sr.SellDate.Year }))
                 {
                     var profits = group.Where(r => r.TotalProfit > 0).Sum(r => r.TotalProfit);
                     var losses = group.Where(r => r.TotalProfit < 0).Sum(r => r.TotalProfit);
                     var netGain = profits + losses;
 
-                    // Deemed disposal credit: sum of deemed disposal tax events for this holding before end of year
-                    var yearEnd = new DateOnly(group.Key.Year, 12, 31);
-                    var ddCredit = await _db.TaxEvents
+                    // Deemed disposal credit: taxable gain from deemed disposal events up to and including sell year,
+                    // scaled proportionally to the quantity sold vs total buy quantity for this holding.
+                    var totalDdCreditRaw = await _db.TaxEvents
                         .Where(te => te.HoldingId == group.Key.HoldingId
                                   && te.EventType == TaxEventType.DeemedDisposal
-                                  && te.EventDate <= yearEnd)
-                        .SumAsync(te => te.TaxAmount, ct);
+                                  && te.EventDate.Year <= group.Key.Year)
+                        .SumAsync(te => te.TaxableGain, ct);
+
+                    var totalBuyQty = await _db.Transactions
+                        .Where(t => t.HoldingId == group.Key.HoldingId)
+                        .SumAsync(t => t.Quantity, ct);
+
+                    var qtySold = group.Sum(r => r.Quantity);
+                    var ratio = (totalBuyQty > 0m) ? Math.Min(1m, qtySold / totalBuyQty) : 0m;
+                    var ddCredit = Math.Round(totalDdCreditRaw * ratio, 2);
 
                     var taxable = Math.Max(0m, netGain - ddCredit);
+                    var potStatus = exitAnnualStatuses.TryGetValue((group.Key.HoldingId, group.Key.Year), out var ps) ? ps : "Pending";
                     exitTaxPots.Add(new ExitTaxPotDto
                     {
                         HoldingId = group.Key.HoldingId,
@@ -159,7 +175,7 @@ public class TaxEventsController : ControllerBase
                         DeemedDisposalCreditUsed = ddCredit,
                         NetTaxableGain = taxable,
                         TaxDue = taxable * (projSettings?.ExitTaxPercent ?? 41m) / 100m,
-                        Status = "Pending"
+                        Status = potStatus
                     });
                 }
                 exitTaxPots = exitTaxPots.OrderBy(p => p.Year).ThenBy(p => p.Ticker).ToList();
@@ -186,23 +202,42 @@ public class TaxEventsController : ControllerBase
                     });
                 }
                 // After-allowance total = CGT pending (from cgtByYear) + non-CGT pending events
-                var nonCgtPending = dtos.Where(e => e.Status == "Pending" && e.TaxSubType != "CGT").Sum(e => e.TaxAmount);
+                // For Irish: ExitTax pending uses exitTaxPots statuses, NOT raw TaxEvents
+                var nonCgtPending = isIrishInvestor
+                    ? dtos.Where(e => e.Status == "Pending" && e.TaxSubType != "CGT" && e.TaxSubType != "ExitTax").Sum(e => e.TaxAmount)
+                      + exitTaxPots.Where(p => p.Status == "Pending").Sum(p => p.TaxDue)
+                    : dtos.Where(e => e.Status == "Pending" && e.TaxSubType != "CGT").Sum(e => e.TaxAmount);
                 totalPendingAfterAllowance = cgtByYear.Where(y => y.Status == "Pending").Sum(y => y.TaxDue) + nonCgtPending;
             }
             else
             {
-                totalPendingAfterAllowance = dtos.Where(e => e.Status == "Pending").Sum(e => e.TaxAmount);
+                // For Irish: ExitTax pending uses exitTaxPots statuses
+                totalPendingAfterAllowance = isIrishInvestor
+                    ? cgtByYear.Where(y => y.Status == "Pending").Sum(y => y.TaxDue)
+                      + dtos.Where(e => e.Status == "Pending" && e.TaxSubType != "CGT" && e.TaxSubType != "ExitTax").Sum(e => e.TaxAmount)
+                      + exitTaxPots.Where(p => p.Status == "Pending").Sum(p => p.TaxDue)
+                    : dtos.Where(e => e.Status == "Pending").Sum(e => e.TaxAmount);
             }
 
             // TotalPending: use CgtByYear for CGT portion (accurate year-level calc) + non-CGT events
-            var nonCgtPendingTotal = dtos.Where(e => e.Status == "Pending" && e.TaxSubType != "CGT").Sum(e => e.TaxAmount);
-            var cgtPendingTotal = cgtByYear.Where(y => y.Status == "Pending").Sum(y => y.TaxDue);  // already nets losses + allowance
+            // For Irish: ExitTax pending uses exitTaxPots statuses (AnnualTaxSummary is source of truth)
+            var nonCgtPendingTotal = isIrishInvestor
+                ? dtos.Where(e => e.Status == "Pending" && e.TaxSubType != "CGT" && e.TaxSubType != "ExitTax").Sum(e => e.TaxAmount)
+                  + exitTaxPots.Where(p => p.Status == "Pending").Sum(p => p.TaxDue)
+                : dtos.Where(e => e.Status == "Pending" && e.TaxSubType != "CGT").Sum(e => e.TaxAmount);
+            var cgtPendingTotal = cgtByYear.Where(y => y.Status == "Pending").Sum(y => y.TaxDue);
+
+            // ExitTax paid: use exitTaxPots live TaxDue for paid pots (accurate even on first mark-paid)
+            var exitTaxPaidTotal = isIrishInvestor
+                ? exitTaxPots.Where(p => p.Status == "Paid").Sum(p => p.TaxDue)
+                : 0m;
 
             return Ok(new TaxSummaryDto
             {
-                // TotalPaid = non-CGT paid events (DeemedDisposals etc.) + CGT years snapshotted PaidTaxAmount
-                TotalPaid = dtos.Where(e => e.Status == "Paid" && e.TaxSubType != "CGT").Sum(e => e.TaxAmount)
-                          + annualSummaries.Where(a => a.Status == "Paid").Sum(a => a.PaidTaxAmount),
+                // TotalPaid = non-CGT/non-ExitTax paid events + CGT annual paid snapshots + ExitTax annual paid snapshots
+                TotalPaid = dtos.Where(e => e.Status == "Paid" && e.TaxSubType != "CGT" && e.TaxSubType != "ExitTax").Sum(e => e.TaxAmount)
+                          + annualSummaries.Where(a => a.Status == "Paid").Sum(a => a.PaidTaxAmount)
+                          + exitTaxPaidTotal,
                 TotalPending = cgtPendingTotal + nonCgtPendingTotal,
                 IsIrishInvestor = isIrishInvestor,
                 NextDeemedDisposalDate = nextDd,
@@ -231,12 +266,12 @@ public class TaxEventsController : ControllerBase
             if (_sharingContext.IsReadOnly())
                 return StatusCode(403, new { message = "Read-only profile." });
 
-            var projSettings = await _db.ProjectionSettings
+            var projSettings = await _db.UserSettings
                 .FirstOrDefaultAsync(ps => ps.UserId == UserId, ct);
             var isIrishInvestor = projSettings?.IsIrishInvestor ?? false;
             var cgtRate = projSettings?.CgtPercent ?? 33m;
             var exitTaxRate = projSettings?.ExitTaxPercent ?? 41m;
-            var annualAllowance = (!isIrishInvestor && (projSettings?.TaxFreeAllowancePerYear ?? 0) > 0)
+            var annualAllowance = ((projSettings?.TaxFreeAllowancePerYear ?? 0) > 0)
                 ? projSettings!.TaxFreeAllowancePerYear
                 : 0m;
 
@@ -280,12 +315,22 @@ public class TaxEventsController : ControllerBase
                     var profits = group.Where(r => r.TotalProfit > 0).Sum(r => r.TotalProfit);
                     var losses = group.Where(r => r.TotalProfit < 0).Sum(r => r.TotalProfit);
                     var netGain = profits + losses;
-                    var yearEnd = new DateOnly(year, 12, 31);
-                    var ddCredit = await _db.TaxEvents
+
+                    // Deemed disposal credit: taxable gain from DD events up to and including sell year, scaled to qty sold / total buy qty.
+                    var totalDdCreditRaw = await _db.TaxEvents
                         .Where(te => te.HoldingId == group.Key
                                   && te.EventType == TaxEventType.DeemedDisposal
-                                  && te.EventDate <= yearEnd)
-                        .SumAsync(te => te.TaxAmount, ct);
+                                  && te.EventDate.Year <= year)
+                        .SumAsync(te => te.TaxableGain, ct);
+
+                    var totalBuyQty = await _db.Transactions
+                        .Where(t => t.HoldingId == group.Key)
+                        .SumAsync(t => t.Quantity, ct);
+
+                    var qtySold = group.Sum(r => r.Quantity);
+                    var ratio = (totalBuyQty > 0m) ? Math.Min(1m, qtySold / totalBuyQty) : 0m;
+                    var ddCredit = Math.Round(totalDdCreditRaw * ratio, 2);
+
 
                     var taxable = Math.Max(0m, netGain - ddCredit);
                     var taxDue = taxable * exitTaxRate / 100m;
@@ -424,6 +469,67 @@ public class TaxEventsController : ControllerBase
         }
     }
 
+    [HttpPut("mark-exit-tax-year-paid/{year:int}")]
+    public async Task<ActionResult<object>> MarkExitTaxYearPaid(int year, CancellationToken ct = default)
+    {
+        try
+        {
+            if (_sharingContext.IsReadOnly())
+                return StatusCode(403, new { message = "Read-only profile." });
+
+            var holdingIds = await _db.Holdings
+                .Where(h => h.UserId == UserId).Select(h => h.Id).ToListAsync(ct);
+
+            var existingPots = await _db.AnnualTaxSummaries
+                .Where(a => a.UserId == UserId && a.TaxType == "ExitTax" && a.TaxYear == year)
+                .ToListAsync(ct);
+
+            foreach (var pot in existingPots)
+            {
+                pot.PaidTaxAmount = pot.TaxDue;
+                pot.Status = "Paid";
+                pot.RecalculatedAt = DateTime.UtcNow;
+            }
+
+            var coveredHoldings = existingPots.Select(p => p.HoldingId).ToHashSet();
+            var holdingsWithSells = await _db.SellRecords
+                .Where(sr => holdingIds.Contains(sr.HoldingId) && sr.TaxType == "ExitTax" && sr.SellDate.Year == year)
+                .Select(sr => sr.HoldingId).Distinct().ToListAsync(ct);
+
+            foreach (var hId in holdingsWithSells.Where(h => !coveredHoldings.Contains(h)))
+            {
+                _db.AnnualTaxSummaries.Add(new AnnualTaxSummary
+                {
+                    UserId = UserId, TaxYear = year, TaxType = "ExitTax",
+                    HoldingId = hId, Status = "Paid", PaidTaxAmount = 0m,
+                    RecalculatedAt = DateTime.UtcNow
+                });
+            }
+
+            // Also mark any Deemed Disposal TaxEvents for this year as Paid
+            var deemedDisposalEvents = await _db.TaxEvents
+                .Where(te => holdingIds.Contains(te.HoldingId)
+                          && te.EventType == TaxEventType.DeemedDisposal
+                          && te.EventDate.Year == year
+                          && te.Status == TaxEventStatus.Pending)
+                .ToListAsync(ct);
+
+            foreach (var te in deemedDisposalEvents)
+            {
+                te.Status = TaxEventStatus.Paid;
+                te.PaidAt = DateTime.UtcNow;
+            }
+
+            await _db.SaveChangesAsync(ct);
+            return Ok(new { year, status = "Paid" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error marking exit tax year {Year} as paid", year);
+            return StatusCode(500, new { message = "Error updating exit tax year status" });
+        }
+    }
+
     // ── Helpers ─────────────────────────────────────────────────────────────────
 
     private async Task UpsertAnnualSummaryAsync(
@@ -457,8 +563,13 @@ public class TaxEventsController : ControllerBase
         }
         else
         {
-            // If TaxDue changed, the previous "Paid" mark is stale — reset to Pending
-            if (Math.Round(existing.TaxDue, 2) != Math.Round(taxDue, 2))
+            // Reset to Pending only when the TaxDue meaningfully changed from a previously
+            // calculated value. If existing.TaxDue is 0 it means the record was created by
+            // "Mark Paid" before any recalculation had run (placeholder) — just update the
+            // numbers and keep the Paid status; don't punish the user with a spurious reset.
+            var taxDueChanged = Math.Round(existing.TaxDue, 2) != Math.Round(taxDue, 2);
+            var wasRealValue  = existing.TaxDue != 0m;
+            if (taxDueChanged && wasRealValue)
             {
                 existing.Status = "Pending";
                 existing.PaidTaxAmount = 0m;

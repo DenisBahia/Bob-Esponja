@@ -29,6 +29,7 @@ export interface HoldingDto {
   totalCgtPending: number;
   availableQuantity: number;
   nextDeemedDisposalDate: string | null;
+  assetType: string | null;
 }
 
 export interface DashboardHeaderDto {
@@ -93,20 +94,8 @@ export interface ProjectionSettingsDto {
   projectionYears: number;
   inflationPercent: number;
   cgtPercent: number;
-  exitTaxPercent: number;
-  excludePreExistingFromTax: boolean;
-  /** SIA annual tax percentage — charged yearly on total portfolio value (alternative to CGT/Exit Tax). */
-  siaAnnualPercent: number;
   /** Optional override for the starting portfolio value (0 / undefined = use live portfolio value). */
   startAmount?: number | null;
-  /** User is subject to Irish Exit Tax / Deemed Disposal regime. Hides tax-free allowance when true. */
-  isIrishInvestor: boolean;
-  /** Annual tax-free CGT allowance. 0 = disabled. Not used for Irish investors. */
-  taxFreeAllowancePerYear: number;
-  /** Tax rate for 8-year deemed disposal events. Always from user defaults. */
-  deemedDisposalPercent: number;
-  /** When false, deemed disposal loop is skipped in projection. */
-  deemedDisposalEnabled: boolean;
 }
 
 // ── User Tax Defaults ─────────────────────────────────────────────────────────
@@ -131,15 +120,8 @@ export interface ProjectionDataPointDto {
   totalAmount: number;
   inflationCorrectedAmount: number;
   taxPaid: number;
-  exitTaxPaid: number;
   afterTaxTotalAmount: number;
   afterTaxInflationCorrectedAmount: number;
-  /** SIA tax charged this year. May be 0 or missing for older saved versions. */
-  siaTax?: number;
-  /** After-tax balance using SIA model. May be missing for older saved versions. */
-  afterTaxSia?: number;
-  /** After-tax balance (SIA) corrected for inflation. May be missing for older saved versions. */
-  afterTaxInflationCorrectedSia?: number;
 }
 
 export interface ProjectionResultDto {
@@ -523,6 +505,10 @@ export class ApiService {
 
   markYearPaid(year: number): Observable<{ year: number; status: string }> {
     return this.http.put<{ year: number; status: string }>(`${this.apiUrl}/tax-events/mark-year-paid/${year}`, {});
+  }
+
+  markExitTaxYearPaid(year: number): Observable<{ year: number; status: string }> {
+    return this.http.put<{ year: number; status: string }>(`${this.apiUrl}/tax-events/mark-exit-tax-year-paid/${year}`, {});
   }
 
   recalculateTaxYear(year: number): Observable<RecalculateTaxYearResultDto> {

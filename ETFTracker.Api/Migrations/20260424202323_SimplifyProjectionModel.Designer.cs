@@ -3,6 +3,7 @@ using System;
 using ETFTracker.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ETFTracker.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260424202323_SimplifyProjectionModel")]
+    partial class SimplifyProjectionModel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -322,9 +325,33 @@ namespace ETFTracker.Api.Migrations
                         .HasColumnName("created_at")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
+                    b.Property<bool>("DeemedDisposalEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("deemed_disposal_enabled");
+
+                    b.Property<decimal>("DeemedDisposalPercent")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(5,2)")
+                        .HasDefaultValue(41m)
+                        .HasColumnName("deemed_disposal_percent");
+
+                    b.Property<decimal>("ExitTaxPercent")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(5,2)")
+                        .HasDefaultValue(41m)
+                        .HasColumnName("exit_tax_percent");
+
                     b.Property<decimal>("InflationPercent")
                         .HasColumnType("decimal(5,2)")
                         .HasColumnName("inflation_percent");
+
+                    b.Property<bool>("IsIrishInvestor")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_irish_investor");
 
                     b.Property<decimal>("MonthlyBuyAmount")
                         .HasColumnType("decimal(12,2)")
@@ -334,9 +361,21 @@ namespace ETFTracker.Api.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("projection_years");
 
+                    b.Property<decimal>("SiaAnnualPercent")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(5,2)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("sia_annual_percent");
+
                     b.Property<decimal?>("StartAmount")
                         .HasColumnType("decimal(15,2)")
                         .HasColumnName("start_amount");
+
+                    b.Property<decimal>("TaxFreeAllowancePerYear")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(12,2)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("tax_free_allowance_per_year");
 
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
@@ -725,81 +764,6 @@ namespace ETFTracker.Api.Migrations
                     b.ToTable("UserGoals");
                 });
 
-            modelBuilder.Entity("ETFTracker.Api.Models.UserSettings", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<decimal>("CgtPercent")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(5,2)")
-                        .HasDefaultValue(33m)
-                        .HasColumnName("cgt_percent");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<bool>("DeemedDisposalEnabled")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("deemed_disposal_enabled");
-
-                    b.Property<decimal>("DeemedDisposalPercent")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(5,2)")
-                        .HasDefaultValue(41m)
-                        .HasColumnName("deemed_disposal_percent");
-
-                    b.Property<decimal>("ExitTaxPercent")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(5,2)")
-                        .HasDefaultValue(41m)
-                        .HasColumnName("exit_tax_percent");
-
-                    b.Property<bool>("IsIrishInvestor")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("is_irish_investor");
-
-                    b.Property<decimal>("SiaAnnualPercent")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(5,2)")
-                        .HasDefaultValue(0m)
-                        .HasColumnName("sia_annual_percent");
-
-                    b.Property<decimal>("TaxFreeAllowancePerYear")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(12,2)")
-                        .HasDefaultValue(0m)
-                        .HasColumnName("tax_free_allowance_per_year");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
-                    b.ToTable("user_settings", (string)null);
-                });
-
             modelBuilder.Entity("ETFTracker.Api.Models.AnnualTaxSummary", b =>
                 {
                     b.HasOne("ETFTracker.Api.Models.Holding", "Holding")
@@ -963,17 +927,6 @@ namespace ETFTracker.Api.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("ETFTracker.Api.Models.UserSettings", b =>
-                {
-                    b.HasOne("ETFTracker.Api.Models.User", "User")
-                        .WithOne("UserSettings")
-                        .HasForeignKey("ETFTracker.Api.Models.UserSettings", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("ETFTracker.Api.Models.Holding", b =>
                 {
                     b.Navigation("SellRecords");
@@ -997,8 +950,6 @@ namespace ETFTracker.Api.Migrations
                     b.Navigation("SharedByMe");
 
                     b.Navigation("SharedWithMe");
-
-                    b.Navigation("UserSettings");
                 });
 #pragma warning restore 612, 618
         }

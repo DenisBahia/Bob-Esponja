@@ -36,7 +36,7 @@ public class DeemedDisposalService : IDeemedDisposalService
         if (!isIrishInvestor) return;
 
         // Always load the deemed-disposal rate from user defaults — not overridable at call site
-        var projSettings = await _db.ProjectionSettings
+        var projSettings = await _db.UserSettings
             .FirstOrDefaultAsync(ps => ps.UserId == userId, ct);
         var taxRate = projSettings?.DeemedDisposalPercent
                       ?? projSettings?.ExitTaxPercent

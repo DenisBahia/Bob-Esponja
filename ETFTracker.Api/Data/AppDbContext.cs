@@ -15,6 +15,7 @@ public class AppDbContext : DbContext
     public DbSet<PriceSnapshot> PriceSnapshots { get; set; }
     public DbSet<ProjectionSettings> ProjectionSettings { get; set; }
     public DbSet<ProjectionVersion> ProjectionVersions { get; set; }
+    public DbSet<UserSettings> UserSettings { get; set; }
     public DbSet<ProfileShare> ProfileShares { get; set; }
     public DbSet<UserGoal> UserGoals { get; set; }
     public DbSet<SellRecord> SellRecords { get; set; }
@@ -173,21 +174,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<ProjectionSettings>()
             .Property(ps => ps.CgtPercent).HasColumnName("cgt_percent").HasColumnType("decimal(5,2)");
         modelBuilder.Entity<ProjectionSettings>()
-            .Property(ps => ps.ExitTaxPercent).HasColumnName("exit_tax_percent").HasColumnType("decimal(5,2)");
-        modelBuilder.Entity<ProjectionSettings>()
-            .Property(ps => ps.ExcludePreExistingFromTax).HasColumnName("exclude_pre_existing_from_tax").HasDefaultValue(false);
-        modelBuilder.Entity<ProjectionSettings>()
-            .Property(ps => ps.SiaAnnualPercent).HasColumnName("sia_annual_percent").HasColumnType("decimal(5,2)").HasDefaultValue(0m);
-        modelBuilder.Entity<ProjectionSettings>()
             .Property(ps => ps.StartAmount).HasColumnName("start_amount").HasColumnType("decimal(15,2)").IsRequired(false);
-        modelBuilder.Entity<ProjectionSettings>()
-            .Property(ps => ps.IsIrishInvestor).HasColumnName("is_irish_investor").HasDefaultValue(false);
-        modelBuilder.Entity<ProjectionSettings>()
-            .Property(ps => ps.TaxFreeAllowancePerYear).HasColumnName("tax_free_allowance_per_year").HasColumnType("decimal(15,2)").HasDefaultValue(0m);
-        modelBuilder.Entity<ProjectionSettings>()
-            .Property(ps => ps.DeemedDisposalPercent).HasColumnName("deemed_disposal_percent").HasColumnType("decimal(5,2)").HasDefaultValue(41m);
-        modelBuilder.Entity<ProjectionSettings>()
-            .Property(ps => ps.DeemedDisposalEnabled).HasColumnName("deemed_disposal_enabled").HasDefaultValue(true);
         modelBuilder.Entity<ProjectionSettings>()
             .Property(ps => ps.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
         modelBuilder.Entity<ProjectionSettings>()
@@ -198,6 +185,27 @@ public class AppDbContext : DbContext
             .HasOne(ps => ps.User)
             .WithOne(u => u.ProjectionSettings)
             .HasForeignKey<ProjectionSettings>(ps => ps.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // UserSettings
+        modelBuilder.Entity<UserSettings>().ToTable("user_settings");
+        modelBuilder.Entity<UserSettings>().HasKey(us => us.Id);
+        modelBuilder.Entity<UserSettings>().Property(us => us.Id).HasColumnName("id");
+        modelBuilder.Entity<UserSettings>().Property(us => us.UserId).HasColumnName("user_id");
+        modelBuilder.Entity<UserSettings>().Property(us => us.IsIrishInvestor).HasColumnName("is_irish_investor").HasDefaultValue(false);
+        modelBuilder.Entity<UserSettings>().Property(us => us.ExitTaxPercent).HasColumnName("exit_tax_percent").HasColumnType("decimal(5,2)").HasDefaultValue(41m);
+        modelBuilder.Entity<UserSettings>().Property(us => us.DeemedDisposalPercent).HasColumnName("deemed_disposal_percent").HasColumnType("decimal(5,2)").HasDefaultValue(41m);
+        modelBuilder.Entity<UserSettings>().Property(us => us.SiaAnnualPercent).HasColumnName("sia_annual_percent").HasColumnType("decimal(5,2)").HasDefaultValue(0m);
+        modelBuilder.Entity<UserSettings>().Property(us => us.DeemedDisposalEnabled).HasColumnName("deemed_disposal_enabled").HasDefaultValue(false);
+        modelBuilder.Entity<UserSettings>().Property(us => us.CgtPercent).HasColumnName("cgt_percent").HasColumnType("decimal(5,2)").HasDefaultValue(33m);
+        modelBuilder.Entity<UserSettings>().Property(us => us.TaxFreeAllowancePerYear).HasColumnName("tax_free_allowance_per_year").HasColumnType("decimal(12,2)").HasDefaultValue(0m);
+        modelBuilder.Entity<UserSettings>().Property(us => us.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+        modelBuilder.Entity<UserSettings>().Property(us => us.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+        modelBuilder.Entity<UserSettings>().HasIndex(us => us.UserId).IsUnique();
+        modelBuilder.Entity<UserSettings>()
+            .HasOne(us => us.User)
+            .WithOne(u => u.UserSettings)
+            .HasForeignKey<UserSettings>(us => us.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
         // ProjectionVersion
@@ -214,12 +222,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.ProjectionYears).HasColumnName("projection_years");
         modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.InflationPercent).HasColumnName("inflation_percent").HasColumnType("decimal(5,2)");
         modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.CgtPercent).HasColumnName("cgt_percent").HasColumnType("decimal(5,2)");
-        modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.ExitTaxPercent).HasColumnName("exit_tax_percent").HasColumnType("decimal(5,2)");
-        modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.ExcludePreExistingFromTax).HasColumnName("exclude_pre_existing_from_tax").HasDefaultValue(false);
-        modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.SiaAnnualPercent).HasColumnName("sia_annual_percent").HasColumnType("decimal(5,2)").HasDefaultValue(0m);
-        modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.IsIrishInvestor).HasColumnName("is_irish_investor").HasDefaultValue(false);
-        modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.TaxFreeAllowancePerYear).HasColumnName("tax_free_allowance_per_year").HasColumnType("decimal(15,2)").HasDefaultValue(0m);
-        modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.DeemedDisposalPercent).HasColumnName("deemed_disposal_percent").HasColumnType("decimal(5,2)").HasDefaultValue(41m);
+        modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.StartAmount).HasColumnName("start_amount").HasColumnType("decimal(15,2)").IsRequired(false);
         modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.DataPointsJson).HasColumnName("data_points_json").HasColumnType("text");
         modelBuilder.Entity<ProjectionVersion>().HasIndex(pv => pv.UserId);
         modelBuilder.Entity<ProjectionVersion>()

@@ -32,6 +32,7 @@ public class HoldingDto
     public decimal TotalCgtPending { get; set; }
     public decimal AvailableQuantity { get; set; }
     public DateOnly? NextDeemedDisposalDate { get; set; }
+    public string? AssetType { get; set; }
 }
 
 public class DashboardHeaderDto

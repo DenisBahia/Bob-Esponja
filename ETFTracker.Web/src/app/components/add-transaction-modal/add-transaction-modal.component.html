@@ -117,8 +117,10 @@
       <!-- Deemed Disposal toggle — Irish investors only -->
       <div class="form-group toggle-row" *ngIf="isIrishInvestor">
         <div class="toggle-label-group">
-          <label>Deemed Disposal Due</label>
-          <span class="toggle-hint">Mark if this asset is subject to the 8-year deemed disposal rule (e.g. ETFs, funds). Your preference is remembered per asset type.</span>
+          <label>
+            Deemed Disposal Due
+            <span class="badge-info" title="Mark if this asset is subject to the 8-year deemed disposal rule (e.g. ETFs, funds). Your preference is remembered per asset type.">ⓘ</span>
+          </label>
         </div>
         <div class="toggle-switch" [class.active]="deemedDisposalDue" (click)="deemedDisposalDue = !deemedDisposalDue" role="checkbox" [attr.aria-checked]="deemedDisposalDue">
           <span class="toggle-track"><span class="toggle-thumb"></span></span>

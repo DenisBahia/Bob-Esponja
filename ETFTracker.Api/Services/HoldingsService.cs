@@ -196,6 +196,7 @@ public class HoldingsService : IHoldingsService
                 TotalCgtPending = taxEventsByHolding.TryGetValue(holding.Id, out var taxData4) ? taxData4.TotalCgtPending : 0m,
                 AvailableQuantity = availableQty,
                 NextDeemedDisposalDate = nextDeemedDisposalByHolding.TryGetValue(holding.Id, out var nd) ? nd : null,
+                AssetType = holding.AssetType,
                 DailyMetrics = await CalculatePeriodMetricsAsync(holding.Ticker, holding.Quantity, 1, cancellationToken),
                 WeeklyMetrics = await CalculatePeriodMetricsAsync(holding.Ticker, holding.Quantity, 7, cancellationToken),
                 MonthlyMetrics = await CalculatePeriodMetricsAsync(holding.Ticker, holding.Quantity, 30, cancellationToken),
@@ -279,11 +280,17 @@ public class HoldingsService : IHoldingsService
                     EtfName = etfName,
                     Quantity = 0,
                     AverageCost = 0,
+                    AssetType = dto.AssetType,
                     CreatedAt = utcNow,
                     UpdatedAt = utcNow
                 };
                 _context.Holdings.Add(holding);
                 await _context.SaveChangesAsync(cancellationToken);
+            }
+            else if (!string.IsNullOrEmpty(dto.AssetType) && string.IsNullOrEmpty(holding.AssetType))
+            {
+                // Back-fill asset type if not yet set
+                holding.AssetType = dto.AssetType;
             }
 
             // Add transaction
@@ -749,7 +756,7 @@ public class HoldingsService : IHoldingsService
     {
         if (holdings.Count == 0) return;
 
-        var isIrishInvestor = await _context.ProjectionSettings
+        var isIrishInvestor = await _context.UserSettings
             .Where(ps => ps.UserId == userId)
             .Select(ps => ps.IsIrishInvestor)
             .FirstOrDefaultAsync(cancellationToken);
@@ -797,7 +804,7 @@ public class HoldingsService : IHoldingsService
             throw new ArgumentException("No rows provided.");
 
         // Fetch user tax settings
-        var userSettings = await _context.ProjectionSettings
+        var userSettings = await _context.UserSettings
             .FirstOrDefaultAsync(ps => ps.UserId == userId, cancellationToken);
         var isIrishInvestor = userSettings?.IsIrishInvestor ?? true;
         var taxRate = isIrishInvestor

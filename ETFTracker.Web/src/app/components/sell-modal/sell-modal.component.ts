@@ -2,7 +2,7 @@ import { ChangeDetectorRef, Component, EventEmitter, Input, OnInit, Output } fro
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
-  ApiService, HoldingDto, ProjectionSettingsDto,
+  ApiService, HoldingDto, UserTaxDefaultsDto,
   SellPreviewDto, SellRecordDto, SellRequestDto
 } from '../../services/api.service';
 
@@ -16,7 +16,7 @@ import {
 export class SellModalComponent implements OnInit {
   @Input() holding!: HoldingDto;
   @Input() isIrishInvestor: boolean = true;
-  @Input() projectionSettings: ProjectionSettingsDto | null = null;
+  @Input() userTaxDefaults: UserTaxDefaultsDto | null = null;
 
   @Output() sold = new EventEmitter<void>();
   @Output() cancelled = new EventEmitter<void>();
@@ -71,8 +71,8 @@ export class SellModalComponent implements OnInit {
     this.sellPrice = this.holding.currentPrice;
     this.sellDate = new Date().toISOString().slice(0, 10);
     this.editableTaxRate = this.isIrishInvestor
-      ? (this.projectionSettings?.exitTaxPercent ?? 38)
-      : (this.projectionSettings?.cgtPercent ?? 0);
+      ? (this.userTaxDefaults?.exitTaxPercent ?? 38)
+      : (this.userTaxDefaults?.cgtPercent ?? 0);
   }
 
   calculateTax(): void {
@@ -140,13 +140,13 @@ export class SellModalComponent implements OnInit {
 
         // Update tax rate if changed
         const originalRate = this.isIrishInvestor
-          ? (this.projectionSettings?.exitTaxPercent ?? 38)
-          : (this.projectionSettings?.cgtPercent ?? 0);
-        if (this.projectionSettings && this.editableTaxRate !== originalRate) {
-          const updated = { ...this.projectionSettings };
+          ? (this.userTaxDefaults?.exitTaxPercent ?? 38)
+          : (this.userTaxDefaults?.cgtPercent ?? 0);
+        if (this.userTaxDefaults && this.editableTaxRate !== originalRate) {
+          const updated = { ...this.userTaxDefaults };
           if (this.isIrishInvestor) updated.exitTaxPercent = this.editableTaxRate;
           else updated.cgtPercent = this.editableTaxRate;
-          this.apiService.saveProjectionSettings(updated).subscribe();
+          this.apiService.saveTaxDefaults(updated).subscribe();
         }
 
         this.confirming = false;

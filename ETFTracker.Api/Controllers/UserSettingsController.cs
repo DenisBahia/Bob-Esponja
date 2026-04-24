@@ -36,8 +36,8 @@ public class UserSettingsController : ControllerBase
     {
         try
         {
-            var settings = await _db.ProjectionSettings
-                .FirstOrDefaultAsync(ps => ps.UserId == UserId, ct);
+            var settings = await _db.UserSettings
+                .FirstOrDefaultAsync(us => us.UserId == UserId, ct);
 
             if (settings == null)
                 return Ok(new UserTaxDefaultsDto
@@ -60,7 +60,7 @@ public class UserSettingsController : ControllerBase
         }
     }
 
-    /// <summary>Saves the user's tax defaults. Updates ProjectionSettings in place (upsert).</summary>
+    /// <summary>Saves the user's tax defaults into the dedicated user_settings table.</summary>
     [HttpPut("tax-defaults")]
     public async Task<ActionResult<UserTaxDefaultsDto>> SaveTaxDefaults(
         [FromBody] UserTaxDefaultsDto dto, CancellationToken ct = default)
@@ -70,22 +70,17 @@ public class UserSettingsController : ControllerBase
             if (_sharingContext.IsReadOnly())
                 return StatusCode(403, new { message = "Read-only profile." });
 
-            var settings = await _db.ProjectionSettings
-                .FirstOrDefaultAsync(ps => ps.UserId == UserId, ct);
+            var settings = await _db.UserSettings
+                .FirstOrDefaultAsync(us => us.UserId == UserId, ct);
 
             if (settings == null)
             {
-                settings = new ProjectionSettings
+                settings = new UserSettings
                 {
                     UserId = UserId,
-                    YearlyReturnPercent = 7m,
-                    MonthlyBuyAmount = 500m,
-                    AnnualBuyIncreasePercent = 3m,
-                    ProjectionYears = 10,
-                    InflationPercent = 2m,
                     CreatedAt = DateTime.UtcNow,
                 };
-                _db.ProjectionSettings.Add(settings);
+                _db.UserSettings.Add(settings);
             }
 
             // Apply tax-defaults fields
@@ -107,7 +102,7 @@ public class UserSettingsController : ControllerBase
         }
     }
 
-    private static UserTaxDefaultsDto MapToDto(ProjectionSettings s) => new()
+    private static UserTaxDefaultsDto MapToDto(UserSettings s) => new()
     {
         IsConfigured = true,
         IsIrishInvestor = s.IsIrishInvestor,

@@ -387,13 +387,15 @@ public class SellService : ISellService
             var consume = Math.Min(remaining, lotAvail);
             remaining -= consume;
 
-            // Per-lot deemed disposal: only adjust cost basis if this specific buy is flagged
+            // Per-lot deemed disposal: resolve stepped-up cost for display/storage,
+            // but profit on an actual sell is ALWAYS based on the original purchase price.
+            // The deemed disposal tax already paid is deducted separately at tax calculation time.
             (decimal adjustedCost, DateOnly? deemedDate, decimal? deemedPrice) =
                 txn.DeemedDisposalDue
                     ? await ResolveLotTaxBasisAsync(ticker, txn.PurchaseDate, txn.PurchasePrice, sellDate, ct)
                     : (txn.PurchasePrice, null, null);
 
-            var profit = (sellPrice - adjustedCost) * consume;
+            var profit = (sellPrice - txn.PurchasePrice) * consume;
 
             lots.Add(new SellLotBreakdownDto
             {
