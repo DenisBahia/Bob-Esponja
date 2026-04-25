@@ -743,7 +743,7 @@
               📋
             </button>
           </div>
-          <span class="start-amount-hint" *ngIf="!projectionSettings.startAmount">
+          <span class="start-amount-hint" *ngIf="projectionSettings.startAmount == null">
             Default: live portfolio value
           </span>
         </div>

@@ -102,7 +102,7 @@ public class ProjectionService : IProjectionService
             currentTotal += holding.Quantity * (price ?? 0m);
         }
 
-        if (settings.StartAmount.HasValue && settings.StartAmount.Value > 0m)
+        if (settings.StartAmount.HasValue)
             currentTotal = settings.StartAmount.Value;
 
         // ── Months remaining in current year ──────────────────────────────────
@@ -200,7 +200,7 @@ public class ProjectionService : IProjectionService
                 ProjectionYears          = dto.ProjectionYears,
                 InflationPercent         = dto.InflationPercent,
                 CgtPercent               = dto.CgtPercent,
-                StartAmount              = (dto.StartAmount.HasValue && dto.StartAmount.Value > 0m) ? dto.StartAmount : null,
+                StartAmount              = dto.StartAmount,
                 CreatedAt                = utcNow,
                 UpdatedAt                = utcNow,
             };
@@ -214,7 +214,7 @@ public class ProjectionService : IProjectionService
             existing.ProjectionYears          = dto.ProjectionYears;
             existing.InflationPercent         = dto.InflationPercent;
             existing.CgtPercent               = dto.CgtPercent;
-            existing.StartAmount              = (dto.StartAmount.HasValue && dto.StartAmount.Value > 0m) ? dto.StartAmount : null;
+            existing.StartAmount              = dto.StartAmount;
             existing.UpdatedAt                = utcNow;
         }
 
@@ -241,7 +241,7 @@ public class ProjectionService : IProjectionService
             ProjectionYears          = settings.ProjectionYears,
             InflationPercent         = settings.InflationPercent,
             CgtPercent               = settings.CgtPercent,
-            StartAmount              = (settings.StartAmount.HasValue && settings.StartAmount.Value > 0m) ? settings.StartAmount : null,
+            StartAmount              = settings.StartAmount,
             DataPointsJson           = json,
         };
         _context.ProjectionVersions.Add(entity);
