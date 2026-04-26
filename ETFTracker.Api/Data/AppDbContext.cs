@@ -172,9 +172,9 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<ProjectionSettings>()
             .Property(ps => ps.InflationPercent).HasColumnName("inflation_percent").HasColumnType("decimal(5,2)");
         modelBuilder.Entity<ProjectionSettings>()
-            .Property(ps => ps.CgtPercent).HasColumnName("cgt_percent").HasColumnType("decimal(5,2)");
-        modelBuilder.Entity<ProjectionSettings>()
             .Property(ps => ps.StartAmount).HasColumnName("start_amount").HasColumnType("decimal(15,2)").IsRequired(false);
+        modelBuilder.Entity<ProjectionSettings>()
+            .Property(ps => ps.ApplyDeemedDisposal).HasColumnName("apply_deemed_disposal").HasDefaultValue(false);
         modelBuilder.Entity<ProjectionSettings>()
             .Property(ps => ps.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
         modelBuilder.Entity<ProjectionSettings>()
@@ -223,6 +223,8 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.InflationPercent).HasColumnName("inflation_percent").HasColumnType("decimal(5,2)");
         modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.CgtPercent).HasColumnName("cgt_percent").HasColumnType("decimal(5,2)");
         modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.StartAmount).HasColumnName("start_amount").HasColumnType("decimal(15,2)").IsRequired(false);
+        modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.ApplyDeemedDisposal).HasColumnName("apply_deemed_disposal").HasDefaultValue(false);
+        modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.DeemedDisposalPercent).HasColumnName("deemed_disposal_percent").HasColumnType("decimal(5,2)").HasDefaultValue(0m);
         modelBuilder.Entity<ProjectionVersion>().Property(pv => pv.DataPointsJson).HasColumnName("data_points_json").HasColumnType("text");
         modelBuilder.Entity<ProjectionVersion>().HasIndex(pv => pv.UserId);
         modelBuilder.Entity<ProjectionVersion>()

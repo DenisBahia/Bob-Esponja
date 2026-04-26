@@ -1173,12 +1173,99 @@ th.sortable {
             align-items: flex-start;
             gap: 1rem;
           }
+
+          // Read-only tax rate display row
+          .tax-rate-readonly-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.45rem 0.75rem;
+            width: 100%;
+
+            .tax-rate-value {
+              font-size: 1.05rem;
+              font-weight: 700;
+              color: var(--accent);
+              min-width: 3.2rem;
+            }
+
+            .tax-rate-label {
+              font-size: 0.75rem;
+              color: var(--text-secondary);
+              flex: 1;
+            }
+
+            .tax-rate-edit-btn {
+              background: none;
+              border: none;
+              color: var(--text-secondary);
+              font-size: 0.9rem;
+              cursor: pointer;
+              padding: 0.1rem 0.3rem;
+              border-radius: 4px;
+              opacity: 0.6;
+              transition: opacity 0.15s, color 0.15s;
+
+              &:hover {
+                opacity: 1;
+                color: var(--accent);
+              }
+            }
+
+            .tax-rate-source-badge {
+              font-size: 0.62rem;
+              font-weight: 600;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+              color: var(--text-secondary);
+              background: rgba(255,255,255,0.06);
+              border: 1px solid var(--border);
+              border-radius: 4px;
+              padding: 0.1rem 0.35rem;
+              white-space: nowrap;
+            }
+          }
         }
 
         .tax-section-separator {
           width: 100%;
           border-top: 1px dashed var(--border);
           margin: 0.25rem 0;
+        }
+
+        // Deemed Disposal toggle row
+        .dd-toggle-section {
+          .dd-toggle-row {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+          }
+
+          .dd-toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            cursor: pointer;
+
+            input[type='checkbox'] {
+              width: 1rem;
+              height: 1rem;
+              accent-color: var(--accent);
+              cursor: pointer;
+            }
+          }
+
+          .field-hint {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+          }
         }
       }
 
@@ -1391,6 +1478,30 @@ th.sortable {
               font-weight: 700;
               vertical-align: middle;
               cursor: help;
+            }
+
+            // DD / Exit Tax badges shared base
+            .tax-badge {
+              display: inline-block;
+              margin-left: 0.3rem;
+              padding: 0.1rem 0.35rem;
+              border-radius: 3px;
+              font-size: 0.62rem;
+              font-weight: 700;
+              vertical-align: middle;
+              cursor: help;
+
+              &.badge-dd {
+                background: rgba(6, 214, 208, 0.15);
+                color: #06d6d0;
+                border: 1px solid rgba(6, 214, 208, 0.4);
+              }
+
+              &.badge-exit {
+                background: rgba(168, 85, 247, 0.15);
+                color: #c084fc;
+                border: 1px solid rgba(168, 85, 247, 0.4);
+              }
             }
           }
 

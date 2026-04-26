@@ -93,9 +93,14 @@ export interface ProjectionSettingsDto {
   annualBuyIncreasePercent: number;
   projectionYears: number;
   inflationPercent: number;
+  /** Exit Tax % when DD on, CGT % when DD off. */
   cgtPercent: number;
   /** Optional override for the starting portfolio value (0 / undefined = use live portfolio value). */
   startAmount?: number | null;
+  /** Irish investors only: simulate 8-year deemed disposal events. */
+  applyDeemedDisposal: boolean;
+  /** Read-only — always resolved from user tax settings by the backend. */
+  deemedDisposalPercent: number;
 }
 
 // ── User Tax Defaults ─────────────────────────────────────────────────────────
@@ -119,6 +124,8 @@ export interface ProjectionDataPointDto {
   yearProfit: number;
   totalAmount: number;
   inflationCorrectedAmount: number;
+  /** Deemed Disposal tax paid this year (0 when DD is off or no DD event this year). */
+  deemedDisposalPaid: number;
   taxPaid: number;
   afterTaxTotalAmount: number;
   afterTaxInflationCorrectedAmount: number;

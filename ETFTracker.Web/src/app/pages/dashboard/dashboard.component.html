@@ -808,14 +808,35 @@
 
         <div class="tax-section-separator"></div>
 
-        <!-- Tax Section: CGT -->
-        <div class="tax-section">
-          <div class="tax-section-header">CGT</div>
+        <!-- Tax Section: Deemed Disposal (Irish investors only) -->
+        <div class="tax-section dd-toggle-section" *ngIf="isIrishInvestor">
+          <div class="tax-section-header">Deemed Disposal</div>
           <div class="tax-section-fields">
-            <div class="param-group">
-              <label for="cgt">CGT %</label>
-              <input id="cgt" type="number" step="0.1" min="0" max="100"
-                     [(ngModel)]="projectionSettings.cgtPercent" />
+            <div class="param-group dd-toggle-row">
+              <label class="dd-toggle-label" for="applyDD">
+                <input id="applyDD" type="checkbox"
+                       [(ngModel)]="projectionSettings.applyDeemedDisposal"
+                       (ngModelChange)="onDeemedDisposalToggled()" />
+                Apply Deemed Disposal
+              </label>
+              <div class="field-hint" *ngIf="projectionSettings.applyDeemedDisposal">
+                DD rate: <strong>{{ projectionSettings.deemedDisposalPercent }}%</strong>
+                (from your tax settings). Fires every 8 years per contribution cohort.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tax Section: CGT / Exit Tax — read-only, always from User Settings -->
+        <div class="tax-section">
+          <div class="tax-section-header">{{ projectionTaxRateLabel }}</div>
+          <div class="tax-section-fields">
+            <div class="tax-rate-readonly-row">
+              <span class="tax-rate-value">
+                {{ projection?.settings?.cgtPercent ?? projectionSettings.cgtPercent }}%
+              </span>
+              <span class="tax-rate-label">{{ projectionTaxRateLabel }}</span>
+              <span class="tax-rate-source-badge">from user settings</span>
             </div>
           </div>
         </div>
@@ -894,7 +915,6 @@
                 <th>Total Buys</th>
                 <th>Year Profit</th>
                 <th>EoY Balance</th>
-                <th>EoY Inflation-Corrected</th>
                 <th>Tax Due</th>
                 <th>After Tax Balance</th>
                 <th>After Tax Balance Inflation-Corrected</th>
@@ -909,9 +929,19 @@
                   {{ formatCurrency(point.yearProfit) }}
                 </td>
                 <td class="value-col eoy-col">{{ formatCurrency(point.totalAmount) }}</td>
-                <td class="value-col inflation-col">{{ formatCurrency(point.inflationCorrectedAmount) }}</td>
-                <td class="value-col tax-col" [ngClass]="point.taxPaid > 0 ? 'tax-due' : ''">
-                  {{ point.taxPaid > 0 ? formatCurrency(point.taxPaid) : '—' }}
+                <td class="value-col tax-col"
+                    [ngClass]="getTaxDueForPoint(point) > 0 ? 'tax-due' : ''">
+                  <ng-container *ngIf="getTaxDueForPoint(point) > 0; else noTax">
+                    {{ formatCurrency(getTaxDueForPoint(point)) }}
+                    <span *ngIf="getTaxBadgeLabel(point, i === (projection.dataPoints.length - 1)) as badge"
+                          class="tax-badge"
+                          [class.badge-dd]="badge === 'DD'"
+                          [class.badge-exit]="badge === 'Exit Tax'"
+                          [title]="badge === 'DD' ? 'Deemed Disposal event (8-year anniversary)' : 'Exit Tax on total profit minus DD already paid'">
+                      {{ badge }}
+                    </span>
+                  </ng-container>
+                  <ng-template #noTax>—</ng-template>
                 </td>
                 <td class="value-col after-tax-col">{{ formatCurrency(point.afterTaxTotalAmount) }}</td>
                 <td class="value-col after-tax-inflation-col">{{ formatCurrency(point.afterTaxInflationCorrectedAmount) }}</td>
@@ -925,7 +955,12 @@
                 <td class="value-col profit-col" [ngClass]="projectionTotals.yearProfit >= 0 ? 'positive' : 'negative'">
                   <strong>{{ formatCurrency(projectionTotals.yearProfit) }}</strong>
                 </td>
-                <td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>
+                <td>—</td>
+                <td class="value-col tax-col" [ngClass]="projectionTotals.totalTaxDue > 0 ? 'tax-due' : ''">
+                  <strong>{{ projectionTotals.totalTaxDue > 0 ? formatCurrency(projectionTotals.totalTaxDue) : '—' }}</strong>
+                </td>
+                <td>—</td>
+                <td>—</td>
               </tr>
             </tfoot>
           </table>
@@ -980,7 +1015,7 @@
                   <td class="version-stat-col">{{ v.settings.annualBuyIncreasePercent }}%</td>
                   <td class="version-stat-col">{{ v.settings.projectionYears }}y</td>
                   <td class="version-stat-col">{{ v.settings.inflationPercent }}%</td>
-                  <td class="version-stat-col">{{ v.settings.cgtPercent }}%</td>
+                  <td class="version-stat-col">{{ v.settings.cgtPercent }}% <span class="version-tax-source">(from settings)</span></td>
                   <td class="version-delete-col">
                     <ng-container *ngIf="!sharingCtx.isReadOnly()">
                       <button class="btn-save-as-goal"

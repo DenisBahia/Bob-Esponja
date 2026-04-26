@@ -95,8 +95,10 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     annualBuyIncreasePercent: 3,
     projectionYears: 10,
     inflationPercent: 2,
-    cgtPercent: 33,
+    cgtPercent: 0,       // read-only — always populated by backend from UserSettings
     startAmount: null,
+    applyDeemedDisposal: false,
+    deemedDisposalPercent: 0,
   };
   /** UI-only: drives the Monthly Buy derivation. Not sent to API directly. */
   targetTotalAmount: number | null = null;
@@ -277,12 +279,40 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     return this.userTaxDefaults?.isIrishInvestor ?? false;
   }
 
-  get projectionTotals(): { totalBuys: number; yearProfit: number } {
+  /** Label for the tax-rate field; changes when DD is active. */
+  get projectionTaxRateLabel(): string {
+    return this.projectionSettings.applyDeemedDisposal ? 'Exit Tax %' : 'CGT %';
+  }
+
+  /** Called when the "Apply Deemed Disposal" toggle is flipped. */
+  onDeemedDisposalToggled(): void {
+    // Tax rate is always resolved from UserSettings by the backend.
+    // Update the local display value so the hint shows the correct DD %.
+    if (this.projectionSettings.applyDeemedDisposal && this.userTaxDefaults) {
+      this.projectionSettings.deemedDisposalPercent = this.userTaxDefaults.deemedDisposalPercent;
+    }
+  }
+
+  get projectionTotals(): { totalBuys: number; yearProfit: number; totalTaxDue: number } {
     const points = this.projection?.dataPoints ?? [];
     return {
-      totalBuys:  points.reduce((sum, p) => sum + p.totalBuys, 0),
-      yearProfit: points.reduce((sum, p) => sum + p.yearProfit, 0),
+      totalBuys:   points.reduce((sum, p) => sum + p.totalBuys, 0),
+      yearProfit:  points.reduce((sum, p) => sum + p.yearProfit, 0),
+      totalTaxDue: points.reduce((sum, p) => sum + this.getTaxDueForPoint(p), 0),
     };
+  }
+
+  /** Returns the total tax amount to show in the Tax Due column for a data point. */
+  getTaxDueForPoint(dp: ProjectionDataPointDto): number {
+    return (dp.deemedDisposalPaid ?? 0) + dp.taxPaid;
+  }
+
+  /** Badge label for the Tax Due column: 'DD', 'Exit Tax', or null. */
+  getTaxBadgeLabel(dp: ProjectionDataPointDto, isLastYear: boolean): string | null {
+    if (!this.projectionSettings.applyDeemedDisposal) return null;
+    if (dp.taxPaid > 0) return 'Exit Tax';
+    if ((dp.deemedDisposalPaid ?? 0) > 0) return 'DD';
+    return null;
   }
 
   constructor(private apiService: ApiService, private cdr: ChangeDetectorRef, public auth: AuthService, public sharingCtx: SharingContextService) {
@@ -332,10 +362,8 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.settingsIsFirstTime = false;
     if (saved) {
       this.userTaxDefaults = saved;
-      this.projectionSettings = {
-        ...this.projectionSettings,
-        cgtPercent: saved.cgtPercent,
-      };
+      // Tax rate is now always resolved from UserSettings by the backend —
+      // just recalculate so the projection refreshes with the new rates.
       // Recalculate projection and refresh tax summary with the updated defaults
       this.projectionChartRendered = false;
       this.lineChart?.destroy();
@@ -546,18 +574,6 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
         pointBackgroundColor: '#10B981',
       },
       {
-        label: 'Amount corrected by inflation',
-        data: points.map(p => p.inflationCorrectedAmount),
-        borderColor: '#f05252',
-        backgroundColor: 'rgba(240, 82, 82, 0.07)',
-        fill: true,
-        tension: 0.35,
-        pointRadius: 5,
-        pointHoverRadius: 7,
-        pointBackgroundColor: '#f05252',
-        borderDash: [6, 3],
-      },
-      {
         label: 'Projected after taxes',
         data: points.map(p => p.afterTaxTotalAmount),
         borderColor: '#4d6080',
@@ -570,7 +586,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
         borderDash: [4, 4],
       },
       {
-        label: 'After Tax Balance Inflation-Corrected',
+        label: 'After Tax + Inflation Corrected',
         data: points.map(p => p.afterTaxInflationCorrectedAmount),
         borderColor: '#f89b29',
         backgroundColor: 'rgba(248, 155, 41, 0.07)',
@@ -580,7 +596,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
         pointHoverRadius: 7,
         pointBackgroundColor: '#f89b29',
         borderDash: [8, 3],
-      }
+      },
     ];
 
     this.lineChart = new Chart(ctx, {

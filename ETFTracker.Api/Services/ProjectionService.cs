@@ -30,7 +30,8 @@ public class ProjectionService : IProjectionService
         AnnualBuyIncreasePercent = 3m,
         ProjectionYears          = 10,
         InflationPercent         = 2m,
-        CgtPercent               = 33m,
+        ApplyDeemedDisposal      = false,
+        DeemedDisposalPercent    = 0m,
     };
 
     public ProjectionService(AppDbContext context, IPriceService priceService, ILogger<ProjectionService> logger)
@@ -55,8 +56,8 @@ public class ProjectionService : IProjectionService
                 AnnualBuyIncreasePercent = dbSettings.AnnualBuyIncreasePercent,
                 ProjectionYears          = dbSettings.ProjectionYears,
                 InflationPercent         = dbSettings.InflationPercent,
-                CgtPercent               = dbSettings.CgtPercent,
                 StartAmount              = dbSettings.StartAmount,
+                ApplyDeemedDisposal      = dbSettings.ApplyDeemedDisposal,
             }
             : new ProjectionSettingsDto
             {
@@ -65,9 +66,14 @@ public class ProjectionService : IProjectionService
                 AnnualBuyIncreasePercent = DefaultSettings.AnnualBuyIncreasePercent,
                 ProjectionYears          = DefaultSettings.ProjectionYears,
                 InflationPercent         = DefaultSettings.InflationPercent,
-                CgtPercent               = DefaultSettings.CgtPercent,
                 StartAmount              = null,
+                ApplyDeemedDisposal      = false,
             };
+
+        // Always resolve tax rates from user settings
+        settings.CgtPercent           = await GetTaxRateAsync(userId, settings.ApplyDeemedDisposal, ct);
+        if (settings.ApplyDeemedDisposal)
+            settings.DeemedDisposalPercent = await GetDeemedDisposalPercentAsync(userId, ct);
 
         var dataPoints = await ComputeDataPointsAsync(userId, settings, ct);
         return new ProjectionResultDto { Settings = settings, DataPoints = dataPoints };
@@ -79,13 +85,20 @@ public class ProjectionService : IProjectionService
     /// </summary>
     public async Task<ProjectionResultDto> CalculateAsync(int userId, ProjectionSettingsDto settings, CancellationToken ct = default)
     {
+        // Always override tax rates from user settings — ignore whatever the client sent
+        settings.CgtPercent           = await GetTaxRateAsync(userId, settings.ApplyDeemedDisposal, ct);
+        if (settings.ApplyDeemedDisposal)
+            settings.DeemedDisposalPercent = await GetDeemedDisposalPercentAsync(userId, ct);
+
         var dataPoints = await ComputeDataPointsAsync(userId, settings, ct);
         return new ProjectionResultDto { Settings = settings, DataPoints = dataPoints };
     }
 
     /// <summary>
     /// Core calculation: builds projection data points for the given settings and current portfolio.
-    /// Tax is applied once in the final year only, over the total profit (endValue − totalInvested).
+    /// When ApplyDeemedDisposal is false: tax is applied once in the final year only (original behaviour).
+    /// When ApplyDeemedDisposal is true: 8-year DD events fire per contribution cohort; final-year exit tax
+    /// is calculated on (totalProfit − totalDDPaid) to avoid double taxation.
     /// </summary>
     private async Task<List<ProjectionDataPointDto>> ComputeDataPointsAsync(
         int userId, ProjectionSettingsDto settings, CancellationToken ct)
@@ -117,11 +130,13 @@ public class ProjectionService : IProjectionService
 
         var monthsRemaining = hasBuyThisMonth ? 12 - currentMonth : 12 - currentMonth + 1;
 
+        int N = settings.ProjectionYears;
+
         // ── Gross projection arrays ───────────────────────────────────────────
-        var endOfYear      = new decimal[settings.ProjectionYears + 1];
-        var initialBalance = new decimal[settings.ProjectionYears + 1];
-        var totalBuys      = new decimal[settings.ProjectionYears + 1];
-        var yearProfit     = new decimal[settings.ProjectionYears + 1];
+        var endOfYear      = new decimal[N + 1];
+        var initialBalance = new decimal[N + 1];
+        var totalBuys      = new decimal[N + 1];
+        var yearProfit     = new decimal[N + 1];
 
         var partialGrowthFactor = (decimal)Math.Pow(
             (double)(1 + settings.YearlyReturnPercent / 100m),
@@ -132,7 +147,7 @@ public class ProjectionService : IProjectionService
         endOfYear[0]      = (currentTotal + totalBuys[0]) * partialGrowthFactor;
         yearProfit[0]     = endOfYear[0] - currentTotal - totalBuys[0];
 
-        for (int i = 1; i <= settings.ProjectionYears; i++)
+        for (int i = 1; i <= N; i++)
         {
             var annualIncreaseFactor = (decimal)Math.Pow((double)(1 + settings.AnnualBuyIncreasePercent / 100m), i);
             var contributions = 12m * settings.MonthlyBuyAmount * annualIncreaseFactor;
@@ -144,26 +159,97 @@ public class ProjectionService : IProjectionService
             yearProfit[i]     = endOfYear[i] - endOfYear[i - 1] - contributions;
         }
 
-        // ── Simplified universal tax engine ───────────────────────────────────
-        // Tax is calculated once, at the final year only.
-        // totalProfit = endValue − (startingBalance + all contributions across all years)
+        // ── Total invested (same for both tax modes) ──────────────────────────
         decimal totalAmountInvested = currentTotal;
-        for (int i = 0; i <= settings.ProjectionYears; i++)
+        for (int i = 0; i <= N; i++)
             totalAmountInvested += totalBuys[i];
 
-        var totalProfit = Math.Max(0m, endOfYear[settings.ProjectionYears] - totalAmountInvested);
-        var taxAtEnd    = Math.Round(totalProfit * settings.CgtPercent / 100m, 2);
+        // ── Deemed Disposal engine (Irish investors only) ─────────────────────
+        // Each cohort c (0 = existing portfolio, 1..N = annual contributions) grows
+        // independently. A DD event fires for cohort c at year y when (y-c) % 8 == 0.
+        // The cost basis is stepped up after each DD event to prevent double taxation.
+        var ddPaidPerYear = new decimal[N + 1];
+        decimal totalDDPaid = 0m;
+
+        if (settings.ApplyDeemedDisposal && settings.DeemedDisposalPercent > 0m)
+        {
+            decimal r = settings.YearlyReturnPercent / 100m;
+
+            // cohortOriginalAmount[c]: original contribution amount of cohort c
+            // cohortBasis[c]: current cost basis (stepped up after DD events)
+            var cohortOriginalAmount = new decimal[N + 1];
+            var cohortBasis          = new decimal[N + 1];
+
+            cohortOriginalAmount[0] = currentTotal;
+            cohortBasis[0]          = currentTotal;
+
+            for (int i = 1; i <= N; i++)
+            {
+                var annualIncreaseFactor = (decimal)Math.Pow((double)(1 + settings.AnnualBuyIncreasePercent / 100m), i);
+                cohortOriginalAmount[i] = 12m * settings.MonthlyBuyAmount * annualIncreaseFactor;
+                cohortBasis[i]          = cohortOriginalAmount[i];
+            }
+
+            // Helper: value of cohort c at end of year y (simple compound growth)
+            decimal CohortValue(int c, int y) =>
+                cohortOriginalAmount[c] * (decimal)Math.Pow((double)(1m + r), y - c);
+
+            for (int y = 1; y <= N; y++)
+            {
+                for (int c = 0; c <= y; c++)
+                {
+                    int age = y - c;
+                    if (age > 0 && age % 8 == 0)
+                    {
+                        var value   = CohortValue(c, y);
+                        var profit  = Math.Max(0m, value - cohortBasis[c]);
+                        var ddTax   = Math.Round(profit * settings.DeemedDisposalPercent / 100m, 2);
+
+                        ddPaidPerYear[y] += ddTax;
+                        totalDDPaid      += ddTax;
+
+                        // Step up cost basis so future events don't re-tax the same profit
+                        cohortBasis[c] = value;
+                    }
+                }
+            }
+        }
+
+        // ── Final-year exit/CGT tax ───────────────────────────────────────────
+        decimal taxAtEnd;
+        if (settings.ApplyDeemedDisposal)
+        {
+            // Irish Revenue rule: exit tax is calculated on the FULL gain at exit,
+            // then DD taxes already paid are deducted as a credit (not from the profit base).
+            // Formula: max(0, (totalProfit × exitTaxRate) − totalDDPaid)
+            var grossTotalProfit = Math.Max(0m, endOfYear[N] - totalAmountInvested);
+            var grossExitTax     = Math.Round(grossTotalProfit * settings.CgtPercent / 100m, 2);
+            taxAtEnd             = Math.Max(0m, grossExitTax - totalDDPaid);
+        }
+        else
+        {
+            var totalProfit = Math.Max(0m, endOfYear[N] - totalAmountInvested);
+            taxAtEnd        = Math.Round(totalProfit * settings.CgtPercent / 100m, 2);
+        }
 
         // ── Build data points ─────────────────────────────────────────────────
         var dataPoints = new List<ProjectionDataPointDto>();
+        decimal cumulativeDDPaid = 0m;
 
-        for (int i = 0; i <= settings.ProjectionYears; i++)
+        for (int i = 0; i <= N; i++)
         {
-            var year            = currentYear + i;
-            var inflationFactor = (decimal)Math.Pow((double)(1 + settings.InflationPercent / 100m), i);
-            var isLastYear      = (i == settings.ProjectionYears);
-            var taxPaid         = isLastYear ? taxAtEnd : 0m;
-            var afterTax        = Math.Max(0m, endOfYear[i] - taxPaid);
+            var year              = currentYear + i;
+            var inflationFactor   = (decimal)Math.Pow((double)(1 + settings.InflationPercent / 100m), i);
+            var isLastYear        = (i == N);
+            var ddThisYear        = ddPaidPerYear[i];
+            var taxPaid           = isLastYear ? taxAtEnd : 0m;
+
+            cumulativeDDPaid += ddThisYear;
+
+            // After-tax balance = gross EoY value minus ALL taxes paid up to and including this year.
+            // This reflects the real net position: every euro of DD paid in prior years
+            // has already left the portfolio and cannot compound further.
+            var afterTax = Math.Max(0m, endOfYear[i] - cumulativeDDPaid - taxPaid);
 
             dataPoints.Add(new ProjectionDataPointDto
             {
@@ -173,13 +259,47 @@ public class ProjectionService : IProjectionService
                 YearProfit                       = Math.Round(yearProfit[i], 2),
                 TotalAmount                      = Math.Round(endOfYear[i], 2),
                 InflationCorrectedAmount         = Math.Round(endOfYear[i] / inflationFactor, 2),
-                TaxPaid                          = taxPaid,
+                DeemedDisposalPaid               = Math.Round(ddThisYear, 2),
+                TaxPaid                          = Math.Round(taxPaid, 2),
                 AfterTaxTotalAmount              = Math.Round(afterTax, 2),
                 AfterTaxInflationCorrectedAmount = Math.Round(afterTax / inflationFactor, 2),
             });
         }
 
         return dataPoints;
+    }
+
+    /// <summary>
+    /// Resolves the final-exit tax rate from UserSettings.
+    /// Irish investor with DD on → ExitTaxPercent.
+    /// Irish investor with DD off → ExitTaxPercent.
+    /// Non-Irish investor → CgtPercent.
+    /// </summary>
+    private async Task<decimal> GetTaxRateAsync(int userId, bool applyDeemedDisposal, CancellationToken ct)
+    {
+        var us = await _context.UserSettings.FirstOrDefaultAsync(s => s.UserId == userId, ct);
+        if (us == null)
+        {
+            _logger.LogWarning(
+                "No UserSettings found for user {UserId} — tax rate cannot be resolved; defaulting to 0%.",
+                userId);
+            return 0m;
+        }
+        return us.IsIrishInvestor ? us.ExitTaxPercent : us.CgtPercent;
+    }
+
+    /// <summary>Reads the user's Deemed Disposal % from UserSettings (Irish regime only).</summary>
+    private async Task<decimal> GetDeemedDisposalPercentAsync(int userId, CancellationToken ct)
+    {
+        var us = await _context.UserSettings.FirstOrDefaultAsync(s => s.UserId == userId, ct);
+        if (us == null)
+        {
+            _logger.LogWarning(
+                "No UserSettings found for user {UserId} — DD % cannot be resolved; DD events will be skipped (0%).",
+                userId);
+            return 0m;
+        }
+        return us.DeemedDisposalPercent;
     }
 
     public async Task<ProjectionSettingsDto> SaveSettingsAsync(int userId, ProjectionSettingsDto dto, CancellationToken ct = default)
@@ -199,8 +319,8 @@ public class ProjectionService : IProjectionService
                 AnnualBuyIncreasePercent = dto.AnnualBuyIncreasePercent,
                 ProjectionYears          = dto.ProjectionYears,
                 InflationPercent         = dto.InflationPercent,
-                CgtPercent               = dto.CgtPercent,
                 StartAmount              = dto.StartAmount,
+                ApplyDeemedDisposal      = dto.ApplyDeemedDisposal,
                 CreatedAt                = utcNow,
                 UpdatedAt                = utcNow,
             };
@@ -213,8 +333,8 @@ public class ProjectionService : IProjectionService
             existing.AnnualBuyIncreasePercent = dto.AnnualBuyIncreasePercent;
             existing.ProjectionYears          = dto.ProjectionYears;
             existing.InflationPercent         = dto.InflationPercent;
-            existing.CgtPercent               = dto.CgtPercent;
             existing.StartAmount              = dto.StartAmount;
+            existing.ApplyDeemedDisposal      = dto.ApplyDeemedDisposal;
             existing.UpdatedAt                = utcNow;
         }
 
@@ -226,6 +346,11 @@ public class ProjectionService : IProjectionService
         int userId, SaveVersionRequestDto dto, CancellationToken ct = default)
     {
         var settings = dto.Settings;
+        // Resolve tax rates from user settings before computing
+        settings.CgtPercent = await GetTaxRateAsync(userId, settings.ApplyDeemedDisposal, ct);
+        if (settings.ApplyDeemedDisposal)
+            settings.DeemedDisposalPercent = await GetDeemedDisposalPercentAsync(userId, ct);
+
         var dataPoints = await ComputeDataPointsAsync(userId, settings, ct);
         var json = System.Text.Json.JsonSerializer.Serialize(dataPoints);
 
@@ -242,6 +367,8 @@ public class ProjectionService : IProjectionService
             InflationPercent         = settings.InflationPercent,
             CgtPercent               = settings.CgtPercent,
             StartAmount              = settings.StartAmount,
+            ApplyDeemedDisposal      = settings.ApplyDeemedDisposal,
+            DeemedDisposalPercent    = settings.DeemedDisposalPercent,
             DataPointsJson           = json,
         };
         _context.ProjectionVersions.Add(entity);
@@ -281,6 +408,8 @@ public class ProjectionService : IProjectionService
                 InflationPercent         = pv.InflationPercent,
                 CgtPercent               = pv.CgtPercent,
                 StartAmount              = pv.StartAmount,
+                ApplyDeemedDisposal      = pv.ApplyDeemedDisposal,
+                DeemedDisposalPercent    = pv.DeemedDisposalPercent,
             },
             DataPoints = System.Text.Json.JsonSerializer.Deserialize<List<ProjectionDataPointDto>>(pv.DataPointsJson)
                          ?? new List<ProjectionDataPointDto>(),
@@ -313,6 +442,8 @@ public class ProjectionService : IProjectionService
                 InflationPercent         = entity.InflationPercent,
                 CgtPercent               = entity.CgtPercent,
                 StartAmount              = entity.StartAmount,
+                ApplyDeemedDisposal      = entity.ApplyDeemedDisposal,
+                DeemedDisposalPercent    = entity.DeemedDisposalPercent,
             },
             DataPoints = dataPoints,
         };
@@ -350,6 +481,8 @@ public class ProjectionService : IProjectionService
                 InflationPercent         = target.InflationPercent,
                 CgtPercent               = target.CgtPercent,
                 StartAmount              = target.StartAmount,
+                ApplyDeemedDisposal      = target.ApplyDeemedDisposal,
+                DeemedDisposalPercent    = target.DeemedDisposalPercent,
             }
         };
     }

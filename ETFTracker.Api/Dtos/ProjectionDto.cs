@@ -7,13 +7,25 @@ public class ProjectionSettingsDto
     public decimal AnnualBuyIncreasePercent { get; set; }
     public int ProjectionYears { get; set; }
     public decimal InflationPercent { get; set; }
-    /// <summary>Single tax rate applied once in the final projected year over total profit.</summary>
+    /// <summary>
+    /// Tax rate for the final exit event — always resolved from UserSettings (ExitTaxPercent for Irish,
+    /// CgtPercent for non-Irish). Never stored in projection_settings; read-only for the caller.
+    /// </summary>
     public decimal CgtPercent { get; set; }
     /// <summary>
     /// Optional override for the starting portfolio value used in the projection.
     /// When null or 0, the actual current portfolio value (from live prices) is used.
     /// </summary>
     public decimal? StartAmount { get; set; }
+
+    // ── Deemed Disposal (Irish investors only) ────────────────────────────────
+    /// <summary>When true, 8-year deemed disposal events are simulated per contribution cohort.</summary>
+    public bool ApplyDeemedDisposal { get; set; }
+    /// <summary>
+    /// DD rate resolved from UserSettings at calculation time.
+    /// Read-only in the projection UI — always driven by the user's tax profile.
+    /// </summary>
+    public decimal DeemedDisposalPercent { get; set; }
 }
 
 public class ProjectionDataPointDto
@@ -27,9 +39,11 @@ public class ProjectionDataPointDto
     public decimal YearProfit { get; set; }
     public decimal TotalAmount { get; set; }
     public decimal InflationCorrectedAmount { get; set; }
-    /// <summary>Tax paid this year — 0 for all years except the final projected year.</summary>
+    /// <summary>Exit tax paid in the final projected year (0 for all other years).</summary>
     public decimal TaxPaid { get; set; }
-    /// <summary>Gross portfolio value minus tax (only differs from TotalAmount in the final year).</summary>
+    /// <summary>Deemed Disposal tax paid in this year (Irish DD mode only; 0 otherwise).</summary>
+    public decimal DeemedDisposalPaid { get; set; }
+    /// <summary>Gross portfolio value minus tax (only differs from TotalAmount in tax years).</summary>
     public decimal AfterTaxTotalAmount { get; set; }
     /// <summary>After-tax balance corrected for inflation.</summary>
     public decimal AfterTaxInflationCorrectedAmount { get; set; }

@@ -16,6 +16,10 @@ public class ProjectionVersion
     public decimal InflationPercent { get; set; }
     public decimal CgtPercent { get; set; }
     public decimal? StartAmount { get; set; }
+    /// <summary>Snapshot: whether DD was applied when this version was saved.</summary>
+    public bool ApplyDeemedDisposal { get; set; }
+    /// <summary>Snapshot of the DD rate used when this version was saved.</summary>
+    public decimal DeemedDisposalPercent { get; set; }
 
     // Computed data points serialised as JSON at save time (captures portfolio state)
     public string DataPointsJson { get; set; } = "[]";
