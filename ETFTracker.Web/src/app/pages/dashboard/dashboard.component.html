@@ -909,15 +909,22 @@
         <div class="projection-table-wrapper" *ngIf="projection && !projectionLoading">
           <table class="projection-table">
             <thead>
+              <!-- Group header row -->
+              <tr class="col-group-row">
+                <th colspan="5" class="col-group col-group-performance">Portfolio Growth</th>
+                <th colspan="2" class="col-group col-group-tax group-sep">Tax</th>
+                <th colspan="1" class="col-group col-group-inflation group-sep">Inflation-Adjusted</th>
+              </tr>
+              <!-- Column header row -->
               <tr>
                 <th>Year</th>
                 <th>Initial Balance</th>
                 <th>Total Buys</th>
                 <th>Year Profit</th>
                 <th>EoY Balance</th>
-                <th>Tax Due</th>
+                <th class="group-sep">Tax Due</th>
                 <th>After Tax Balance</th>
-                <th>After Tax Balance Inflation-Corrected</th>
+                <th class="group-sep">After Tax Balance Inflation-Corrected</th>
               </tr>
             </thead>
             <tbody>
@@ -929,7 +936,7 @@
                   {{ formatCurrency(point.yearProfit) }}
                 </td>
                 <td class="value-col eoy-col">{{ formatCurrency(point.totalAmount) }}</td>
-                <td class="value-col tax-col"
+                <td class="value-col tax-col group-sep"
                     [ngClass]="getTaxDueForPoint(point) > 0 ? 'tax-due' : ''">
                   <ng-container *ngIf="getTaxDueForPoint(point) > 0; else noTax">
                     {{ formatCurrency(getTaxDueForPoint(point)) }}
@@ -944,7 +951,7 @@
                   <ng-template #noTax>—</ng-template>
                 </td>
                 <td class="value-col after-tax-col">{{ formatCurrency(point.afterTaxTotalAmount) }}</td>
-                <td class="value-col after-tax-inflation-col">{{ formatCurrency(point.afterTaxInflationCorrectedAmount) }}</td>
+                <td class="value-col after-tax-inflation-col group-sep">{{ formatCurrency(point.afterTaxInflationCorrectedAmount) }}</td>
               </tr>
             </tbody>
             <tfoot class="projection-totals-row">
@@ -956,11 +963,11 @@
                   <strong>{{ formatCurrency(projectionTotals.yearProfit) }}</strong>
                 </td>
                 <td>—</td>
-                <td class="value-col tax-col" [ngClass]="projectionTotals.totalTaxDue > 0 ? 'tax-due' : ''">
+                <td class="value-col tax-col group-sep" [ngClass]="projectionTotals.totalTaxDue > 0 ? 'tax-due' : ''">
                   <strong>{{ projectionTotals.totalTaxDue > 0 ? formatCurrency(projectionTotals.totalTaxDue) : '—' }}</strong>
                 </td>
                 <td>—</td>
-                <td>—</td>
+                <td class="group-sep">—</td>
               </tr>
             </tfoot>
           </table>

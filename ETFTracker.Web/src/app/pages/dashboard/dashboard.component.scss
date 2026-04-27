@@ -1410,8 +1410,41 @@ th.sortable {
           background: var(--bg-elevated);
           border-bottom: 1px solid var(--border);
 
+          // Group header row
+          .col-group-row {
+            border-bottom: none;
+
+            .col-group {
+              padding: 0.4rem 0.9rem 0.2rem;
+              text-align: center;
+              font-size: 0.62rem;
+              font-weight: 700;
+              letter-spacing: 0.08em;
+              text-transform: uppercase;
+              border-bottom: 2px solid transparent;
+              white-space: nowrap;
+
+              &.col-group-performance {
+                color: var(--text-muted);
+                border-bottom-color: var(--border);
+              }
+
+              &.col-group-tax {
+                color: #c084fc;
+                border-bottom-color: rgba(168, 85, 247, 0.45);
+                background: rgba(168, 85, 247, 0.05);
+              }
+
+              &.col-group-inflation {
+                color: #f89b29;
+                border-bottom-color: rgba(248, 155, 41, 0.45);
+                background: rgba(248, 155, 41, 0.05);
+              }
+            }
+          }
+
           th {
-            padding: 0.65rem 0.9rem;
+            padding: 0.5rem 0.9rem;
             text-align: left;
             font-weight: 600;
             color: var(--text-muted);
@@ -1420,6 +1453,18 @@ th.sortable {
             font-size: 0.68rem;
             letter-spacing: 0.06em;
           }
+        }
+
+        // Column group separator — left border on first col of groups 2 & 3
+        th.group-sep,
+        td.group-sep {
+          border-left: 2px solid var(--border);
+        }
+
+        // Tint the Tax group columns subtly
+        thead .col-group-row th.col-group-tax,
+        thead .col-group-row th.col-group-inflation {
+          border-left: 2px solid var(--border);
         }
 
         tbody tr {

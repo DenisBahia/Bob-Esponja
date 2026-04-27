@@ -1537,7 +1537,6 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     // Each metric has its own colour family; each version gets a different shade of that family
     const LINE_TYPE_CONFIG: { key: keyof ProjectionDataPointDto; label: string; dash: number[]; shades: string[] }[] = [
       { key: 'totalAmount',                       label: 'Projected Portfolio Value',             dash: [],      shades: ['#10B981', '#2563d4', '#7cb5ff', '#1a47a0'] },
-      { key: 'inflationCorrectedAmount',          label: 'Inflation Corrected',                   dash: [6, 3],  shades: ['#f05252', '#b91c1c', '#f87171', '#7f1d1d'] },
       { key: 'afterTaxTotalAmount',               label: 'After Taxes',                           dash: [4, 4],  shades: ['#4d6080', '#2d4565', '#6d80a0', '#1d2f45'] },
       { key: 'afterTaxInflationCorrectedAmount',  label: 'After Tax + Inflation Corrected',       dash: [8, 3],  shades: ['#f89b29', '#c27416', '#fbba60', '#7c4a0a'] },
     ];
