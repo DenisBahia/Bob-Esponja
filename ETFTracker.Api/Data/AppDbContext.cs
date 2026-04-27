@@ -40,6 +40,8 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<User>()
             .Property(u => u.Id).HasColumnName("id");
         modelBuilder.Entity<User>()
+            .Property(u => u.Username).HasColumnName("username").HasMaxLength(50);
+        modelBuilder.Entity<User>()
             .Property(u => u.Email).HasColumnName("email");
         modelBuilder.Entity<User>()
             .Property(u => u.FirstName).HasColumnName("first_name");
@@ -52,8 +54,13 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<User>()
             .Property(u => u.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
         modelBuilder.Entity<User>()
+            .HasIndex(u => u.Username)
+            .IsUnique()
+            .HasFilter("username IS NOT NULL");
+        modelBuilder.Entity<User>()
             .HasIndex(u => u.Email)
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("email IS NOT NULL");
         modelBuilder.Entity<User>()
             .HasMany(u => u.Holdings)
             .WithOne(h => h.User)

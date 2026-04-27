@@ -31,6 +31,7 @@ public class JwtService
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new("userId",          user.Id.ToString()),
+            new("username",        user.Username        ?? ""),
             new("email",           user.Email           ?? ""),
             new("name",            $"{user.FirstName} {user.LastName}".Trim()),
             new("avatarUrl",       user.AvatarUrl       ?? ""),

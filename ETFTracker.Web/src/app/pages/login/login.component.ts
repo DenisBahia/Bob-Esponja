@@ -30,7 +30,18 @@ const AUTH_API = `${environment.apiBase}/api/auth`;
             <input type="text" [(ngModel)]="firstName" name="firstName" placeholder="First name" class="input" />
             <input type="text" [(ngModel)]="lastName"  name="lastName"  placeholder="Last name"  class="input" />
           </div>
-          <input type="email"    [(ngModel)]="email"    name="email"    placeholder="Email"    required class="input" />
+          <input *ngIf="isRegister"
+                 type="text" [(ngModel)]="username" name="username"
+                 placeholder="Username (required)" required class="input"
+                 autocomplete="username" />
+          <input *ngIf="isRegister"
+                 type="email" [(ngModel)]="email" name="email"
+                 placeholder="Email (optional)" class="input"
+                 autocomplete="email" />
+          <input *ngIf="!isRegister"
+                 type="text" [(ngModel)]="emailOrUsername" name="emailOrUsername"
+                 placeholder="Email or Username" required class="input"
+                 autocomplete="username" />
           <input type="password" [(ngModel)]="password" name="password" placeholder="Password" required class="input"
                  [minlength]="isRegister ? 8 : 1" />
           <button type="submit" class="btn btn-primary" [disabled]="loading || !canSubmit()">
@@ -218,10 +229,15 @@ export class LoginComponent implements OnInit {
   // Keep GitHub auth code path available while hiding it from the UI for now.
   readonly showGitHubAuth = false;
 
+  // Register fields
+  username  = '';
   email     = '';
   password  = '';
   firstName = '';
   lastName  = '';
+
+  // Login field
+  emailOrUsername = '';
 
   private readonly requestTimeoutMs = 15000;
 
@@ -239,11 +255,10 @@ export class LoginComponent implements OnInit {
   }
 
   canSubmit(): boolean {
-    if (!this.isValidEmail(this.email)) {
-      return false;
+    if (this.isRegister) {
+      return this.isValidUsername(this.username) && this.password.length >= 8;
     }
-
-    return this.password.length >= this.getPasswordMinLength();
+    return this.emailOrUsername.trim().length >= 1 && this.password.length >= 1;
   }
 
   async submitEmailForm(): Promise<void> {
@@ -251,27 +266,35 @@ export class LoginComponent implements OnInit {
     this.successMessage = '';
 
     if (!this.canSubmit()) {
-      this.errorMessage = this.isValidEmail(this.email)
-        ? `Password must be at least ${this.getPasswordMinLength()} character${this.getPasswordMinLength() > 1 ? 's' : ''}.`
-        : 'Please enter a valid email address.';
+      if (this.isRegister) {
+        this.errorMessage = !this.isValidUsername(this.username)
+          ? 'Username must be 3–50 characters (letters, numbers, _ or -).'
+          : 'Password must be at least 8 characters.';
+      } else {
+        this.errorMessage = 'Please enter your email or username and password.';
+      }
       return;
     }
 
-    this.loading        = true;
+    this.loading = true;
     try {
       let token: string;
       if (this.isRegister) {
         const res = await firstValueFrom(
           this.http.post<{ token: string }>(`${AUTH_API}/register`, {
-            email: this.email, password: this.password,
-            firstName: this.firstName || null, lastName: this.lastName || null
+            username: this.username.trim(),
+            email: this.email.trim() || null,
+            password: this.password,
+            firstName: this.firstName || null,
+            lastName: this.lastName || null
           }).pipe(timeout(this.requestTimeoutMs))
         );
         token = res.token;
       } else {
         const res = await firstValueFrom(
           this.http.post<{ token: string }>(`${AUTH_API}/login`, {
-            email: this.email, password: this.password
+            emailOrUsername: this.emailOrUsername.trim(),
+            password: this.password
           }).pipe(timeout(this.requestTimeoutMs))
         );
         token = res.token;
@@ -280,8 +303,13 @@ export class LoginComponent implements OnInit {
       await this.router.navigate(['/dashboard']);
     } catch (err: any) {
       const msg = err?.error?.message;
-      if (err?.status === 409)       this.errorMessage = 'An account with this email already exists.';
-      else if (err?.status === 401)  this.errorMessage = 'Invalid email or password.';
+      if (err?.status === 409) {
+        const errorCode = err?.error?.error;
+        this.errorMessage = errorCode === 'username_taken'
+          ? 'This username is already taken.'
+          : 'An account with this email already exists.';
+      }
+      else if (err?.status === 401)  this.errorMessage = 'Invalid email/username or password.';
       else if (err?.name === 'TimeoutError') this.errorMessage = 'Request timed out. Please try again.';
       else if (msg)                  this.errorMessage = msg;
       else                           this.errorMessage = 'Something went wrong. Please try again.';
@@ -297,8 +325,8 @@ export class LoginComponent implements OnInit {
     this.router.navigate(['/']);
   }
 
-  private getPasswordMinLength(): number {
-    return this.isRegister ? 8 : 1;
+  private isValidUsername(value: string): boolean {
+    return /^[a-zA-Z0-9_\-]{3,50}$/.test(value.trim());
   }
 
   private isValidEmail(value: string): boolean {

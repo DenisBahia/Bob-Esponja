@@ -39,7 +39,7 @@ public class AuthController : ControllerBase
     // ── Email / Password ───────────────────────────────────────────────────────
 
     /// <summary>
-    /// Registers a new user with email and password.
+    /// Registers a new user with a username (required), optional email, and password.
     /// </summary>
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterDto dto, CancellationToken ct)
@@ -47,13 +47,22 @@ public class AuthController : ControllerBase
         var registerValidation = ValidateRegisterRequest(dto);
         if (registerValidation is not null) return registerValidation;
 
-        var emailLower = dto.Email.Trim().ToLowerInvariant();
-        if (await _db.Users.AnyAsync(u => u.Email == emailLower, ct))
-            return Conflict(new { error = "email_taken", message = "An account with this email already exists." });
+        var usernameLower = dto.Username.Trim().ToLowerInvariant();
+        if (await _db.Users.AnyAsync(u => u.Username == usernameLower, ct))
+            return Conflict(new { error = "username_taken", message = "This username is already taken." });
+
+        string? emailLower = null;
+        if (!string.IsNullOrWhiteSpace(dto.Email))
+        {
+            emailLower = dto.Email.Trim().ToLowerInvariant();
+            if (await _db.Users.AnyAsync(u => u.Email == emailLower, ct))
+                return Conflict(new { error = "email_taken", message = "An account with this email already exists." });
+        }
 
         var now = DateTime.UtcNow;
         var user = new User
         {
+            Username     = usernameLower,
             Email        = emailLower,
             FirstName    = NormalizeOptionalName(dto.FirstName),
             LastName     = NormalizeOptionalName(dto.LastName),
@@ -70,7 +79,7 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Authenticates an existing user with email and password.
+    /// Authenticates an existing user with email or username and password.
     /// </summary>
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto dto, CancellationToken ct)
@@ -78,12 +87,18 @@ public class AuthController : ControllerBase
         var loginValidation = ValidateLoginRequest(dto);
         if (loginValidation is not null) return loginValidation;
 
-        var emailLower = dto.Email.Trim().ToLowerInvariant();
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == emailLower, ct);
+        var input = dto.EmailOrUsername.Trim();
+        var inputLower = input.ToLowerInvariant();
+
+        User? user;
+        if (IsValidEmail(input))
+            user = await _db.Users.FirstOrDefaultAsync(u => u.Email == inputLower, ct);
+        else
+            user = await _db.Users.FirstOrDefaultAsync(u => u.Username == inputLower, ct);
 
         if (user == null || string.IsNullOrEmpty(user.PasswordHash)
             || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
-            return Unauthorized(new { error = "invalid_credentials", message = "Invalid email or password." });
+            return Unauthorized(new { error = "invalid_credentials", message = "Invalid email/username or password." });
 
         var now = DateTime.UtcNow;
         user.LastLoginAt = now;
@@ -96,7 +111,13 @@ public class AuthController : ControllerBase
 
     private IActionResult? ValidateRegisterRequest(RegisterDto dto)
     {
-        if (!IsValidEmail(dto.Email))
+        if (string.IsNullOrWhiteSpace(dto.Username) || dto.Username.Trim().Length < 3)
+            return BadRequest(new { error = "invalid_username", message = "Username must be at least 3 characters." });
+
+        if (!IsValidUsername(dto.Username.Trim()))
+            return BadRequest(new { error = "invalid_username", message = "Username may only contain letters, numbers, underscores, and hyphens." });
+
+        if (!string.IsNullOrWhiteSpace(dto.Email) && !IsValidEmail(dto.Email))
             return BadRequest(new { error = "invalid_email", message = "Please enter a valid email address." });
 
         if (string.IsNullOrWhiteSpace(dto.Password) || dto.Password.Length < 8)
@@ -107,8 +128,8 @@ public class AuthController : ControllerBase
 
     private IActionResult? ValidateLoginRequest(LoginDto dto)
     {
-        if (!IsValidEmail(dto.Email))
-            return BadRequest(new { error = "invalid_email", message = "Please enter a valid email address." });
+        if (string.IsNullOrWhiteSpace(dto.EmailOrUsername))
+            return BadRequest(new { error = "invalid_input", message = "Email or username is required." });
 
         if (string.IsNullOrWhiteSpace(dto.Password))
             return BadRequest(new { error = "invalid_password", message = "Password is required." });
@@ -129,6 +150,12 @@ public class AuthController : ControllerBase
         {
             return false;
         }
+    }
+
+    private static bool IsValidUsername(string value)
+    {
+        // Allow letters, digits, underscores, hyphens; 3-50 chars
+        return System.Text.RegularExpressions.Regex.IsMatch(value, @"^[a-zA-Z0-9_\-]{3,50}$");
     }
 
     private static string? NormalizeOptionalName(string? value)
@@ -192,6 +219,7 @@ public class AuthController : ControllerBase
     public IActionResult GetCurrentUser() => Ok(new
     {
         userId        = User.FindFirst("userId")?.Value,
+        username      = User.FindFirst("username")?.Value,
         email         = User.FindFirst("email")?.Value,
         name          = User.FindFirst("name")?.Value,
         avatarUrl     = User.FindFirst("avatarUrl")?.Value,
