@@ -76,7 +76,7 @@
     <p class="hero__sub reveal">
       The portfolio tracker built for serious long-term investors.
       Real-time prices, decades-ahead wealth projections, automated CGT calculations,
-      inflation-adjusted returns, buy &amp; sell history, and deep tax tooling for
+      inflation-adjusted returns, buy &amp; sell history, personalised goal tracking, and deep tax tooling for
       every investor &mdash; including a dedicated engine for Irish Exit Tax &amp; Deemed Disposal.
     </p>
 
@@ -122,6 +122,11 @@
         <span class="hero__stat-val">Free</span>
         <span class="hero__stat-lbl">No credit card needed</span>
       </div>
+      <span class="hero__stat-sep"></span>
+      <div class="hero__stat">
+        <span class="hero__stat-val">&#x1F3AF; Goal</span>
+        <span class="hero__stat-lbl">Personal wealth targets</span>
+      </div>
     </div>
 
     <!-- Irish tax highlight — secondary callout -->
@@ -150,7 +155,7 @@
     <div class="section-header reveal">
       <span class="section-tag">Features</span>
       <h2>Everything you need to invest smarter</h2>
-      <p>Built for long-term investors who want clarity, not complexity. Real-time prices, automated tax calculations, multi-decade projections, and buy/sell history — for any investor, anywhere.</p>
+      <p>Built for long-term investors who want clarity, not complexity. Real-time prices, automated tax calculations, multi-decade projections, personalised goal tracking, buy/sell history, and CSV import — for any investor, anywhere.</p>
     </div>
 
     <div class="features__grid">
@@ -250,6 +255,14 @@
         <h3>CSV Import</h3>
         <p>Import your entire transaction history in seconds. Drop a CSV file, resolve any unrecognised tickers with a live search, preview every row before committing, and bulk-import hundreds of buys and sells at once — no manual entry required.</p>
       </div>
+
+      <div class="feature-card reveal" style="--delay:0.25s">
+        <div class="feature-card__icon feature-card__icon--amber">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <h3>My Goal</h3>
+        <p>Set a personalised wealth target by seeding any projection version as your goal. Edit year-by-year target values on an interactive chart and table, switch between yearly and monthly views, and track how your actual projections stack up against your goal &mdash; all in a dedicated tab.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -262,7 +275,7 @@
     <div class="section-header reveal">
       <span class="section-tag">App Preview</span>
       <h2>See what's waiting for you</h2>
-      <p>A pixel-perfect dark dashboard built for focus — rich analytics, tax projections, buy/sell history with per-transaction performance, allocation charts, portfolio sharing, and more.</p>
+      <p>A pixel-perfect dark dashboard built for focus — rich analytics, tax projections, buy/sell history with per-transaction performance, allocation charts, portfolio sharing, personalised goal tracking, CSV import, and more.</p>
     </div>
 
     <!-- Slide tabs -->
@@ -1009,6 +1022,123 @@
           <text x="730" y="461" fill="#fff" font-family="Inter,sans-serif" font-size="11" font-weight="700">Import 14 rows →</text>
         </svg>
       </div>
+
+      <!-- ── Slide 7: My Goal ── -->
+      <div class="preview__slide" [class.active]="activeSlide === 7">
+        <svg viewBox="0 0 900 520" xmlns="http://www.w3.org/2000/svg" class="preview__svg">
+          <rect width="900" height="520" fill="#080c14"/>
+          <rect width="900" height="46" fill="#111d35"/>
+          <line x1="0" y1="46" x2="900" y2="46" stroke="#1f2e4a" stroke-width="1"/>
+          <text x="18" y="28" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="13" font-weight="700">📊 Portify</text>
+
+          <!-- Section title -->
+          <text x="18" y="67" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="14" font-weight="700">🎯 My Goal</text>
+
+          <!-- Tab buttons: Yearly / Monthly -->
+          <rect x="18" y="74" width="90" height="24" rx="6" fill="#10B981"/>
+          <text x="37" y="90" fill="#fff" font-family="Inter,sans-serif" font-size="9.5" font-weight="700">Yearly view</text>
+          <rect x="116" y="74" width="90" height="24" rx="6" fill="#172040" stroke="#243452" stroke-width="1"/>
+          <text x="131" y="90" fill="#8da0bf" font-family="Inter,sans-serif" font-size="9.5">Monthly view</text>
+
+          <!-- Chart panel -->
+          <rect x="18" y="106" width="880" height="210" rx="7" fill="#111d35" stroke="#1f2e4a" stroke-width="1"/>
+          <text x="32" y="126" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="11" font-weight="700">Goal Target — 20-Year Wealth Journey</text>
+          <line x1="18" y1="134" x2="898" y2="134" stroke="#1f2e4a" stroke-width="1"/>
+
+          <!-- Chart grid -->
+          <line x1="50" y1="300" x2="880" y2="300" stroke="#1f2e4a" stroke-width="0.7"/>
+          <line x1="50" y1="262" x2="880" y2="262" stroke="#1f2e4a" stroke-width="0.7"/>
+          <line x1="50" y1="224" x2="880" y2="224" stroke="#1f2e4a" stroke-width="0.7"/>
+          <line x1="50" y1="186" x2="880" y2="186" stroke="#1f2e4a" stroke-width="0.7"/>
+          <line x1="50" y1="148" x2="880" y2="148" stroke="#1f2e4a" stroke-width="0.7"/>
+
+          <!-- Y-axis labels -->
+          <text x="46" y="304" fill="#4d6080" font-family="Inter,sans-serif" font-size="8" text-anchor="end">0</text>
+          <text x="46" y="266" fill="#4d6080" font-family="Inter,sans-serif" font-size="8" text-anchor="end">100k</text>
+          <text x="46" y="228" fill="#4d6080" font-family="Inter,sans-serif" font-size="8" text-anchor="end">200k</text>
+          <text x="46" y="190" fill="#4d6080" font-family="Inter,sans-serif" font-size="8" text-anchor="end">300k</text>
+          <text x="46" y="152" fill="#4d6080" font-family="Inter,sans-serif" font-size="8" text-anchor="end">400k</text>
+
+          <!-- X-axis labels -->
+          <text x="50" y="314" fill="#4d6080" font-family="Inter,sans-serif" font-size="8.5">2025</text>
+          <text x="210" y="314" fill="#4d6080" font-family="Inter,sans-serif" font-size="8.5">2030</text>
+          <text x="380" y="314" fill="#4d6080" font-family="Inter,sans-serif" font-size="8.5">2035</text>
+          <text x="557" y="314" fill="#4d6080" font-family="Inter,sans-serif" font-size="8.5">2040</text>
+          <text x="730" y="314" fill="#4d6080" font-family="Inter,sans-serif" font-size="8.5">2045</text>
+
+          <defs>
+            <linearGradient id="goalGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="rgba(16,185,129,0.25)"/>
+              <stop offset="100%" stop-color="rgba(16,185,129,0)"/>
+            </linearGradient>
+            <clipPath id="goalClip"><rect x="50" y="140" width="836" height="165"/></clipPath>
+          </defs>
+          <g clip-path="url(#goalClip)">
+            <path d="M50,299 C130,293 210,280 300,264 C390,246 470,222 560,198 C650,172 730,158 870,142 L870,303 L50,303Z" fill="url(#goalGrad)"/>
+            <polyline class="anim-line-1" points="50,299 130,293 210,280 300,264 390,246 470,222 560,198 650,172 730,158 870,142"
+              stroke="#10B981" stroke-width="2.3" fill="none"/>
+            <circle cx="870" cy="142" r="5" fill="#10B981"/>
+          </g>
+          <text x="875" y="147" fill="#10B981" font-family="Inter,sans-serif" font-size="10" font-weight="700">€400k</text>
+
+          <!-- Legend -->
+          <line x1="650" y1="125" x2="672" y2="125" stroke="#10B981" stroke-width="2"/>
+          <text x="677" y="129" fill="#8da0bf" font-family="Inter,sans-serif" font-size="9">Goal target</text>
+
+          <!-- Table panel -->
+          <rect x="18" y="324" width="880" height="178" rx="7" fill="#111d35" stroke="#1f2e4a" stroke-width="1"/>
+          <text x="32" y="344" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="11" font-weight="700">Year-by-Year Targets</text>
+          <line x1="18" y1="352" x2="898" y2="352" stroke="#1f2e4a" stroke-width="1"/>
+
+          <!-- Table header -->
+          <rect x="18" y="352" width="880" height="24" fill="rgba(31,46,74,0.55)"/>
+          <text x="38" y="368" fill="#4d6080" font-family="Inter,sans-serif" font-size="8">YEAR</text>
+          <text x="140" y="368" fill="#4d6080" font-family="Inter,sans-serif" font-size="8">TARGET (€)</text>
+          <text x="278" y="368" fill="#4d6080" font-family="Inter,sans-serif" font-size="8">YEAR</text>
+          <text x="380" y="368" fill="#4d6080" font-family="Inter,sans-serif" font-size="8">TARGET (€)</text>
+          <text x="518" y="368" fill="#4d6080" font-family="Inter,sans-serif" font-size="8">YEAR</text>
+          <text x="620" y="368" fill="#4d6080" font-family="Inter,sans-serif" font-size="8">TARGET (€)</text>
+          <text x="758" y="368" fill="#4d6080" font-family="Inter,sans-serif" font-size="8">YEAR</text>
+          <text x="840" y="368" fill="#4d6080" font-family="Inter,sans-serif" font-size="8">TARGET (€)</text>
+
+          <!-- 3 data rows -->
+          <rect x="18" y="376" width="880" height="30" fill="rgba(16,185,129,0.03)"/>
+          <text x="38" y="395" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">2025</text>
+          <rect x="130" y="381" width="100" height="18" rx="4" fill="#0d1526" stroke="#243452" stroke-width="1"/>
+          <text x="140" y="394" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">25,000</text>
+          <text x="278" y="395" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">2030</text>
+          <rect x="370" y="381" width="100" height="18" rx="4" fill="#0d1526" stroke="#243452" stroke-width="1"/>
+          <text x="380" y="394" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">80,000</text>
+          <text x="518" y="395" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">2035</text>
+          <rect x="610" y="381" width="100" height="18" rx="4" fill="#0d1526" stroke="#10B981" stroke-width="1.2"/>
+          <text x="620" y="394" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">163,000</text>
+          <text x="758" y="395" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">2040</text>
+          <rect x="830" y="381" width="50" height="18" rx="4" fill="#0d1526" stroke="#243452" stroke-width="1"/>
+          <text x="838" y="394" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">270k</text>
+          <line x1="18" y1="406" x2="898" y2="406" stroke="#1f2e4a" stroke-width="0.5"/>
+
+          <rect x="18" y="406" width="880" height="30" fill="rgba(16,185,129,0.03)"/>
+          <text x="38" y="425" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">2026</text>
+          <rect x="130" y="411" width="100" height="18" rx="4" fill="#0d1526" stroke="#243452" stroke-width="1"/>
+          <text x="140" y="424" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">38,000</text>
+          <text x="278" y="425" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">2031</text>
+          <rect x="370" y="411" width="100" height="18" rx="4" fill="#0d1526" stroke="#243452" stroke-width="1"/>
+          <text x="380" y="424" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">97,500</text>
+          <text x="518" y="425" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">2036</text>
+          <rect x="610" y="411" width="100" height="18" rx="4" fill="#0d1526" stroke="#243452" stroke-width="1"/>
+          <text x="620" y="424" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">188,000</text>
+          <text x="758" y="425" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">2045</text>
+          <rect x="830" y="411" width="50" height="18" rx="4" fill="#0d1526" stroke="#243452" stroke-width="1"/>
+          <text x="838" y="424" fill="#e4eaf5" font-family="Inter,sans-serif" font-size="10">400k</text>
+          <line x1="18" y1="436" x2="898" y2="436" stroke="#1f2e4a" stroke-width="0.5"/>
+
+          <!-- Footer buttons -->
+          <rect x="18" y="454" width="180" height="30" rx="7" fill="#172040" stroke="#1f2e4a" stroke-width="1"/>
+          <text x="52" y="473" fill="#10B981" font-family="Inter,sans-serif" font-size="9.5" font-weight="600">🎯 Save as Goal</text>
+          <rect x="706" y="454" width="174" height="30" rx="7" fill="#10B981"/>
+          <text x="742" y="473" fill="#fff" font-family="Inter,sans-serif" font-size="10" font-weight="700">💾 Save changes</text>
+        </svg>
+      </div>
     </div>
   </div>
 </section>
@@ -1417,7 +1547,7 @@
         </div>
         <h3>Sign in instantly</h3>
         <p *ngIf="showGitHubAuth">One click with your GitHub or Google account. No passwords, no forms, no waiting for email verification.</p>
-        <p *ngIf="!showGitHubAuth">One click with your Google account. No passwords, no forms, no waiting for email verification.</p>
+        <p *ngIf="!showGitHubAuth">Sign in with Google in one click, or register with a username and password in seconds. No credit card, no email verification required.</p>
       </div>
 
       <div class="how__connector reveal"></div>
@@ -1454,7 +1584,7 @@
     <div class="cta-section__inner reveal">
       <h2>Ready to take control of your investments?</h2>
       <p *ngIf="showGitHubAuth">Free to use. No credit card. Sign in with GitHub or Google and start tracking in seconds.</p>
-      <p *ngIf="!showGitHubAuth">Free to use. No credit card. Sign in with Google and start tracking in seconds.</p>
+      <p *ngIf="!showGitHubAuth">Free to use. No credit card. Sign in with Google or register with a username and password — start tracking in seconds.</p>
       <p class="cta-section__tagline">Track. Project. Grow.</p>
 
       <div class="cta-section__btns">
@@ -1476,7 +1606,7 @@
       </div>
 
       <p class="cta-section__note">
-        🔒 We only store your email address and investment data. Zero third-party tracking.
+        🔒 We only store your email address (if provided) and investment data. Zero third-party tracking.
       </p>
       <p class="cta-section__contact">
         Questions, bug reports, or feature ideas? Reach us at
