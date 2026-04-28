@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { SeoService } from '../../services/seo.service';
 
 @Component({
   selector: 'app-landing',
@@ -30,9 +31,15 @@ export class LandingComponent implements OnInit, OnDestroy {
   private slideInterval: ReturnType<typeof setInterval> | null = null;
   private observer: IntersectionObserver | null = null;
 
-  constructor(private router: Router, private auth: AuthService) {}
+  constructor(private router: Router, private auth: AuthService, private seo: SeoService) {}
 
   ngOnInit(): void {
+    this.seo.update({
+      title: 'Portify – Investment Tracker for Irish Investors',
+      description:
+        'Free investment portfolio tracker for Irish investors. Track ETFs, stocks, crypto and funds with automatic deemed disposal tax calculations, real-time prices and portfolio sharing.',
+      url: '/',
+    });
     if (this.auth.isAuthenticated()) {
       this.router.navigate(['/dashboard']);
       return;

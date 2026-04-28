@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, DashboardDto, HoldingDto, ProjectionResultDto, ProjectionSettingsDto, PortfolioEvolutionDto, ProjectionVersionSummaryDto, ProjectionVersionDetailDto, ProjectionDataPointDto, SaveVersionRequestDto, UserGoalDto, GoalDataPointDto, UpsertGoalRequestDto, TaxSummaryDto, TaxEventDto, TaxYearAllowanceSummaryDto, UserTaxDefaultsDto, TaxYearSummaryDto, ExitTaxPotDto, RecalculateTaxYearResultDto } from '../../services/api.service';
 import { AuthService, CurrentUser } from '../../services/auth.service';
+import { SeoService } from '../../services/seo.service';
 import { AddTransactionModalComponent } from '../../components/add-transaction-modal/add-transaction-modal.component';
 import { BuyHistoryModalComponent } from '../../components/buy-history-modal/buy-history-modal.component';
 import { SellModalComponent } from '../../components/sell-modal/sell-modal.component';
@@ -315,7 +316,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     return null;
   }
 
-  constructor(private apiService: ApiService, private cdr: ChangeDetectorRef, public auth: AuthService, public sharingCtx: SharingContextService) {
+  constructor(private apiService: ApiService, private cdr: ChangeDetectorRef, public auth: AuthService, public sharingCtx: SharingContextService, private seo: SeoService) {
   }
 
   get canViewProjections(): boolean {
@@ -329,6 +330,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   ngOnInit(): void {
+    this.seo.update({ title: 'Dashboard – Portify', description: 'Your investment portfolio dashboard.', url: '/dashboard', noIndex: true });
     console.log('Dashboard component initialized');
     this.enforceReadOnlyNavigation();
     this.loadDashboard();

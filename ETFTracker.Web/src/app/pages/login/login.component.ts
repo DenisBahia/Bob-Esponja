@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, timeout } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
+import { SeoService } from '../../services/seo.service';
 import { environment } from '../../../environments/environment';
 
 const AUTH_API = `${environment.apiBase}/api/auth`;
@@ -241,9 +242,10 @@ export class LoginComponent implements OnInit {
 
   private readonly requestTimeoutMs = 15000;
 
-  constructor(private auth: AuthService, private route: ActivatedRoute, private http: HttpClient, private router: Router) {}
+  constructor(private auth: AuthService, private route: ActivatedRoute, private http: HttpClient, private router: Router, private seo: SeoService) {}
 
   ngOnInit(): void {
+    this.seo.update({ title: 'Sign In – Portify', description: 'Sign in to your Portify investment portfolio tracker account.', url: '/login', noIndex: true });
     const err = this.route.snapshot.queryParamMap.get('error');
     if (err === 'oauth_failed') this.errorMessage = 'Authentication failed. Please try again.';
   }
