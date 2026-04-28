@@ -402,16 +402,17 @@
         <!-- ── Tax by Year (Irish only) — CGT + Exit Tax combined ── -->
         <div class="tax-year-section" *ngIf="isIrishInvestor && irishTaxByYear.length > 0">
           <h3 class="tax-section-title">Tax by Year</h3>
+          <p class="tax-section-desc">The consolidated view — summarises every transaction across your whole portfolio for the year.</p>
           <table class="tax-year-table">
             <thead>
               <tr>
                 <th>Year</th>
-                <th>Profits</th>
-                <th>Losses</th>
-                <th class="tax-col-sep-right">Net Gain</th>
-                <th class="tax-col-sep-right">DD Taxable Gain</th>
-                <th class="tax-col-sep-right">Taxable Gain</th>
-                <th>Tax Due</th>
+                <th>Profits <span class="th-tip" data-tip="Total gross gains from all asset sales during the tax year, before any losses or exemptions are applied.">ⓘ</span></th>
+                <th>Losses <span class="th-tip" data-tip="Total losses from asset sales. Exit Tax losses can only offset Exit Tax gains; CGT losses can only offset CGT gains.">ⓘ</span></th>
+                <th class="tax-col-sep-right">Net Gain <span class="th-tip" data-tip="The sum of all profits minus all losses across all investment types. Formula: Profits − Losses">ⓘ</span></th>
+                <th class="tax-col-sep-right">DD Taxable Gain <span class="th-tip" data-tip="Gains subject to Deemed Disposal (8-year rule for ETFs). A 'phantom' gain taxed even if you didn't sell. Calculated per lot at the 8-year anniversary date.">ⓘ</span></th>
+                <th class="tax-col-sep-right">Taxable Gain <span class="th-tip" data-tip="Final amount subject to tax. Formula: (CGT Net Gain − €1,270 allowance) + Exit Tax Gains + DD Taxable Gains. The €1,270 exemption only applies to CGT assets, not Exit Tax.">ⓘ</span></th>
+                <th>Tax Due <span class="th-tip" data-tip="Total tax obligation for the year. Formula: Taxable Gain × 38% — combining CGT, Exit Tax, and Deemed Disposal.">ⓘ</span></th>
                 <th>Status</th>
                 <th *ngIf="!sharingCtx.isReadOnly()">Action</th>
               </tr>
@@ -449,16 +450,17 @@
             <span class="tooltip-icon" title="Exit Tax losses within this asset and year can offset gains from the same asset in the same year. They cannot reduce Exit Tax on other assets.">ⓘ</span>
             <span class="tax-section-badge tax-section-badge--exit">For assets subject to Deemed Disposal (Exit Tax)</span>
           </h3>
+          <p class="tax-section-desc">Focuses on ETFs & funds subject to Exit Tax (38%). No €1,270 annual exemption applies here; losses can only offset gains within the same asset and year.</p>
           <table class="tax-year-table">
             <thead>
               <tr>
                 <th>Asset</th>
                 <th>Year</th>
-                <th>Profits</th>
-                <th>Losses</th>
-                <th>DD Taxable Gain</th>
-                <th>Taxable Gain</th>
-                <th>Tax Due</th>
+                <th>Profits <span class="th-tip" data-tip="Realised gains from the sale of ETFs / Funds subject to Exit Tax (typically 38%).">ⓘ</span></th>
+                <th>Losses <span class="th-tip" data-tip="Losses from selling Exit Tax assets. These can only offset gains within the same Exit Tax pot — they cannot reduce Exit Tax on other assets.">ⓘ</span></th>
+                <th>DD Taxable Gain <span class="th-tip" data-tip="The gain accrued on lots held for exactly 8 years (Deemed Disposal). A mandatory tax event — triggers even if you haven't sold. Formula: (Price at 8-yr date − Cost Basis) × Qty. ⚠️ When units were partially or fully sold in the same year, a proportional factor is applied (qty sold ÷ total qty bought) to avoid double taxation — you would otherwise pay both Deemed Disposal tax and Exit Tax on the same sold units. The remaining unsold portion retains its full DD gain.">ⓘ</span></th>
+                <th>Taxable Gain <span class="th-tip" data-tip="Net Exit Tax gains plus Deemed Disposal gains, minus allowable Exit Tax losses. Formula: Profits − Losses + DD Taxable Gain. Note: the €1,270 exemption does NOT apply here.">ⓘ</span></th>
+                <th>Tax Due <span class="th-tip" data-tip="Total Exit Tax payable for this asset. Formula: Taxable Gain × 38%. The annual €1,270 exemption does NOT apply to Exit Tax assets.">ⓘ</span></th>
               </tr>
             </thead>
             <tbody>
@@ -484,15 +486,16 @@
             CGT by Year
             <span class="tax-section-badge tax-section-badge--cgt">For assets not subject to Deemed Disposal</span>
           </h3>
+          <p class="tax-section-desc">Capital Gains Tax on shares and non-UCITS assets. Benefits from the annual €1,270 Personal Allowance. Losses can offset gains within the same year but not against Exit Tax.</p>
           <table class="tax-year-table">
             <thead>
               <tr>
                 <th>Year</th>
-                <th>Profits</th>
-                <th>Losses</th>
-                <th>Net Gain</th>
-                <th>Taxable Gain</th>
-                <th>Tax Due <span class="th-note">(net, after allowance)</span></th>
+                <th>Profits <span class="th-tip" data-tip="Total gains from sales of shares and assets not subject to Exit Tax (Deemed Disposal does not apply to these).">ⓘ</span></th>
+                <th>Losses <span class="th-tip" data-tip="Losses from CGT-applicable assets. Can offset CGT gains within the same year but cannot be used against Exit Tax gains.">ⓘ</span></th>
+                <th>Net Gain <span class="th-tip" data-tip="Your total CGT profit minus CGT losses. Formula: Profits − Losses">ⓘ</span></th>
+                <th>Taxable Gain <span class="th-tip" data-tip="The portion of Net Gain that exceeds the Annual Personal Allowance. Formula: max(0, Net Gain − €1,270). If Net Gain ≤ €1,270, this is €0.">ⓘ</span></th>
+                <th>Tax Due <span class="th-note">(net, after allowance)</span> <span class="th-tip" data-tip="Final CGT amount due. Formula: Taxable Gain × 38%. If your Net Gain is below €1,270, this will be €0.">ⓘ</span></th>
               </tr>
             </thead>
             <tbody>
@@ -516,12 +519,12 @@
             <thead>
               <tr>
                 <th>Year</th>
-                <th>Profits</th>
-                <th>Losses</th>
-                <th>Net Gain</th>
-                <th>Allowance</th>
-                <th>Taxable Gain</th>
-                <th>Tax Due <span class="th-note">(net, after allowance)</span></th>
+                <th>Profits <span class="th-tip" data-tip="Total gains from asset sales during the tax year, before losses or exemptions.">ⓘ</span></th>
+                <th>Losses <span class="th-tip" data-tip="Total losses from asset sales. These can offset gains within the same tax year.">ⓘ</span></th>
+                <th>Net Gain <span class="th-tip" data-tip="Your total profit minus losses for the year. Formula: Profits − Losses">ⓘ</span></th>
+                <th>Allowance <span class="th-tip" data-tip="Your annual tax-free Capital Gains allowance applied to this year's net gain.">ⓘ</span></th>
+                <th>Taxable Gain <span class="th-tip" data-tip="The portion of Net Gain that exceeds your annual allowance. Formula: max(0, Net Gain − Allowance)">ⓘ</span></th>
+                <th>Tax Due <span class="th-note">(net, after allowance)</span> <span class="th-tip" data-tip="Final CGT amount due. Formula: Taxable Gain × your configured tax rate.">ⓘ</span></th>
                 <th>Status</th>
                 <th *ngIf="!sharingCtx.isReadOnly()">Action</th>
               </tr>
