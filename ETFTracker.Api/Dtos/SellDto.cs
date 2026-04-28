@@ -54,6 +54,14 @@ public class SellRecordDto
     public List<SellLotBreakdownDto> Lots { get; set; } = new();
 }
 
+// ── Update sell record ────────────────────────────────────────────────────────
+public class UpdateSellRecordDto
+{
+    public decimal Quantity { get; set; }
+    public decimal SellPrice { get; set; }
+    public DateOnly SellDate { get; set; }
+}
+
 // ── Asset-type deemed-disposal default ────────────────────────────────────────
 public class AssetTypeDeemedDisposalDefaultDto
 {

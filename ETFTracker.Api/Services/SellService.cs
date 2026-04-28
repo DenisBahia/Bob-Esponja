@@ -17,6 +17,10 @@ public interface ISellService
         DateOnly sellDate, bool isIrishInvestor, decimal taxRate, CancellationToken ct = default);
 
     Task<List<SellRecordDto>> GetSellHistoryAsync(int holdingId, int userId, CancellationToken ct = default);
+
+    Task DeleteSellRecordAsync(int sellRecordId, int userId, CancellationToken ct = default);
+
+    Task<SellRecordDto> UpdateSellRecordAsync(int sellRecordId, int userId, UpdateSellRecordDto dto, CancellationToken ct = default);
 }
 
 public class SellService : ISellService
@@ -334,6 +338,215 @@ public class SellService : ISellService
                 DeemedDisposalDue = txns.TryGetValue(l.BuyTransactionId, out var t2) && t2.DeemedDisposalDue
             }).ToList()
         }).ToList();
+    }
+
+    public async Task DeleteSellRecordAsync(int sellRecordId, int userId, CancellationToken ct = default)
+    {
+        var old = await _db.SellRecords
+            .Include(sr => sr.LotAllocations)
+            .FirstOrDefaultAsync(sr => sr.Id == sellRecordId, ct)
+            ?? throw new KeyNotFoundException("Sell record not found.");
+
+        var holding = await _db.Holdings
+            .FirstOrDefaultAsync(h => h.Id == old.HoldingId && h.UserId == userId, ct)
+            ?? throw new UnauthorizedAccessException("Access denied.");
+
+        var holdingId = old.HoldingId;
+        var sellYear = old.SellDate.Year;
+        var utcNow = new DateTime(DateTime.UtcNow.Ticks, DateTimeKind.Utc);
+
+        await using var tx = await _db.Database.BeginTransactionAsync(ct);
+        try
+        {
+            var taxEvents = await _db.TaxEvents
+                .Where(te => te.SellRecordId == sellRecordId)
+                .ToListAsync(ct);
+            _db.TaxEvents.RemoveRange(taxEvents);
+            _db.SellLotAllocations.RemoveRange(old.LotAllocations);
+            _db.SellRecords.Remove(old);
+            await _db.SaveChangesAsync(ct);
+
+            await RecalculateHoldingAsync(holding, holdingId, utcNow, ct);
+
+            await tx.CommitAsync(ct);
+        }
+        catch
+        {
+            await tx.RollbackAsync(ct);
+            throw;
+        }
+
+        try
+        {
+            var summaries = await _db.AnnualTaxSummaries
+                .Where(a => a.UserId == userId && a.TaxYear == sellYear)
+                .ToListAsync(ct);
+            foreach (var s in summaries.Where(s => s.Status == "Paid"))
+            {
+                s.Status = "Pending";
+                s.PaidTaxAmount = 0m;
+            }
+            if (summaries.Any(s => s.Status == "Pending"))
+                await _db.SaveChangesAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to reset AnnualTaxSummary after deleting sell record {SellRecordId}", sellRecordId);
+        }
+    }
+
+    public async Task<SellRecordDto> UpdateSellRecordAsync(int sellRecordId, int userId, UpdateSellRecordDto dto, CancellationToken ct = default)
+    {
+        var old = await _db.SellRecords
+            .Include(sr => sr.LotAllocations)
+            .FirstOrDefaultAsync(sr => sr.Id == sellRecordId, ct)
+            ?? throw new KeyNotFoundException("Sell record not found.");
+
+        var holding = await _db.Holdings
+            .FirstOrDefaultAsync(h => h.Id == old.HoldingId && h.UserId == userId, ct)
+            ?? throw new UnauthorizedAccessException("Access denied.");
+
+        var holdingId = old.HoldingId;
+        var taxRate = old.TaxRateUsed;
+        var oldYear = old.SellDate.Year;
+        var utcNow = new DateTime(DateTime.UtcNow.Ticks, DateTimeKind.Utc);
+
+        await using var tx = await _db.Database.BeginTransactionAsync(ct);
+        try
+        {
+            // 1. Remove old record
+            var taxEvents = await _db.TaxEvents
+                .Where(te => te.SellRecordId == sellRecordId)
+                .ToListAsync(ct);
+            _db.TaxEvents.RemoveRange(taxEvents);
+            _db.SellLotAllocations.RemoveRange(old.LotAllocations);
+            _db.SellRecords.Remove(old);
+            await _db.SaveChangesAsync(ct);
+
+            // 2. Compute lots with freed-up quantities
+            var (newLots, _) = await ComputeLotsAsync(holding, dto.Quantity, dto.SellPrice, dto.SellDate, ct);
+            var totalProfit = newLots.Sum(l => l.ProfitOnLot);
+            var taxType = DetermineTaxType(newLots);
+            var taxAmountSaved = taxType == "ExitTax" ? Math.Max(0, totalProfit) * taxRate / 100m : 0m;
+
+            // 3. Persist new sell record
+            var newRecord = new SellRecord
+            {
+                HoldingId = holdingId,
+                SellDate = dto.SellDate,
+                SellPrice = dto.SellPrice,
+                Quantity = dto.Quantity,
+                TotalProfit = totalProfit,
+                TaxAmountSaved = taxAmountSaved,
+                TaxRateUsed = taxRate,
+                TaxType = taxType,
+                CreatedAt = utcNow
+            };
+            _db.SellRecords.Add(newRecord);
+            await _db.SaveChangesAsync(ct);
+
+            foreach (var lot in newLots)
+            {
+                _db.SellLotAllocations.Add(new SellLotAllocation
+                {
+                    SellRecordId = newRecord.Id,
+                    BuyTransactionId = lot.BuyTransactionId,
+                    QuantityConsumed = lot.QuantityConsumed,
+                    OriginalCostPerUnit = lot.OriginalCostPerUnit,
+                    AdjustedCostPerUnit = lot.AdjustedCostPerUnit,
+                    DeemedDisposalDate = lot.DeemedDisposalDate,
+                    DeemedDisposalPricePerUnit = lot.DeemedDisposalPricePerUnit,
+                    ProfitOnLot = lot.ProfitOnLot,
+                    CreatedAt = utcNow
+                });
+            }
+            await _db.SaveChangesAsync(ct);
+
+            // 4. Recalculate holding
+            await RecalculateHoldingAsync(holding, holdingId, utcNow, ct);
+
+            await tx.CommitAsync(ct);
+
+            // 5. Tax event (best-effort, after commit)
+            try
+            {
+                var taxEvent = BuildSellTaxEvent(userId, holdingId, newRecord.Id,
+                    dto.SellDate, dto.SellPrice, totalProfit, taxAmountSaved, taxRate, taxType);
+                _db.TaxEvents.Add(taxEvent);
+                await _db.SaveChangesAsync(ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to create TaxEvent for updated sell record {SellRecordId}", newRecord.Id);
+            }
+
+            // 6. Reset AnnualTaxSummary for affected years
+            try
+            {
+                var years = new HashSet<int> { oldYear, dto.SellDate.Year };
+                var summaries = await _db.AnnualTaxSummaries
+                    .Where(a => a.UserId == userId && years.Contains(a.TaxYear))
+                    .ToListAsync(ct);
+                foreach (var s in summaries.Where(s => s.Status == "Paid"))
+                {
+                    s.Status = "Pending";
+                    s.PaidTaxAmount = 0m;
+                }
+                if (summaries.Any(s => s.Status == "Pending"))
+                    await _db.SaveChangesAsync(ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to reset AnnualTaxSummary after updating sell record {SellRecordId}", sellRecordId);
+            }
+
+            return new SellRecordDto
+            {
+                Id = newRecord.Id,
+                HoldingId = holdingId,
+                SellDate = dto.SellDate,
+                SellPrice = dto.SellPrice,
+                Quantity = dto.Quantity,
+                TotalProfit = totalProfit,
+                TaxAmountSaved = taxAmountSaved,
+                TaxRateUsed = taxRate,
+                TaxType = taxType,
+                CreatedAt = utcNow,
+                Lots = newLots
+            };
+        }
+        catch
+        {
+            await tx.RollbackAsync(ct);
+            throw;
+        }
+    }
+
+    private async Task RecalculateHoldingAsync(Holding holding, int holdingId, DateTime utcNow, CancellationToken ct)
+    {
+        var allTxns = await _db.Transactions
+            .Where(t => t.HoldingId == holdingId)
+            .ToDictionaryAsync(t => t.Id, ct);
+
+        var allConsumed = await _db.SellLotAllocations
+            .Where(sla => allTxns.Keys.Contains(sla.BuyTransactionId))
+            .GroupBy(sla => sla.BuyTransactionId)
+            .Select(g => new { TxnId = g.Key, Consumed = g.Sum(sla => sla.QuantityConsumed) })
+            .ToListAsync(ct);
+        var consumedMap = allConsumed.ToDictionary(x => x.TxnId, x => x.Consumed);
+
+        decimal remQty = 0m, remCost = 0m;
+        foreach (var (txnId, txn) in allTxns)
+        {
+            var consumed = consumedMap.TryGetValue(txnId, out var c) ? c : 0m;
+            var remaining = txn.Quantity - consumed;
+            if (remaining > 0) { remQty += remaining; remCost += remaining * txn.PurchasePrice; }
+        }
+        holding.Quantity = remQty;
+        holding.AverageCost = remQty > 0 ? remCost / remQty : 0m;
+        holding.UpdatedAt = utcNow;
+        _db.Holdings.Update(holding);
+        await _db.SaveChangesAsync(ct);
     }
 
     // ── Private helpers ────────────────────────────────────────────────────────

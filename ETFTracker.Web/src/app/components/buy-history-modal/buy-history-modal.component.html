@@ -120,20 +120,64 @@
         </thead>
         <tbody>
           <ng-container *ngFor="let record of sellRecords">
-            <tr class="sell-row"
-                [ngClass]="{'positive': record.totalProfit > 0, 'negative': record.totalProfit <= 0}"
-                (click)="toggleSellExpand(record.id)" style="cursor:pointer">
-              <td>{{ formatDate(record.sellDate) }}</td>
-              <td class="quantity">{{ formatQuantity(record.quantity) }}</td>
-              <td class="price">{{ formatCurrency(record.sellPrice) }}</td>
-              <td class="price">{{ formatCurrency(record.quantity * record.sellPrice) }}</td>
-              <td class="price" [ngClass]="record.totalProfit >= 0 ? 'gain' : 'loss'">{{ formatCurrency(record.totalProfit) }}</td>
-              <td class="price" [title]="getSellTaxPaidLabel(record)">{{ formatCurrency(record.taxAmountSaved) }}</td>
-              <td class="price" [title]="getSellTaxPaidLabel(record)">{{ record.taxRateUsed.toFixed(1) }}%</td>
-              <td class="action-col">{{ expandedSellId === record.id ? '▲' : '▼' }}</td>
-            </tr>
+
+            <!-- ── EDIT MODE ── -->
+            <ng-container *ngIf="editingSellId === record.id; else sellViewMode">
+              <tr class="row-editing">
+                <td><input type="date" class="edit-input" [(ngModel)]="editSellForm.sellDate" /></td>
+                <td><input type="number" class="edit-input edit-input-sm" [(ngModel)]="editSellForm.quantity" step="0.0001" min="0.0001" /></td>
+                <td><input type="number" class="edit-input edit-input-sm" [(ngModel)]="editSellForm.sellPrice" step="0.01" min="0" /></td>
+                <td class="price">{{ formatCurrency(editSellForm.quantity * editSellForm.sellPrice) }}</td>
+                <td class="price">—</td>
+                <td class="price">—</td>
+                <td class="price">—</td>
+                <td class="action-col">
+                  <span class="edit-save-inline">
+                    <button class="btn-confirm-yes" (click)="saveEditSell(record.id)" [disabled]="savingSellEdit">{{ savingSellEdit ? '…' : '✓' }}</button>
+                    <button class="btn-confirm-no" (click)="cancelEditSell()">✕</button>
+                  </span>
+                </td>
+              </tr>
+            </ng-container>
+
+            <!-- ── VIEW MODE ── -->
+            <ng-template #sellViewMode>
+              <tr class="sell-row"
+                  [ngClass]="{'positive': record.totalProfit > 0, 'negative': record.totalProfit <= 0}"
+                  (click)="confirmDeleteSellId !== record.id && toggleSellExpand(record.id)" style="cursor:pointer">
+                <td>{{ formatDate(record.sellDate) }}</td>
+                <td class="quantity">{{ formatQuantity(record.quantity) }}</td>
+                <td class="price">{{ formatCurrency(record.sellPrice) }}</td>
+                <td class="price">{{ formatCurrency(record.quantity * record.sellPrice) }}</td>
+                <td class="price" [ngClass]="record.totalProfit >= 0 ? 'gain' : 'loss'">{{ formatCurrency(record.totalProfit) }}</td>
+                <td class="price" [title]="getSellTaxPaidLabel(record)">{{ formatCurrency(record.taxAmountSaved) }}</td>
+                <td class="price" [title]="getSellTaxPaidLabel(record)">{{ record.taxRateUsed.toFixed(1) }}%</td>
+                <td class="action-col" (click)="$event.stopPropagation()">
+                  <ng-container *ngIf="!sharingCtx.isReadOnly()">
+                    <ng-container *ngIf="confirmDeleteSellId === record.id; else sellNormalActions">
+                      <span class="delete-confirm-inline">
+                        <button class="btn-confirm-yes" (click)="confirmDeleteSell(record.id)" [disabled]="deletingSellIds.has(record.id)">✓</button>
+                        <button class="btn-confirm-no" (click)="cancelDeleteSell()">✕</button>
+                      </span>
+                    </ng-container>
+                    <ng-template #sellNormalActions>
+                      <button class="btn-edit" (click)="startEditSell(record)" title="Edit this sell">✏️</button>
+                      <button class="btn-delete"
+                              (click)="requestDeleteSell(record.id)"
+                              [disabled]="deletingSellIds.has(record.id)"
+                              title="Delete this sell">
+                        {{ deletingSellIds.has(record.id) ? '…' : '🗑️' }}
+                      </button>
+                    </ng-template>
+                  </ng-container>
+                  <span *ngIf="sharingCtx.isReadOnly()">{{ expandedSellId === record.id ? '▲' : '▼' }}</span>
+                  <span *ngIf="!sharingCtx.isReadOnly() && confirmDeleteSellId !== record.id">{{ expandedSellId === record.id ? '▲' : '▼' }}</span>
+                </td>
+              </tr>
+            </ng-template>
+
             <!-- Expandable FIFO lot breakdown -->
-            <tr *ngIf="expandedSellId === record.id" class="lot-breakdown-row">
+            <tr *ngIf="expandedSellId === record.id && editingSellId !== record.id" class="lot-breakdown-row">
               <td colspan="8">
                 <table class="lot-breakdown-table">
                   <thead>

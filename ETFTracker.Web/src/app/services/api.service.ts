@@ -245,6 +245,12 @@ export interface SellRecordDto {
   lots: SellLotBreakdownDto[];
 }
 
+export interface UpdateSellRecordDto {
+  quantity: number;
+  sellPrice: number;
+  sellDate: string;  // "YYYY-MM-DD"
+}
+
 // ── Tax Events ────────────────────────────────────────────────────────────────
 
 export interface TaxEventDto {
@@ -488,6 +494,14 @@ export class ApiService {
 
   getSellHistory(holdingId: number): Observable<SellRecordDto[]> {
     return this.http.get<SellRecordDto[]>(`${this.apiUrl}/holdings/${holdingId}/sell-history`);
+  }
+
+  deleteSellRecord(sellRecordId: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/holdings/sell-records/${sellRecordId}`);
+  }
+
+  updateSellRecord(sellRecordId: number, dto: UpdateSellRecordDto): Observable<SellRecordDto> {
+    return this.http.patch<SellRecordDto>(`${this.apiUrl}/holdings/sell-records/${sellRecordId}`, dto);
   }
 
   // ── Tax Events ────────────────────────────────────────────────────────────

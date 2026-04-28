@@ -1,7 +1,7 @@
 import { ChangeDetectorRef, Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, TransactionDto, UpdateTransactionDto, SellRecordDto } from '../../services/api.service';
+import { ApiService, TransactionDto, UpdateTransactionDto, SellRecordDto, UpdateSellRecordDto } from '../../services/api.service';
 import { SharingContextService } from '../../services/sharing-context.service';
 
 @Component({
@@ -17,12 +17,19 @@ export class BuyHistoryModalComponent implements OnInit {
   /** Fires whenever a transaction is deleted so the parent can refresh its data. */
   @Output() changed = new EventEmitter<void>();
 
-  // ── Tab ──────────────────────────────────────────────────────────────────────
+  // ── Sells tab ─────────────────────────────────────────────────────────────────
   activeTab: 'buys' | 'sells' = 'buys';
   sellsLoaded = false;
   sellsLoading = false;
   sellRecords: SellRecordDto[] = [];
   expandedSellId: number | null = null;
+
+  // Sell edit/delete
+  editingSellId: number | null = null;
+  editSellForm: UpdateSellRecordDto = { quantity: 0, sellPrice: 0, sellDate: '' };
+  savingSellEdit = false;
+  confirmDeleteSellId: number | null = null;
+  deletingSellIds: Set<number> = new Set();
 
   // ── Buys tab ─────────────────────────────────────────────────────────────────
   transactions: TransactionDto[] = [];
@@ -200,6 +207,84 @@ export class BuyHistoryModalComponent implements OnInit {
   formatPercent(value: number): string {
     const sign = value >= 0 ? '+' : '';
     return sign + value.toFixed(2) + '%';
+  }
+
+  // ── Sell edit / delete ────────────────────────────────────────────────────────
+
+  startEditSell(record: SellRecordDto): void {
+    this.confirmDeleteSellId = null;
+    this.expandedSellId = null;
+    this.editingSellId = record.id;
+    this.editSellForm = {
+      quantity: record.quantity,
+      sellPrice: record.sellPrice,
+      sellDate: record.sellDate.slice(0, 10),
+    };
+    this.cdr.detectChanges();
+  }
+
+  cancelEditSell(): void {
+    this.editingSellId = null;
+    this.cdr.detectChanges();
+  }
+
+  saveEditSell(id: number): void {
+    if (this.savingSellEdit) return;
+    this.savingSellEdit = true;
+    this.cdr.detectChanges();
+
+    this.apiService.updateSellRecord(id, this.editSellForm).subscribe({
+      next: () => {
+        this.savingSellEdit = false;
+        this.editingSellId = null;
+        this.sellsLoaded = false;
+        this.loadSells();
+        this.changed.emit();
+      },
+      error: (err) => {
+        console.error('Error updating sell record:', err);
+        this.error = err?.error?.message ?? 'Failed to update sell record. Please try again.';
+        this.savingSellEdit = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  requestDeleteSell(id: number): void {
+    this.editingSellId = null;
+    this.expandedSellId = null;
+    this.confirmDeleteSellId = id;
+    this.cdr.detectChanges();
+  }
+
+  cancelDeleteSell(): void {
+    this.confirmDeleteSellId = null;
+    this.cdr.detectChanges();
+  }
+
+  confirmDeleteSell(id: number): void {
+    this.confirmDeleteSellId = null;
+    this.deletingSellIds = new Set(this.deletingSellIds).add(id);
+    this.cdr.detectChanges();
+
+    this.apiService.deleteSellRecord(id).subscribe({
+      next: () => {
+        this.sellRecords = this.sellRecords.filter(r => r.id !== id);
+        const next = new Set(this.deletingSellIds);
+        next.delete(id);
+        this.deletingSellIds = next;
+        this.changed.emit();
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error deleting sell record:', err);
+        this.error = err?.error?.message ?? 'Failed to delete sell record. Please try again.';
+        const next = new Set(this.deletingSellIds);
+        next.delete(id);
+        this.deletingSellIds = next;
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   onClose(): void {

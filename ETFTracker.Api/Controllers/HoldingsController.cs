@@ -363,4 +363,62 @@ public class HoldingsController : ControllerBase
             return StatusCode(500, new { message = "Error retrieving sell history" });
         }
     }
+
+    /// <summary>Delete a sell record and restore holding quantities.</summary>
+    [HttpDelete("sell-records/{sellRecordId}")]
+    public async Task<ActionResult> DeleteSellRecord(int sellRecordId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (_sharingContext.IsReadOnly())
+                return StatusCode(403, new { message = "This profile is shared as read-only." });
+
+            await _sellService.DeleteSellRecordAsync(sellRecordId, GetUserId(), cancellationToken);
+            return NoContent();
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(403, new { message = ex.Message });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting sell record {SellRecordId}", sellRecordId);
+            return StatusCode(500, new { message = "Error deleting sell record" });
+        }
+    }
+
+    /// <summary>Update a sell record (re-runs FIFO with new parameters).</summary>
+    [HttpPatch("sell-records/{sellRecordId}")]
+    public async Task<ActionResult<SellRecordDto>> UpdateSellRecord(int sellRecordId, [FromBody] UpdateSellRecordDto dto, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (_sharingContext.IsReadOnly())
+                return StatusCode(403, new { message = "This profile is shared as read-only." });
+
+            var result = await _sellService.UpdateSellRecordAsync(sellRecordId, GetUserId(), dto, cancellationToken);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(403, new { message = ex.Message });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating sell record {SellRecordId}", sellRecordId);
+            return StatusCode(500, new { message = "Error updating sell record" });
+        }
+    }
 }
