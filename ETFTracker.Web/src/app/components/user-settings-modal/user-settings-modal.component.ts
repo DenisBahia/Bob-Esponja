@@ -25,7 +25,7 @@ export class UserSettingsModalComponent implements OnInit {
     isIrishInvestor: true,
     exitTaxPercent: 38,
     deemedDisposalPercent: 38,
-    siaAnnualPercent: 0,
+    siaAnnualPercent: 1,
     cgtPercent: 38,
     taxFreeAllowancePerYear: 1270,
   };

@@ -129,6 +129,10 @@ export interface ProjectionDataPointDto {
   taxPaid: number;
   afterTaxTotalAmount: number;
   afterTaxInflationCorrectedAmount: number;
+  /** SIA annual charge this year (Irish investors only; 0 when SIA % = 0). */
+  siaTaxDue: number;
+  /** Portfolio value after cumulative SIA charges up to and including this year. */
+  afterSiaTotalAmount: number;
 }
 
 export interface ProjectionResultDto {

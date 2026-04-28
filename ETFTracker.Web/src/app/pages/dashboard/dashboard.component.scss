@@ -1461,6 +1461,12 @@ th.sortable {
                 border-bottom-color: rgba(248, 155, 41, 0.45);
                 background: rgba(248, 155, 41, 0.05);
               }
+
+              &.col-group-sia {
+                color: #2ec4b6;
+                border-bottom-color: rgba(46, 196, 182, 0.45);
+                background: rgba(46, 196, 182, 0.05);
+              }
             }
           }
 
@@ -1484,6 +1490,7 @@ th.sortable {
 
         // Tint the Tax group columns subtly
         thead .col-group-row th.col-group-tax,
+        thead .col-group-row th.col-group-sia,
         thead .col-group-row th.col-group-inflation {
           border-left: 2px solid var(--border);
         }
@@ -3068,6 +3075,21 @@ th.sortable {
   border-radius: 6px;
   padding: 0.1rem 0.4rem;
   margin-left: 0.4rem;
+}
+
+.badge-sia-group {
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: #2ec4b6;
+  background: rgba(46, 196, 182, 0.15);
+  border: 1px solid rgba(46, 196, 182, 0.35);
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  margin-left: 0.4rem;
+  white-space: nowrap;
+  vertical-align: middle;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .badge-info {

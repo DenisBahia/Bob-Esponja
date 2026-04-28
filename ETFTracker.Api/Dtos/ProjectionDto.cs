@@ -47,6 +47,12 @@ public class ProjectionDataPointDto
     public decimal AfterTaxTotalAmount { get; set; }
     /// <summary>After-tax balance corrected for inflation.</summary>
     public decimal AfterTaxInflationCorrectedAmount { get; set; }
+
+    // ── SIA (Standard Investment Account — Irish Gov. plan from 2027+) ──────────
+    /// <summary>SIA annual charge this year (siaAnnualPercent × totalAmount). 0 when SIA is disabled or user is non-Irish.</summary>
+    public decimal SiaTaxDue { get; set; }
+    /// <summary>Portfolio value after cumulative SIA charges up to and including this year.</summary>
+    public decimal AfterSiaTotalAmount { get; set; }
 }
 
 public class ProjectionResultDto

@@ -916,6 +916,9 @@
               <tr class="col-group-row">
                 <th colspan="5" class="col-group col-group-performance">Portfolio Growth</th>
                 <th colspan="2" class="col-group col-group-tax group-sep">Tax</th>
+                <th *ngIf="showSiaColumns" colspan="2" class="col-group col-group-sia group-sep">
+                  SIA <span class="badge-future badge-sia-group">Gov. plan from 2027+</span>
+                </th>
                 <th colspan="1" class="col-group col-group-inflation group-sep">Inflation-Adjusted</th>
               </tr>
               <!-- Column header row -->
@@ -927,6 +930,8 @@
                 <th>EoY Balance</th>
                 <th class="group-sep">Tax Due</th>
                 <th>After Tax Balance</th>
+                <th *ngIf="showSiaColumns" class="group-sep sia-col-header">Tax Due</th>
+                <th *ngIf="showSiaColumns" class="sia-col-header">After Tax Balance</th>
                 <th class="group-sep">After Tax Balance Inflation-Corrected</th>
               </tr>
             </thead>
@@ -954,6 +959,14 @@
                   <ng-template #noTax>—</ng-template>
                 </td>
                 <td class="value-col after-tax-col">{{ formatCurrency(point.afterTaxTotalAmount) }}</td>
+                <!-- SIA columns (Irish investors only) -->
+                <td *ngIf="showSiaColumns" class="value-col sia-col group-sep"
+                    [ngClass]="point.siaTaxDue > 0 ? 'tax-due' : ''">
+                  {{ point.siaTaxDue > 0 ? formatCurrency(point.siaTaxDue) : '—' }}
+                </td>
+                <td *ngIf="showSiaColumns" class="value-col sia-col">
+                  {{ formatCurrency(point.afterSiaTotalAmount) }}
+                </td>
                 <td class="value-col after-tax-inflation-col group-sep">{{ formatCurrency(point.afterTaxInflationCorrectedAmount) }}</td>
               </tr>
             </tbody>
@@ -970,6 +983,11 @@
                   <strong>{{ projectionTotals.totalTaxDue > 0 ? formatCurrency(projectionTotals.totalTaxDue) : '—' }}</strong>
                 </td>
                 <td>—</td>
+                <!-- SIA totals -->
+                <td *ngIf="showSiaColumns" class="value-col sia-col group-sep" [ngClass]="projectionSiaTotals.totalSiaTax > 0 ? 'tax-due' : ''">
+                  <strong>{{ projectionSiaTotals.totalSiaTax > 0 ? formatCurrency(projectionSiaTotals.totalSiaTax) : '—' }}</strong>
+                </td>
+                <td *ngIf="showSiaColumns">—</td>
                 <td class="group-sep">—</td>
               </tr>
             </tfoot>

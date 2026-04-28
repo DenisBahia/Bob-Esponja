@@ -215,6 +215,23 @@ public class ProjectionService : IProjectionService
             }
         }
 
+        // ── SIA engine (Irish investors only — Gov. plan from 2027+) ─────────────
+        // Simple flat annual charge: siaAnnualPercent × end-of-year portfolio value.
+        // Computed as a parallel scenario — does not affect the existing DD/exit-tax columns.
+        var siaPercent = 0m;
+        {
+            var usSia = await _context.UserSettings.FirstOrDefaultAsync(s => s.UserId == userId, ct);
+            if (usSia?.IsIrishInvestor == true && usSia.SiaAnnualPercent > 0m)
+                siaPercent = usSia.SiaAnnualPercent;
+        }
+
+        var siaTaxPerYear = new decimal[N + 1];
+        if (siaPercent > 0m)
+        {
+            for (int i = 0; i <= N; i++)
+                siaTaxPerYear[i] = Math.Round(endOfYear[i] * siaPercent / 100m, 2);
+        }
+
         // ── Final-year exit/CGT tax ───────────────────────────────────────────
         decimal taxAtEnd;
         if (settings.ApplyDeemedDisposal)
@@ -235,6 +252,7 @@ public class ProjectionService : IProjectionService
         // ── Build data points ─────────────────────────────────────────────────
         var dataPoints = new List<ProjectionDataPointDto>();
         decimal cumulativeDDPaid = 0m;
+        decimal cumulativeSiaPaid = 0m;
 
         for (int i = 0; i <= N; i++)
         {
@@ -244,12 +262,14 @@ public class ProjectionService : IProjectionService
             var ddThisYear        = ddPaidPerYear[i];
             var taxPaid           = isLastYear ? taxAtEnd : 0m;
 
-            cumulativeDDPaid += ddThisYear;
+            cumulativeDDPaid  += ddThisYear;
+            cumulativeSiaPaid += siaTaxPerYear[i];
 
             // After-tax balance = gross EoY value minus ALL taxes paid up to and including this year.
             // This reflects the real net position: every euro of DD paid in prior years
             // has already left the portfolio and cannot compound further.
-            var afterTax = Math.Max(0m, endOfYear[i] - cumulativeDDPaid - taxPaid);
+            var afterTax    = Math.Max(0m, endOfYear[i] - cumulativeDDPaid - taxPaid);
+            var afterSia    = Math.Max(0m, endOfYear[i] - cumulativeSiaPaid);
 
             dataPoints.Add(new ProjectionDataPointDto
             {
@@ -263,6 +283,8 @@ public class ProjectionService : IProjectionService
                 TaxPaid                          = Math.Round(taxPaid, 2),
                 AfterTaxTotalAmount              = Math.Round(afterTax, 2),
                 AfterTaxInflationCorrectedAmount = Math.Round(afterTax / inflationFactor, 2),
+                SiaTaxDue                        = Math.Round(siaTaxPerYear[i], 2),
+                AfterSiaTotalAmount              = Math.Round(afterSia, 2),
             });
         }
 

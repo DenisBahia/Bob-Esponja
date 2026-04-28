@@ -303,6 +303,18 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     };
   }
 
+  get projectionSiaTotals(): { totalSiaTax: number } {
+    const points = this.projection?.dataPoints ?? [];
+    return {
+      totalSiaTax: points.reduce((sum, p) => sum + (p.siaTaxDue ?? 0), 0),
+    };
+  }
+
+  /** Whether the SIA group columns should be visible (Irish investors only, and only when SIA % > 0 in user settings). */
+  get showSiaColumns(): boolean {
+    return this.isIrishInvestor && (this.userTaxDefaults?.siaAnnualPercent ?? 0) > 0;
+  }
+
   /** Returns the total tax amount to show in the Tax Due column for a data point. */
   getTaxDueForPoint(dp: ProjectionDataPointDto): number {
     return (dp.deemedDisposalPaid ?? 0) + dp.taxPaid;
@@ -600,6 +612,22 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
         borderDash: [8, 3],
       },
     ];
+
+    // Add SIA line only when the user is an Irish investor and SIA data is present
+    if (this.showSiaColumns && points.some(p => (p.siaTaxDue ?? 0) > 0)) {
+      datasets.push({
+        label: 'Projected after SIA',
+        data: points.map(p => p.afterSiaTotalAmount),
+        borderColor: '#2ec4b6',
+        backgroundColor: 'rgba(46, 196, 182, 0.07)',
+        fill: false,
+        tension: 0.35,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        pointBackgroundColor: '#2ec4b6',
+        borderDash: [4, 4],
+      });
+    }
 
     this.lineChart = new Chart(ctx, {
       type: 'line',
