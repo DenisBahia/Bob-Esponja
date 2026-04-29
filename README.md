@@ -6,6 +6,23 @@ A modern, full-stack web application for managing and tracking investments (ETFs
 
 ---
 
+## 📺 Follow Us on YouTube
+
+> **[🎬 Subscribe to the Investments Tracker YouTube Channel →](https://youtube.com/@InvestmentsTracker)**
+
+We publish weekly videos covering:
+- 🖥️ Feature walkthroughs and tutorials for the app
+- 💰 Irish tax explainers (Deemed Disposal, CGT, Exit Tax)
+- 📈 Portfolio management tips and best practices
+- 🛠️ Open-source development updates (Angular · .NET · PostgreSQL)
+
+[![YouTube Channel](https://img.shields.io/badge/YouTube-Subscribe-red?logo=youtube&logoColor=white)](https://youtube.com/@InvestmentsTracker)
+[![GitHub](https://img.shields.io/badge/GitHub-Source%20Code-black?logo=github)](https://github.com/DenisBahia/Bob-Esponja)
+
+> 📋 See [`YOUTUBE_CHANNEL.md`](./YOUTUBE_CHANNEL.md) for the full channel kit: description, banner templates, video scripts, and social media messages.
+
+---
+
 ## ✨ Quick Highlights
 
 - 📊 **Real-time Portfolio Dashboard** - Multi-period performance tracking (Daily, Weekly, Monthly, YTD)

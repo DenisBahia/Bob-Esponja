@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YouTube Channel Banner – Investments Tracker</title>
+  <style>
+    /* ─────────────────────────────────────────────
+       YouTube recommended banner size: 2560 × 1440 px
+       Safe area (visible on all devices): 1546 × 423 px
+       Export this page as an image at 2560 × 1440 px.
+    ───────────────────────────────────────────── */
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      width: 2560px;
+      height: 1440px;
+      overflow: hidden;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #0d1117;
+    }
+
+    /* ── Animated gradient background ── */
+    .banner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #0d1117 0%, #161b22 40%, #0d1117 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* Decorative grid lines */
+    .grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,212,255,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,255,0.05) 1px, transparent 1px);
+      background-size: 80px 80px;
+    }
+
+    /* Decorative glow circles */
+    .glow {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(180px);
+      opacity: 0.25;
+    }
+    .glow-1 { width: 900px; height: 900px; background: #00d4ff; top: -200px; left: -200px; }
+    .glow-2 { width: 700px; height: 700px; background: #38ef7d; bottom: -150px; right: -100px; }
+    .glow-3 { width: 500px; height: 500px; background: #7b61ff; top: 300px; left: 1100px; }
+
+    /* ── Safe-area content wrapper ── */
+    .safe-area {
+      position: relative;
+      width: 1546px;
+      height: 423px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      z-index: 10;
+    }
+
+    /* Rising bar-chart decoration */
+    .chart-bars {
+      position: absolute;
+      bottom: 30px;
+      left: 0;
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      opacity: 0.15;
+    }
+    .bar {
+      width: 28px;
+      border-radius: 4px 4px 0 0;
+      background: linear-gradient(to top, #00d4ff, #38ef7d);
+    }
+
+    .chart-bars-right {
+      position: absolute;
+      bottom: 30px;
+      right: 0;
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      opacity: 0.15;
+    }
+
+    /* Logo / icon area */
+    .logo-icon {
+      font-size: 72px;
+      margin-bottom: 16px;
+      filter: drop-shadow(0 0 20px rgba(0,212,255,0.6));
+    }
+
+    /* Channel title */
+    .channel-title {
+      font-size: 80px;
+      font-weight: 800;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, #00d4ff 0%, #38ef7d 50%, #00d4ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+      margin-bottom: 18px;
+    }
+
+    /* Tagline */
+    .tagline {
+      font-size: 34px;
+      color: rgba(255,255,255,0.75);
+      letter-spacing: 2px;
+      font-weight: 300;
+      margin-bottom: 24px;
+    }
+
+    /* Feature pills */
+    .pills {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .pill {
+      padding: 10px 28px;
+      border: 1.5px solid rgba(0,212,255,0.4);
+      border-radius: 50px;
+      font-size: 22px;
+      color: #00d4ff;
+      background: rgba(0,212,255,0.06);
+      letter-spacing: 1px;
+    }
+
+    /* Upload date note (bottom right, outside safe area) */
+    .corner-note {
+      position: absolute;
+      bottom: 40px;
+      right: 80px;
+      font-size: 26px;
+      color: rgba(255,255,255,0.3);
+      font-style: italic;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <div class="banner">
+    <div class="grid"></div>
+    <div class="glow glow-1"></div>
+    <div class="glow glow-2"></div>
+    <div class="glow glow-3"></div>
+
+    <div class="safe-area">
+      <!-- Decorative mini-chart bars (left) -->
+      <div class="chart-bars">
+        <div class="bar" style="height:60px"></div>
+        <div class="bar" style="height:90px"></div>
+        <div class="bar" style="height:120px"></div>
+        <div class="bar" style="height:160px"></div>
+        <div class="bar" style="height:200px"></div>
+        <div class="bar" style="height:240px"></div>
+      </div>
+
+      <!-- Logo emoji -->
+      <div class="logo-icon">📈</div>
+
+      <!-- Title -->
+      <div class="channel-title">Investments Tracker</div>
+
+      <!-- Tagline -->
+      <div class="tagline">Portfolio management for the modern Irish investor</div>
+
+      <!-- Feature pills -->
+      <div class="pills">
+        <span class="pill">📊 Real-time Dashboard</span>
+        <span class="pill">💰 Tax Compliance</span>
+        <span class="pill">📈 Projections</span>
+        <span class="pill">👥 Portfolio Sharing</span>
+      </div>
+
+      <!-- Decorative mini-chart bars (right) -->
+      <div class="chart-bars-right">
+        <div class="bar" style="height:240px"></div>
+        <div class="bar" style="height:200px"></div>
+        <div class="bar" style="height:160px"></div>
+        <div class="bar" style="height:120px"></div>
+        <div class="bar" style="height:90px"></div>
+        <div class="bar" style="height:60px"></div>
+      </div>
+    </div>
+
+    <div class="corner-note">New videos every week</div>
+  </div>
+</body>
+</html>
