@@ -27,10 +27,14 @@ We publish weekly videos covering:
 
 - 📊 **Real-time Portfolio Dashboard** - Multi-period performance tracking (Daily, Weekly, Monthly, YTD)
 - 🔄 **Automatic Price Updates** - Powered by Eodhd API with Yahoo Finance fallback
+- 💸 **Sell Holdings** - FIFO-based sell workflow with real-time CGT/Exit Tax preview before confirming
+- 📥 **CSV Import** - Bulk-import transaction history from broker CSV exports
+- 🧾 **Tax Center** - Complete tax ledger tracking deemed disposal events and sell taxes
+- ⚙️ **User Tax Settings** - Configure investor profile, tax rates, and annual CGT allowance
+- 🎯 **Investment Goal** - Set a wealth target and track progress against it
 - 👥 **Portfolio Sharing** - Share portfolios with other investors with granular permission controls
 - 📈 **Investment Projections** - Model future portfolio performance with custom parameters
-- 💰 **Tax Compliance** - Automatic deemed disposal calculations for Irish investors
-- 🎨 **Modern UI** - Responsive dark-theme design with smooth animations
+- 🎨 **Modern UI** - Responsive dark-theme design with smooth animations and a public landing page
 
 ---
 
@@ -50,6 +54,7 @@ We publish weekly videos covering:
 - [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
 - [License](#license)
+- [Quick Links](#quick-links)
 
 ---
 
@@ -118,6 +123,49 @@ Investments Tracker is a comprehensive portfolio management solution built for m
   - Long-term wealth projection
   - Tax impact calculations
 
+- **Tax Center (Tax Events Ledger)**
+  - Full history of deemed disposal and sell tax events
+  - Per-event breakdown: proceeds, cost basis, profit, tax due
+  - Filtered views by holding
+  - Aggregated tax summary with total liability across all events
+  - Annual CGT allowance applied automatically
+
+- **User Tax Settings**
+  - Toggle between Irish Investor and Non-Irish Investor profiles
+  - Configure Exit Tax %, Deemed Disposal %, CGT %, and SIA Annual %
+  - Set annual tax-free CGT allowance
+  - Pre-filled with Irish Revenue defaults (38% Exit Tax, €1,270 allowance)
+
+### 🎯 Investment Goal
+- **Set a Target Portfolio Value**
+  - Define a target wealth amount and target date
+  - Track current portfolio vs goal on the dashboard
+  - Visual progress indicator
+  - Updates automatically as portfolio value changes
+
+### 💸 Sell Holdings
+- **3-Step Sell Workflow**
+  - Enter quantity, sell price, and date
+  - Preview FIFO cost basis and real-time tax calculation before committing
+  - Confirm and record the sale with full audit trail
+  
+- **Tax-Aware Selling**
+  - Automatic FIFO lot matching
+  - Detects ETF Exit Tax vs standard CGT based on asset type
+  - Editable tax rate on the preview screen
+  - Complete sell history per holding
+
+### 📥 CSV Import
+- **Bulk Import Transaction History**
+  - Upload CSV exports from your broker
+  - Native Investments Tracker CSV format supported
+  - Multi-step import wizard: upload → resolve tickers → preview → import
+  
+- **Smart Ticker Resolution**
+  - Detects ISIN codes and maps to tradeable tickers via Yahoo Finance search
+  - Inline search to manually fix unresolved rows
+  - Row-level status (ready / needs picker / error) with delete option before importing
+
 ### 👥 Portfolio Sharing
 - **Share with Other Investors**
   - Invite users by email
@@ -170,15 +218,23 @@ Bob Esponja/
 ├── ETFTracker.Api/                    # Backend (.NET)
 │   ├── Controllers/
 │   │   ├── AuthController.cs          # Authentication & Authorization
-│   │   ├── HoldingsController.cs      # Holdings management
+│   │   ├── HoldingsController.cs      # Holdings, ticker search, sell
 │   │   ├── ProjectionsController.cs   # Projection endpoints
-│   │   └── SharingController.cs       # Portfolio sharing
+│   │   ├── SharingController.cs       # Portfolio sharing
+│   │   ├── TaxEventsController.cs     # Tax event ledger
+│   │   ├── UserSettingsController.cs  # User tax defaults
+│   │   ├── GoalController.cs          # Investment goal
+│   │   └── AssetTypeDefaultsController.cs  # Per-asset deemed-disposal defaults
 │   │
 │   ├── Services/
 │   │   ├── HoldingsService.cs         # Holdings business logic
 │   │   ├── PriceService.cs            # Price fetching & caching
 │   │   ├── ProjectionService.cs       # Projection calculations
-│   │   └── SharingService.cs          # Portfolio sharing logic
+│   │   ├── SharingContextService.cs   # Sharing & permission context
+│   │   ├── SellService.cs             # FIFO sell & tax calculation
+│   │   ├── DeemedDisposalService.cs   # Deemed disposal logic
+│   │   ├── GoalService.cs             # Investment goal logic
+│   │   └── AssetTypeDeemedDisposalDefaultService.cs
 │   │
 │   ├── Models/
 │   │   ├── Holding.cs
@@ -207,30 +263,36 @@ Bob Esponja/
 │   ├── appsettings.Production.json
 │   └── ETFTracker.Api.csproj
 │
-├── ETFTracker.Web/                    # Frontend (Angular)
+├── ETFTracker.Web/                    # Frontend (Angular, standalone components)
 │   ├── src/
 │   │   ├── app/
+│   │   │   ├── pages/
+│   │   │   │   ├── landing/           # Public landing page
+│   │   │   │   ├── dashboard/         # Main authenticated dashboard
+│   │   │   │   ├── login/             # Login page
+│   │   │   │   └── auth-callback/     # OAuth callback
+│   │   │   │
 │   │   │   ├── components/
-│   │   │   │   ├── dashboard/
-│   │   │   │   ├── holdings-table/
-│   │   │   │   ├── add-transaction-modal/
-│   │   │   │   ├── share-profile-modal/
-│   │   │   │   ├── projections/
-│   │   │   │   └── [other components]
+│   │   │   │   ├── add-transaction-modal/  # Record a new buy
+│   │   │   │   ├── buy-history-modal/      # View buy history per holding
+│   │   │   │   ├── sell-modal/             # 3-step sell workflow
+│   │   │   │   ├── import-history-modal/   # CSV bulk import
+│   │   │   │   ├── tax-history-modal/      # Tax events viewer
+│   │   │   │   ├── user-settings-modal/    # Tax defaults & investor profile
+│   │   │   │   └── share-profile-modal/    # Portfolio sharing
 │   │   │   │
 │   │   │   ├── services/
-│   │   │   │   ├── api.service.ts
-│   │   │   │   ├── holdings.service.ts
-│   │   │   │   ├── price.service.ts
-│   │   │   │   ├── sharing.service.ts
-│   │   │   │   └── auth.service.ts
+│   │   │   │   ├── api.service.ts          # HTTP client wrapper
+│   │   │   │   ├── auth.service.ts         # Auth state
+│   │   │   │   ├── csv-parser.service.ts   # CSV parsing & broker presets
+│   │   │   │   ├── seo.service.ts          # Meta tags & SEO
+│   │   │   │   └── sharing-context.service.ts
 │   │   │   │
-│   │   │   ├── models/
-│   │   │   ├── directives/
-│   │   │   ├── pipes/
-│   │   │   ├── app.component.ts
-│   │   │   ├── app.module.ts
-│   │   │   └── app-routing.module.ts
+│   │   │   ├── guards/
+│   │   │   ├── interceptors/
+│   │   │   ├── app.config.ts          # Standalone app config
+│   │   │   ├── app.routes.ts          # Route definitions
+│   │   │   └── app.ts                 # Root component
 │   │   │
 │   │   ├── assets/                    # Static assets
 │   │   ├── environments/              # Environment configs
@@ -507,7 +569,8 @@ GET    /api/holdings/{id}         # Get holding details
 POST   /api/holdings              # Create holding
 PUT    /api/holdings/{id}         # Update holding
 DELETE /api/holdings/{id}         # Delete holding
-GET    /api/holdings/{id}/history # Transaction history
+GET    /api/holdings/{id}/history # Buy transaction history
+GET    /api/holdings/search?q=    # Ticker/instrument search (Yahoo Finance)
 ```
 
 ### Transactions
@@ -517,6 +580,14 @@ POST   /api/transactions          # Add transaction
 GET    /api/transactions/{id}     # Get transaction details
 PUT    /api/transactions/{id}     # Update transaction
 DELETE /api/transactions/{id}     # Delete transaction
+```
+
+### Sell Holdings
+
+```http
+POST   /api/holdings/{id}/sell/preview  # Preview FIFO cost basis & tax before selling
+POST   /api/holdings/{id}/sell/confirm  # Confirm and record the sale
+GET    /api/holdings/{id}/sell-history  # Sell history for a holding
 ```
 
 ### Projections
@@ -554,6 +625,35 @@ GET    /api/dashboard/performance      # Performance metrics
 GET    /api/dashboard/summary          # Portfolio summary
 ```
 
+### Tax Events
+
+```http
+GET    /api/tax-events                 # All tax events (deemed disposal + sells)
+GET    /api/tax-events?holdingId={id}  # Tax events filtered by holding
+```
+
+### User Settings
+
+```http
+GET    /api/user-settings/tax-defaults          # Get investor profile & tax rates
+PUT    /api/user-settings/tax-defaults          # Update investor profile & tax rates
+DELETE /api/user-settings/tax-defaults/reset    # Reset to defaults
+```
+
+### Investment Goal
+
+```http
+GET    /api/goal                       # Get the user's investment goal
+PUT    /api/goal                       # Create or replace the investment goal
+```
+
+### Asset Type Defaults
+
+```http
+GET    /api/asset-type-defaults        # Get deemed-disposal defaults per asset type
+POST   /api/asset-type-defaults        # Upsert deemed-disposal default for an asset type
+```
+
 ## 🎨 Features Guide
 
 ### Using the Dashboard
@@ -562,17 +662,44 @@ GET    /api/dashboard/summary          # Portfolio summary
    - See total portfolio value
    - Monitor multi-period performance (Daily/Weekly/Monthly/YTD)
    - Track top gainers and losers
+   - See progress toward your investment goal
 
 2. **Add New Holdings**
    - Click "Add Transaction"
-   - Enter ticker symbol
-   - Specify quantity and purchase price
+   - Search for a ticker by name or symbol (powered by Yahoo Finance)
+   - Specify quantity, purchase price, and date
+   - Toggle deemed disposal on/off per transaction
    - Automatic price fetching begins
 
 3. **Monitor Performance**
    - Real-time price updates
    - Gain/loss calculations
    - Performance comparisons
+
+### Selling Holdings
+
+1. **Open Sell Modal**
+   - Click the sell button next to a holding
+   - **Step 1**: Enter quantity to sell, sell price, and date
+
+2. **Review Tax Preview**
+   - **Step 2**: See FIFO cost basis, total profit, and tax calculation
+   - Tax type is auto-detected (Exit Tax for Irish ETFs, CGT for equities)
+   - Edit the tax rate directly on screen if needed
+
+3. **Confirm Sale**
+   - **Step 3**: Confirmation with full sale record
+   - Sale is recorded in the holding's sell history and tax events ledger
+
+### Importing Transaction History (CSV)
+
+1. **Open Import Modal** from the dashboard
+2. **Upload** a CSV file from your broker (or use the native Investments Tracker format)
+3. **Resolve Tickers** - the import wizard auto-detects ISINs and searches Yahoo Finance
+   - Rows showing "needs picker" have multiple matches — select the correct ticker
+   - Rows with errors can be fixed with inline search or deleted
+4. **Preview** all rows before committing — sort and review quantities, prices, and dates
+5. **Import** — transactions are bulk-inserted into your portfolio
 
 ### Sharing Portfolios
 
@@ -604,6 +731,42 @@ GET    /api/dashboard/summary          # Portfolio summary
    - View 5-year, 10-year, 20-year scenarios
    - Adjust parameters dynamically
    - Export projection data
+
+### Tax Center
+
+1. **View Tax Events**
+   - Navigate to the Tax Center from any holding
+   - See all deemed disposal events and sell taxes in a unified ledger
+   - Filter by holding or view all events
+
+2. **Tax Summary**
+   - Total tax liability across all events
+   - Annual CGT allowance automatically deducted
+   - Per-event breakdown: proceeds, cost basis, profit, tax due
+
+### User Tax Settings
+
+1. **First-Time Setup**
+   - Prompted on first login to configure your investor profile
+
+2. **Investor Profile**
+   - Toggle between Irish Investor and Non-Irish Investor
+   - Irish defaults: Exit Tax 38%, Deemed Disposal 38%, CGT 38%, €1,270 allowance
+   - Non-Irish defaults: CGT 38%, €3,000 allowance
+
+3. **Customise Rates**
+   - Override any rate for your personal situation
+   - Changes apply to future sell previews and projections
+
+### Investment Goal
+
+1. **Set Your Goal**
+   - Enter a target portfolio value (EUR) and target date
+   - Saved against your account
+
+2. **Track Progress**
+   - Dashboard shows current value vs goal
+   - Progress bar updates in real-time as prices change
 
 ---
 
@@ -782,6 +945,8 @@ Complete documentation available:
 - **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Production deployment
 - **[DATABASE_EXPORT_GUIDE.md](DATABASE_EXPORT_GUIDE.md)** - Data export procedures
 - **[PRICE_SOURCE_TRACKING_COMPLETE.md](PRICE_SOURCE_TRACKING_COMPLETE.md)** - Price source details
+- **[SUPPORTED_ASSET_CLASSES.md](SUPPORTED_ASSET_CLASSES.md)** - Supported investment types
+- **[YOUTUBE_CHANNEL.md](YOUTUBE_CHANNEL.md)** - YouTube channel kit (descriptions, scripts, banners)
 - **[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)** - Full documentation index
 
 ## 🤝 Contributing

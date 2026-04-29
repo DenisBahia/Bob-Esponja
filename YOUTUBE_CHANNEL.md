@@ -32,7 +32,10 @@ Investments Tracker
 
 We build and teach you how to use a free, open-source web app that helps you:
 • Track ETFs, stocks, mutual funds, cryptocurrencies & commodities in real-time
-• Automate Irish tax calculations (Deemed Disposal, Exit Tax, 8-year rule)
+• Automate Irish tax calculations (Deemed Disposal, Exit Tax, CGT, 8-year rule)
+• Sell holdings with FIFO cost-basis and real-time tax preview
+• Import transaction history in bulk from your broker via CSV
+• Set an investment goal and track your progress
 • Project your future wealth with our built-in scenario planner
 • Share your portfolio securely with advisors or family members
 • Monitor multi-period performance (Daily, Weekly, Monthly, YTD)
@@ -60,6 +63,15 @@ I'm Denis, a software engineer and investor based in Ireland. I built Investment
 • Portfolio management tips and best practices
 • Open-source development walkthroughs (Angular + .NET + PostgreSQL)
 • Live demos of new features as they ship
+
+🚀 App Features:
+• Real-time portfolio dashboard (Daily / Weekly / Monthly / YTD performance)
+• Sell holdings with FIFO cost basis and automatic CGT / Exit Tax calculation
+• Bulk import transaction history from your broker via CSV
+• Full Tax Center — ledger of all deemed disposal and sell tax events
+• Investment projections engine for long-term wealth modelling
+• Investment goal tracker
+• Portfolio sharing with advisors or family members
 
 🛠️ Tech Stack:
 Angular 21 · .NET 10 · PostgreSQL · Chart.js · Docker
@@ -139,6 +151,14 @@ Step 3: [Action]
  Drop any questions in the comments — I reply to every one. See you next week! 📈"
 ```
 
+> **Suggested video topics using this template:**
+> - How to sell ETFs and calculate Exit Tax automatically (Sell modal walkthrough)
+> - How to import your entire broker history in minutes (CSV Import walkthrough)
+> - How to use the Tax Center to see all your Irish tax obligations
+> - How to set an investment goal and track your progress
+> - How to project your long-term portfolio value (Projections walkthrough)
+> - How to share your portfolio with your accountant or partner
+
 ---
 
 ### 🎬 Script Template B – Channel Trailer (90 seconds)
@@ -162,6 +182,8 @@ Step 3: [Action]
 
 [FEATURE HIGHLIGHTS – quick montage]
 "From a real-time dashboard… to automatic Deemed Disposal calculations…
+ to selling ETFs with instant Exit Tax preview…
+ to importing your entire broker history with one CSV upload…
  to investment projection modelling… it's all here."
 
 [CTA]
@@ -210,7 +232,7 @@ Step 3: [Action]
 
 ```
 [HOOK — 0–3 sec]
-"Did you know you can share your investment portfolio with one click? Here's how:"
+"Did you know you can import your entire broker history into Investments Tracker in under 2 minutes? Here's how:"
 
 [DEMO — 3–50 sec]
 • Quick screen recording showing the feature.
@@ -219,6 +241,12 @@ Step 3: [Action]
 [CTA — 50–60 sec]
 "Link to the free app in my bio. Follow for more tips every week! 📈"
 ```
+
+> **Suggested Shorts topics:**
+> - Import broker CSV in 2 minutes
+> - See your Exit Tax before you sell (Sell Preview)
+> - Set an investment goal in 30 seconds
+> - Share your portfolio with one link
 
 ---
 
@@ -232,8 +260,10 @@ Hey! 🎉 I just launched my YouTube channel — Investments Tracker!
 
 If you invest in Ireland (ETFs, stocks, crypto...) you'll love this:
 📊 Free portfolio tracking app
-💰 Automatic Irish tax calculations (Deemed Disposal, CGT)
-📈 Investment projection tool
+💰 Automatic Irish tax calculations (Deemed Disposal, Exit Tax, CGT)
+💸 Sell with real-time FIFO cost basis & tax preview
+📥 Bulk import from your broker via CSV
+🎯 Investment goal tracker & projection tool
 
 🎬 YouTube channel: https://youtube.com/@InvestmentsTracker
 🔗 Free app: https://your-app-url.com
@@ -252,15 +282,17 @@ Takes 5 minutes and could save you a ton of confusion at tax time 💰
 
 ---
 
-### 🐦 Twitter / X
+### 🚀 Twitter / X
 
 **Channel launch:**
 ```
 🚀 Just launched the Investments Tracker YouTube channel!
 
 📊 Portfolio tracking
-💰 Irish tax automation (Deemed Disposal, Exit Tax)
-📈 Projection modelling
+💰 Irish tax automation (Deemed Disposal, Exit Tax, CGT)
+💸 FIFO sell with real-time tax preview
+📥 CSV import from any broker
+🎯 Investment goal tracker
 — all FREE & open-source
 
 Subscribe 👉 https://youtube.com/@InvestmentsTracker
@@ -293,6 +325,8 @@ investors get the most out of it.
 What you'll find on the channel:
 ✅ Step-by-step feature tutorials
 ✅ Irish tax explainers (Deemed Disposal, CGT, Exit Tax)
+✅ How to sell ETFs with FIFO cost basis & automatic tax calculation
+✅ How to import your broker history via CSV
 ✅ Portfolio management best practices
 ✅ Open-source development walkthroughs
 
@@ -313,6 +347,8 @@ Managing investments in Ireland just got easier 📊💰
 Introducing Investments Tracker — a FREE app that:
 ✅ Tracks your ETFs, stocks & crypto in real-time
 ✅ Calculates Irish Deemed Disposal tax automatically
+✅ Sells with FIFO cost basis & instant tax preview
+✅ Imports your broker history via CSV in minutes
 ✅ Projects your future wealth
 ✅ Lets you share portfolios securely
 
