@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Video Thumbnail Template – Investments Tracker</title>
+  <style>
+    /* ─────────────────────────────────────────────
+       Standard YouTube thumbnail: 1280 × 720 px
+       Export/screenshot this page at exactly 1280 × 720 px.
+       Customise the CSS variables below for each video.
+    ───────────────────────────────────────────── */
+
+    /* ── Per-video variables ── */
+    :root {
+      --accent:      #00d4ff;   /* swap to #38ef7d for "green" variant  */
+      --accent2:     #38ef7d;
+      --topic-emoji: "📊";      /* change per video                     */
+      --title-line1: "Track Your";
+      --title-line2: "Portfolio";
+      --subtitle:    "Live • Free • Open Source";
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      width: 1280px;
+      height: 720px;
+      overflow: hidden;
+      font-family: 'Segoe UI', Arial, sans-serif;
+    }
+
+    .thumbnail {
+      position: relative;
+      width: 1280px;
+      height: 720px;
+      background: #0d1117;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+    }
+
+    /* Grid overlay */
+    .grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,212,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,255,0.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+
+    /* Glow blobs */
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(120px);
+    }
+    .blob-1 { width: 600px; height: 600px; background: var(--accent);  opacity: 0.18; top:-150px; left:-100px; }
+    .blob-2 { width: 400px; height: 400px; background: var(--accent2); opacity: 0.18; bottom:-100px; right:200px; }
+
+    /* Left: big emoji icon */
+    .icon-area {
+      position: relative;
+      z-index: 10;
+      width: 380px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .big-icon {
+      font-size: 180px;
+      filter: drop-shadow(0 0 40px var(--accent));
+    }
+
+    /* Right: text content */
+    .text-area {
+      position: relative;
+      z-index: 10;
+      flex: 1;
+      padding: 60px 60px 60px 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .channel-label {
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 20px;
+    }
+
+    .title {
+      font-size: 88px;
+      font-weight: 900;
+      line-height: 1.0;
+      color: #ffffff;
+      text-transform: uppercase;
+      letter-spacing: -1px;
+      margin-bottom: 20px;
+    }
+    .title span {
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      font-size: 28px;
+      color: rgba(255,255,255,0.55);
+      letter-spacing: 2px;
+      margin-bottom: 36px;
+    }
+
+    /* CTA badge */
+    .cta-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 32px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 50px;
+      font-size: 26px;
+      font-weight: 700;
+      color: #0d1117;
+      width: fit-content;
+    }
+
+    /* Bottom bar */
+    .bottom-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 100%);
+      z-index: 20;
+    }
+
+    /* ── Variant helpers (add class to .thumbnail) ── */
+
+    /* variant-green: swap accent colours */
+    .variant-green {
+      --accent:  #38ef7d;
+      --accent2: #00d4ff;
+    }
+
+    /* variant-purple */
+    .variant-purple {
+      --accent:  #a855f7;
+      --accent2: #ec4899;
+    }
+
+    /* variant-orange (for tax/tutorial videos) */
+    .variant-orange {
+      --accent:  #f97316;
+      --accent2: #fbbf24;
+    }
+  </style>
+</head>
+<body>
+  <!--
+    HOW TO USE:
+    1. Open this file in a browser.
+    2. Edit the text content in the markup below for each new video.
+    3. Change --accent / --accent2 in :root (or add a variant class) for colour variety.
+    4. Take a screenshot / export at 1280 × 720 px.
+    5. Upload as the YouTube thumbnail.
+  -->
+
+  <!-- ════════ THUMBNAIL 1 – Default / Dashboard ════════ -->
+  <div class="thumbnail" id="thumb-1">
+    <div class="grid"></div>
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <div class="icon-area">
+      <div class="big-icon">📊</div>
+    </div>
+
+    <div class="text-area">
+      <div class="channel-label">📈 Investments Tracker</div>
+      <div class="title">Track Your<br><span>Portfolio</span><br>Live</div>
+      <div class="subtitle">Real-time ETFs, Stocks &amp; Crypto</div>
+      <div class="cta-badge">▶ Watch Now — Free App</div>
+    </div>
+
+    <div class="bottom-bar"></div>
+  </div>
+
+  <!-- ════════ THUMBNAIL 2 – Tax Feature (uncomment to preview) ════════
+  <div class="thumbnail variant-orange" id="thumb-2">
+    <div class="grid"></div>
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <div class="icon-area">
+      <div class="big-icon">💰</div>
+    </div>
+
+    <div class="text-area">
+      <div class="channel-label">📈 Investments Tracker</div>
+      <div class="title">Irish Tax<br><span>Made Easy</span></div>
+      <div class="subtitle">Deemed Disposal · Exit Tax · 8yr Rule</div>
+      <div class="cta-badge">▶ Watch Now — Free Tutorial</div>
+    </div>
+
+    <div class="bottom-bar"></div>
+  </div>
+  -->
+
+  <!-- ════════ THUMBNAIL 3 – Portfolio Sharing (uncomment to preview) ════════
+  <div class="thumbnail variant-green" id="thumb-3">
+    <div class="grid"></div>
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <div class="icon-area">
+      <div class="big-icon">👥</div>
+    </div>
+
+    <div class="text-area">
+      <div class="channel-label">📈 Investments Tracker</div>
+      <div class="title">Share Your<br><span>Portfolio</span><br>Securely</div>
+      <div class="subtitle">Grant read-only access in seconds</div>
+      <div class="cta-badge">▶ Watch Now — Free Feature</div>
+    </div>
+
+    <div class="bottom-bar"></div>
+  </div>
+  -->
+
+  <!-- ════════ THUMBNAIL 4 – Projections (uncomment to preview) ════════
+  <div class="thumbnail variant-purple" id="thumb-4">
+    <div class="grid"></div>
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <div class="icon-area">
+      <div class="big-icon">📈</div>
+    </div>
+
+    <div class="text-area">
+      <div class="channel-label">📈 Investments Tracker</div>
+      <div class="title">See Your<br><span>Future</span><br>Wealth</div>
+      <div class="subtitle">Projection Engine · Scenario Planning</div>
+      <div class="cta-badge">▶ Watch Now — Free Tool</div>
+    </div>
+
+    <div class="bottom-bar"></div>
+  </div>
+  -->
+</body>
+</html>
