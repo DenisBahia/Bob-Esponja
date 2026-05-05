@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <!-- Background circle -->
+  <circle cx="200" cy="200" r="200" fill="#0d1117"/>
+
+  <!-- Outer glow ring -->
+  <circle cx="200" cy="200" r="185" fill="none" stroke="#00d4ff" stroke-width="3" opacity="0.5"/>
+
+  <!-- Chart bars (portfolio visualization) -->
+  <rect x="80"  y="240" width="30" height="60"  rx="4" fill="#00d4ff" opacity="0.7"/>
+  <rect x="120" y="200" width="30" height="100" rx="4" fill="#00d4ff" opacity="0.85"/>
+  <rect x="160" y="170" width="30" height="130" rx="4" fill="#00d4ff"/>
+  <rect x="200" y="150" width="30" height="150" rx="4" fill="#38ef7d"/>
+  <rect x="240" y="120" width="30" height="180" rx="4" fill="#38ef7d" opacity="0.85"/>
+  <rect x="280" y="100" width="30" height="200" rx="4" fill="#38ef7d" opacity="0.7"/>
+
+  <!-- Upward trend line -->
+  <polyline points="95,240 135,200 175,170 215,145 255,115 295,90"
+            fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+
+  <!-- Trend arrow head -->
+  <polygon points="295,90 280,95 285,110" fill="#ffffff" opacity="0.9"/>
+
+  <!-- Euro/Currency symbol -->
+  <text x="200" y="80" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#38ef7d">€</text>
+
+  <!-- App name -->
+  <text x="200" y="350" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#ffffff" letter-spacing="2">INVESTMENTS</text>
+  <text x="200" y="375" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#00d4ff" letter-spacing="4">TRACKER</text>
+</svg>
