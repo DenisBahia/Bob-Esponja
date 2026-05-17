@@ -11,8 +11,11 @@ namespace ETFTracker.Api.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             // 1. Set AssetType = 'ETF' for all holdings that don't already have one.
+            // Note: the column was created without a HasColumnName mapping so EF Core named
+            // it "AssetType" (PascalCase).  PostgreSQL requires double-quotes for mixed-case
+            // identifiers.
             migrationBuilder.Sql(
-                "UPDATE holdings SET asset_type = 'ETF' WHERE asset_type IS NULL OR asset_type = '';"
+                "UPDATE holdings SET \"AssetType\" = 'ETF' WHERE \"AssetType\" IS NULL OR \"AssetType\" = '';"
             );
 
             // 2. Mark DeemedDisposalDue = true on every existing transaction.
@@ -53,7 +56,7 @@ namespace ETFTracker.Api.Migrations
 
             // Clear the ETF asset_type from holdings (set back to null).
             migrationBuilder.Sql(
-                "UPDATE holdings SET asset_type = NULL WHERE asset_type = 'ETF';"
+                "UPDATE holdings SET \"AssetType\" = NULL WHERE \"AssetType\" = 'ETF';"
             );
         }
     }
