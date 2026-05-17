@@ -2196,16 +2196,25 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     const currentMonth = today.getMonth() + 1; // 1-based
     // Conservative: assume no buy this month yet
     const monthsRemaining = 13 - currentMonth;
-    const partialGrowth = Math.pow(1 + R, monthsRemaining / 12);
-    const annualGrowth = 1 + R;
+    // Monthly rate equivalent to the annual rate: (1+R)^(1/12) − 1
+    const monthlyRate = Math.pow(1 + R, 1 / 12) - 1;
 
     const endOfYear = (baseM: number): number => {
-      let val = (P + monthsRemaining * baseM) * partialGrowth;
-      for (let i = 1; i <= N; i++) {
-        const increaseFactor = Math.pow(1 + I, i);
-        val = (val + 12 * baseM * increaseFactor) * annualGrowth;
+      let balance = P;
+      // Year 0: partial current year — buy at start of each remaining month, grow at end
+      for (let m = 0; m < monthsRemaining; m++) {
+        balance += baseM;
+        balance *= (1 + monthlyRate);
       }
-      return val;
+      // Years 1..N: full years — buy increase applied each January
+      for (let i = 1; i <= N; i++) {
+        const monthlyBuyThisYear = baseM * Math.pow(1 + I, i);
+        for (let m = 0; m < 12; m++) {
+          balance += monthlyBuyThisYear;  // buy at start of month
+          balance *= (1 + monthlyRate);   // grow at end of month
+        }
+      }
+      return balance;
     };
 
     const f0 = endOfYear(0);

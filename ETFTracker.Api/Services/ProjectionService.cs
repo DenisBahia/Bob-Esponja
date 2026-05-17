@@ -138,25 +138,48 @@ public class ProjectionService : IProjectionService
         var totalBuys      = new decimal[N + 1];
         var yearProfit     = new decimal[N + 1];
 
-        var partialGrowthFactor = (decimal)Math.Pow(
-            (double)(1 + settings.YearlyReturnPercent / 100m),
-            monthsRemaining / 12.0);
+        // Monthly rate equivalent to the user-supplied annual rate:
+        //   (1 + annualRate)^(1/12) − 1
+        // Compounding monthly for 12 months gives exactly the annual rate.
+        decimal monthlyRate = (decimal)Math.Pow(
+            (double)(1m + settings.YearlyReturnPercent / 100m), 1.0 / 12.0) - 1m;
 
+        // ── Year 0: partial current year ────────────────────────────────────
+        // Each remaining month: buy at the START of the month, then grow to end.
+        decimal balance   = currentTotal;
+        decimal year0Buys = 0m;
+        for (int m = 0; m < monthsRemaining; m++)
+        {
+            balance   += settings.MonthlyBuyAmount;  // buy at start of month
+            year0Buys += settings.MonthlyBuyAmount;
+            balance   *= (1m + monthlyRate);          // compound to end of month
+        }
         initialBalance[0] = currentTotal;
-        totalBuys[0]      = monthsRemaining * settings.MonthlyBuyAmount;
-        endOfYear[0]      = (currentTotal + totalBuys[0]) * partialGrowthFactor;
-        yearProfit[0]     = endOfYear[0] - currentTotal - totalBuys[0];
+        totalBuys[0]      = year0Buys;
+        endOfYear[0]      = balance;
+        yearProfit[0]     = balance - currentTotal - year0Buys;
 
+        // ── Years 1..N: full calendar years ─────────────────────────────────
+        // Annual buy increase is applied in January of every projected year.
+        // Each of the 12 months: buy at start of month, compound to end.
         for (int i = 1; i <= N; i++)
         {
-            var annualIncreaseFactor = (decimal)Math.Pow((double)(1 + settings.AnnualBuyIncreasePercent / 100m), i);
-            var contributions = 12m * settings.MonthlyBuyAmount * annualIncreaseFactor;
-            var growthFactor  = 1m + settings.YearlyReturnPercent / 100m;
+            decimal prevBalance      = balance;
+            var annualIncreaseFactor = (decimal)Math.Pow(
+                (double)(1m + settings.AnnualBuyIncreasePercent / 100m), i);
+            decimal monthlyBuyThisYear = settings.MonthlyBuyAmount * annualIncreaseFactor;
+            decimal yearContributions  = 12m * monthlyBuyThisYear;
 
-            initialBalance[i] = endOfYear[i - 1];
-            totalBuys[i]      = contributions;
-            endOfYear[i]      = (endOfYear[i - 1] + contributions) * growthFactor;
-            yearProfit[i]     = endOfYear[i] - endOfYear[i - 1] - contributions;
+            for (int m = 0; m < 12; m++)
+            {
+                balance += monthlyBuyThisYear;  // buy at start of month (Jan = first)
+                balance *= (1m + monthlyRate);  // compound to end of month
+            }
+
+            initialBalance[i] = prevBalance;
+            totalBuys[i]      = yearContributions;
+            endOfYear[i]      = balance;
+            yearProfit[i]     = balance - prevBalance - yearContributions;
         }
 
         // ── Total invested (same for both tax modes) ──────────────────────────
