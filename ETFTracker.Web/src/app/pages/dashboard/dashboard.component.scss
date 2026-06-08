@@ -2966,6 +2966,51 @@ th.sortable {
   &:disabled { opacity: 0.4; cursor: not-allowed; }
 }
 
+/* ── Version monthly-buy cell with optional overrides button ── */
+.version-monthly-col {
+  white-space: nowrap;
+
+  .btn-overrides-preview {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 0.1rem 0.3rem;
+    border-radius: 5px;
+    margin-left: 0.3rem;
+    line-height: 1;
+    vertical-align: middle;
+    transition: background 0.15s;
+    opacity: 0.75;
+
+    &:hover {
+      background: rgba(16, 185, 129, 0.18);
+      opacity: 1;
+    }
+  }
+}
+
+/* ── Yearly buy table — override row highlight & badge ── */
+.yearly-buy-table--readonly {
+  .override-row {
+    background: rgba(16, 185, 129, 0.06);
+
+    .year-cell { color: var(--text-primary); }
+  }
+
+  .override-badge {
+    margin-left: 0.35rem;
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: var(--accent);
+    background: rgba(16, 185, 129, 0.15);
+    border-radius: 4px;
+    padding: 0.1rem 0.35rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+}
+
 /* ── Taxes column button ──────────────────────────────────── */
 .taxes-cell { white-space: nowrap; }
 

@@ -131,6 +131,48 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   versionsSortCol = 'savedAt';
   versionsSortDir: 'asc' | 'desc' = 'desc';
 
+  // ── Version overrides read-only preview ─────────────────────────────────────
+  versionOverridesPreview: {
+    versionName: string;
+    rows: Array<{ yearIndex: number; year: number; monthlyBuy: number; totalAnnualBuy: number; isPartialYear: boolean; isOverride: boolean }>;
+  } | null = null;
+
+  openVersionOverridesPreview(v: ProjectionVersionSummaryDto): void {
+    const overrides = v.settings.yearlyBuyOverrides ?? {};
+    const base = v.settings.monthlyBuyAmount ?? 0;
+    const inc = v.settings.annualBuyIncreasePercent ?? 0;
+    const N = v.settings.projectionYears ?? 0;
+    const currentYear = new Date().getFullYear();
+
+    const rows = Array.from({ length: N + 1 }, (_, i) => {
+      const defaultMonthly = i === 0 ? base : base * Math.pow(1 + inc / 100, i);
+      const rounded = Math.round(defaultMonthly * 100) / 100;
+      const isOverride = overrides[i] !== undefined;
+      const monthly = isOverride ? overrides[i] : rounded;
+      return {
+        yearIndex: i,
+        year: currentYear + i,
+        monthlyBuy: Math.round(monthly * 100) / 100,
+        totalAnnualBuy: Math.round(monthly * 12 * 100) / 100,
+        isPartialYear: i === 0,
+        isOverride,
+      };
+    });
+
+    this.versionOverridesPreview = { versionName: v.versionName, rows };
+    this.cdr.markForCheck();
+  }
+
+  closeVersionOverridesPreview(): void {
+    this.versionOverridesPreview = null;
+    this.cdr.markForCheck();
+  }
+
+  versionHasOverrides(v: ProjectionVersionSummaryDto): boolean {
+    const ov = v.settings.yearlyBuyOverrides;
+    return !!ov && Object.keys(ov).length > 0;
+  }
+
   // ── Yearly Buy Editor (per-year monthly buy override popup) ─────────────────
   showYearlyBuyEditor = false;
   yearlyBuyEditorRows: Array<{

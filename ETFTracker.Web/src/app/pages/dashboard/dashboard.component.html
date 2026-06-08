@@ -1048,7 +1048,15 @@
                   <td class="version-date-col">{{ v.savedAt | date:'dd/MM/yyyy HH:mm' }}</td>
                   <td class="version-stat-col">{{ (v.settings.startAmount != null && v.settings.startAmount > 0) ? formatCurrency(v.settings.startAmount) : '—' }}</td>
                   <td class="version-stat-col">{{ v.settings.yearlyReturnPercent }}%</td>
-                  <td class="version-stat-col">{{ formatCurrency(v.settings.monthlyBuyAmount) }}</td>
+                  <td class="version-stat-col version-monthly-col">
+                    {{ formatCurrency(v.settings.monthlyBuyAmount) }}
+                    <button *ngIf="versionHasOverrides(v)"
+                            class="btn-overrides-preview"
+                            (click)="openVersionOverridesPreview(v)"
+                            title="View per-year monthly buy overrides">
+                      📅
+                    </button>
+                  </td>
                   <td class="version-stat-col">{{ v.settings.annualBuyIncreasePercent }}%</td>
                   <td class="version-stat-col">{{ v.settings.projectionYears }}y</td>
                   <td class="version-stat-col">{{ v.settings.inflationPercent }}%</td>
@@ -1106,6 +1114,46 @@
   </div>
 
   <!-- Modals -->
+
+  <!-- Version Overrides Preview Modal (read-only) -->
+  <div *ngIf="versionOverridesPreview" class="yearly-buy-overlay" (click)="closeVersionOverridesPreview()">
+    <div class="yearly-buy-modal" (click)="$event.stopPropagation()">
+      <div class="yearly-buy-modal__header">
+        <h3>📅 Per-Year Monthly Buy — <em>{{ versionOverridesPreview.versionName }}</em></h3>
+        <button class="yearly-buy-modal__close" (click)="closeVersionOverridesPreview()" title="Close">✕</button>
+      </div>
+      <p class="yearly-buy-modal__hint">
+        Custom monthly buy amounts saved with this version. Highlighted rows have manual overrides; others use the formula default.
+      </p>
+      <div class="yearly-buy-modal__table-wrap">
+        <table class="yearly-buy-table yearly-buy-table--readonly">
+          <thead>
+            <tr>
+              <th>Year</th>
+              <th>Monthly Buy ($)</th>
+              <th>Total Annual Buy ($)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of versionOverridesPreview.rows"
+                [class.partial-year-row]="row.isPartialYear"
+                [class.override-row]="row.isOverride">
+              <td class="year-cell">
+                {{ row.year }}
+                <span *ngIf="row.isPartialYear" class="partial-badge">partial</span>
+                <span *ngIf="row.isOverride" class="override-badge">custom</span>
+              </td>
+              <td class="total-cell">{{ row.monthlyBuy | number:'1.0-2' }}</td>
+              <td class="total-cell">{{ row.totalAnnualBuy | number:'1.0-0' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="yearly-buy-modal__actions">
+        <button class="btn btn-primary" (click)="closeVersionOverridesPreview()">Close</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Yearly Buy Editor Modal -->
   <div *ngIf="showYearlyBuyEditor" class="yearly-buy-overlay" (click)="closeYearlyBuyEditor()">
