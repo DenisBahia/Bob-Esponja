@@ -14,6 +14,12 @@ public class ProjectionSettings
     public decimal? StartAmount { get; set; }
     /// <summary>When true, 8-year deemed disposal events are simulated (Irish investors only).</summary>
     public bool ApplyDeemedDisposal { get; set; }
+    /// <summary>
+    /// JSON-encoded Dictionary&lt;int,decimal&gt; of per-year monthly-buy overrides.
+    /// Key = year index (0 = partial current year, 1..N = full projected years).
+    /// Null = use standard formula for all years.
+    /// </summary>
+    public string? YearlyBuyOverridesJson { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 

@@ -34,6 +34,19 @@ public class ProjectionService : IProjectionService
         DeemedDisposalPercent    = 0m,
     };
 
+    // ── Helpers for per-year buy overrides ────────────────────────────────────
+    private static Dictionary<int, decimal>? DeserializeOverrides(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return null;
+        return System.Text.Json.JsonSerializer.Deserialize<Dictionary<int, decimal>>(json);
+    }
+
+    private static string? SerializeOverrides(Dictionary<int, decimal>? overrides)
+    {
+        if (overrides == null || overrides.Count == 0) return null;
+        return System.Text.Json.JsonSerializer.Serialize(overrides);
+    }
+
     public ProjectionService(AppDbContext context, IPriceService priceService, ILogger<ProjectionService> logger)
     {
         _context = context;
@@ -58,6 +71,7 @@ public class ProjectionService : IProjectionService
                 InflationPercent         = dbSettings.InflationPercent,
                 StartAmount              = dbSettings.StartAmount,
                 ApplyDeemedDisposal      = dbSettings.ApplyDeemedDisposal,
+                YearlyBuyOverrides       = DeserializeOverrides(dbSettings.YearlyBuyOverridesJson),
             }
             : new ProjectionSettingsDto
             {
@@ -132,6 +146,19 @@ public class ProjectionService : IProjectionService
 
         int N = settings.ProjectionYears;
 
+        // ── Per-year buy overrides helper ─────────────────────────────────────
+        // Returns the monthly buy amount for a given year index (0=partial year, 1..N=full years).
+        // Checks YearlyBuyOverrides first; falls back to the standard formula.
+        decimal MonthlyBuyForYear(int yearIndex)
+        {
+            if (settings.YearlyBuyOverrides != null &&
+                settings.YearlyBuyOverrides.TryGetValue(yearIndex, out var ov))
+                return ov;
+            if (yearIndex == 0) return settings.MonthlyBuyAmount;
+            var factor = (decimal)Math.Pow((double)(1m + settings.AnnualBuyIncreasePercent / 100m), yearIndex);
+            return settings.MonthlyBuyAmount * factor;
+        }
+
         // ── Gross projection arrays ───────────────────────────────────────────
         var endOfYear      = new decimal[N + 1];
         var initialBalance = new decimal[N + 1];
@@ -146,12 +173,13 @@ public class ProjectionService : IProjectionService
 
         // ── Year 0: partial current year ────────────────────────────────────
         // Each remaining month: buy at the START of the month, then grow to end.
-        decimal balance   = currentTotal;
+        decimal balance        = currentTotal;
+        decimal year0MonthlyBuy = MonthlyBuyForYear(0);
         decimal year0Buys = 0m;
         for (int m = 0; m < monthsRemaining; m++)
         {
-            balance   += settings.MonthlyBuyAmount;  // buy at start of month
-            year0Buys += settings.MonthlyBuyAmount;
+            balance   += year0MonthlyBuy;  // buy at start of month
+            year0Buys += year0MonthlyBuy;
             balance   *= (1m + monthlyRate);          // compound to end of month
         }
         initialBalance[0] = currentTotal;
@@ -164,10 +192,8 @@ public class ProjectionService : IProjectionService
         // Each of the 12 months: buy at start of month, compound to end.
         for (int i = 1; i <= N; i++)
         {
-            decimal prevBalance      = balance;
-            var annualIncreaseFactor = (decimal)Math.Pow(
-                (double)(1m + settings.AnnualBuyIncreasePercent / 100m), i);
-            decimal monthlyBuyThisYear = settings.MonthlyBuyAmount * annualIncreaseFactor;
+            decimal prevBalance        = balance;
+            decimal monthlyBuyThisYear = MonthlyBuyForYear(i);
             decimal yearContributions  = 12m * monthlyBuyThisYear;
 
             for (int m = 0; m < 12; m++)
@@ -208,8 +234,7 @@ public class ProjectionService : IProjectionService
 
             for (int i = 1; i <= N; i++)
             {
-                var annualIncreaseFactor = (decimal)Math.Pow((double)(1 + settings.AnnualBuyIncreasePercent / 100m), i);
-                cohortOriginalAmount[i] = 12m * settings.MonthlyBuyAmount * annualIncreaseFactor;
+                cohortOriginalAmount[i] = 12m * MonthlyBuyForYear(i);
                 cohortBasis[i]          = cohortOriginalAmount[i];
             }
 
@@ -366,6 +391,7 @@ public class ProjectionService : IProjectionService
                 InflationPercent         = dto.InflationPercent,
                 StartAmount              = dto.StartAmount,
                 ApplyDeemedDisposal      = dto.ApplyDeemedDisposal,
+                YearlyBuyOverridesJson   = SerializeOverrides(dto.YearlyBuyOverrides),
                 CreatedAt                = utcNow,
                 UpdatedAt                = utcNow,
             };
@@ -380,6 +406,7 @@ public class ProjectionService : IProjectionService
             existing.InflationPercent         = dto.InflationPercent;
             existing.StartAmount              = dto.StartAmount;
             existing.ApplyDeemedDisposal      = dto.ApplyDeemedDisposal;
+            existing.YearlyBuyOverridesJson   = SerializeOverrides(dto.YearlyBuyOverrides);
             existing.UpdatedAt                = utcNow;
         }
 
@@ -414,6 +441,7 @@ public class ProjectionService : IProjectionService
             StartAmount              = settings.StartAmount,
             ApplyDeemedDisposal      = settings.ApplyDeemedDisposal,
             DeemedDisposalPercent    = settings.DeemedDisposalPercent,
+            YearlyBuyOverridesJson   = SerializeOverrides(settings.YearlyBuyOverrides),
             DataPointsJson           = json,
         };
         _context.ProjectionVersions.Add(entity);
@@ -455,6 +483,7 @@ public class ProjectionService : IProjectionService
                 StartAmount              = pv.StartAmount,
                 ApplyDeemedDisposal      = pv.ApplyDeemedDisposal,
                 DeemedDisposalPercent    = pv.DeemedDisposalPercent,
+                YearlyBuyOverrides       = DeserializeOverrides(pv.YearlyBuyOverridesJson),
             },
             DataPoints = System.Text.Json.JsonSerializer.Deserialize<List<ProjectionDataPointDto>>(pv.DataPointsJson)
                          ?? new List<ProjectionDataPointDto>(),
@@ -489,6 +518,7 @@ public class ProjectionService : IProjectionService
                 StartAmount              = entity.StartAmount,
                 ApplyDeemedDisposal      = entity.ApplyDeemedDisposal,
                 DeemedDisposalPercent    = entity.DeemedDisposalPercent,
+                YearlyBuyOverrides       = DeserializeOverrides(entity.YearlyBuyOverridesJson),
             },
             DataPoints = dataPoints,
         };
@@ -528,6 +558,7 @@ public class ProjectionService : IProjectionService
                 StartAmount              = target.StartAmount,
                 ApplyDeemedDisposal      = target.ApplyDeemedDisposal,
                 DeemedDisposalPercent    = target.DeemedDisposalPercent,
+                YearlyBuyOverrides       = DeserializeOverrides(target.YearlyBuyOverridesJson),
             }
         };
     }

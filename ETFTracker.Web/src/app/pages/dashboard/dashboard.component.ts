@@ -131,6 +131,16 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   versionsSortCol = 'savedAt';
   versionsSortDir: 'asc' | 'desc' = 'desc';
 
+  // ── Yearly Buy Editor (per-year monthly buy override popup) ─────────────────
+  showYearlyBuyEditor = false;
+  yearlyBuyEditorRows: Array<{
+    yearIndex: number;
+    year: number;
+    monthlyBuy: number;
+    totalAnnualBuy: number;
+    isPartialYear: boolean;
+  }> = [];
+
   get sortedVersions(): ProjectionVersionSummaryDto[] {
     const list = [...this.projectionVersions];
     const dir = this.versionsSortDir === 'asc' ? 1 : -1;
@@ -162,6 +172,103 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
       this.versionsSortDir = 'asc';
     }
     this.cdr.markForCheck();
+  }
+
+  // ── Yearly Buy Editor ────────────────────────────────────────────────────────
+
+  /** Computes the default (formula-based) monthly buy for a given year index. */
+  private defaultMonthlyBuyForYear(yearIndex: number): number {
+    const base = this.projectionSettings.monthlyBuyAmount ?? 0;
+    if (yearIndex === 0) return base;
+    const inc = this.projectionSettings.annualBuyIncreasePercent ?? 0;
+    return base * Math.pow(1 + inc / 100, yearIndex);
+  }
+
+  /** Opens the per-year monthly buy editor popup. Validates required fields first. */
+  openYearlyBuyEditor(): void {
+    const monthly = this.projectionSettings.monthlyBuyAmount;
+    const years = this.projectionSettings.projectionYears;
+
+    if (!monthly || monthly <= 0) {
+      alert('Please enter a Monthly Buy ($) amount before editing per-year overrides.');
+      return;
+    }
+    if (!years || years <= 0) {
+      alert('Please enter the number of Projection Years before editing per-year overrides.');
+      return;
+    }
+
+    const overrides = this.projectionSettings.yearlyBuyOverrides ?? {};
+    const currentYear = new Date().getFullYear();
+
+    this.yearlyBuyEditorRows = Array.from({ length: years + 1 }, (_, i) => {
+      const defaultMonthly = this.defaultMonthlyBuyForYear(i);
+      const monthly = overrides[i] !== undefined ? overrides[i] : defaultMonthly;
+      const rounded = Math.round(monthly * 100) / 100;
+      return {
+        yearIndex: i,
+        year: currentYear + i,
+        monthlyBuy: rounded,
+        totalAnnualBuy: Math.round(rounded * 12 * 100) / 100,
+        isPartialYear: i === 0,
+      };
+    });
+
+    this.showYearlyBuyEditor = true;
+    this.cdr.markForCheck();
+  }
+
+  /** Called when user edits the Monthly Buy cell for a row. */
+  onEditorMonthlyBuyChange(row: { monthlyBuy: number; totalAnnualBuy: number; isPartialYear: boolean }): void {
+    const val = row.monthlyBuy ?? 0;
+    row.totalAnnualBuy = Math.round(val * 12 * 100) / 100;
+    this.cdr.markForCheck();
+  }
+
+  /** Applies the editor values as overrides (only stores entries that differ from defaults). */
+  applyYearlyBuyOverrides(): void {
+    const overrides: { [key: number]: number } = {};
+    for (const row of this.yearlyBuyEditorRows) {
+      const def = this.defaultMonthlyBuyForYear(row.yearIndex);
+      if (Math.abs(row.monthlyBuy - Math.round(def * 100) / 100) > 0.005) {
+        overrides[row.yearIndex] = row.monthlyBuy;
+      }
+    }
+    this.projectionSettings = {
+      ...this.projectionSettings,
+      yearlyBuyOverrides: Object.keys(overrides).length > 0 ? overrides : null,
+    };
+    this.showYearlyBuyEditor = false;
+    this.cdr.markForCheck();
+  }
+
+  /** Resets all overrides to formula defaults. */
+  resetYearlyBuyOverrides(): void {
+    const currentYear = new Date().getFullYear();
+    const years = this.projectionSettings.projectionYears ?? 0;
+    this.yearlyBuyEditorRows = Array.from({ length: years + 1 }, (_, i) => {
+      const def = this.defaultMonthlyBuyForYear(i);
+      const rounded = Math.round(def * 100) / 100;
+      return {
+        yearIndex: i,
+        year: currentYear + i,
+        monthlyBuy: rounded,
+        totalAnnualBuy: Math.round(rounded * 12 * 100) / 100,
+        isPartialYear: i === 0,
+      };
+    });
+    this.cdr.markForCheck();
+  }
+
+  closeYearlyBuyEditor(): void {
+    this.showYearlyBuyEditor = false;
+    this.cdr.markForCheck();
+  }
+
+  /** True when the user has active per-year buy overrides. */
+  get hasYearlyBuyOverrides(): boolean {
+    const ov = this.projectionSettings.yearlyBuyOverrides;
+    return !!ov && Object.keys(ov).length > 0;
   }
 
   @ViewChild('versionsCompareChart') versionsCompareChartRef!: ElementRef<HTMLCanvasElement>;

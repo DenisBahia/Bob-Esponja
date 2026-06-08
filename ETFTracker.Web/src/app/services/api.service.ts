@@ -101,6 +101,13 @@ export interface ProjectionSettingsDto {
   applyDeemedDisposal: boolean;
   /** Read-only — always resolved from user tax settings by the backend. */
   deemedDisposalPercent: number;
+  /**
+   * Optional per-year monthly-buy overrides.
+   * Key = year index (0 = partial current year, 1..N = full projected years).
+   * When a key is present, that year uses the override value instead of the auto-calculated amount.
+   * Null / undefined = use standard formula for all years.
+   */
+  yearlyBuyOverrides?: { [yearIndex: number]: number } | null;
 }
 
 // ── User Tax Defaults ─────────────────────────────────────────────────────────

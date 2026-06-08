@@ -26,6 +26,13 @@ public class ProjectionSettingsDto
     /// Read-only in the projection UI — always driven by the user's tax profile.
     /// </summary>
     public decimal DeemedDisposalPercent { get; set; }
+
+    /// <summary>
+    /// Optional per-year monthly-buy overrides. Key = year index (0 = partial current year, 1..N = full years).
+    /// When a key is present, that year uses the override value instead of the auto-calculated amount.
+    /// Null / empty = use standard formula (MonthlyBuyAmount × annual increase factor).
+    /// </summary>
+    public Dictionary<int, decimal>? YearlyBuyOverrides { get; set; }
 }
 
 public class ProjectionDataPointDto

@@ -791,10 +791,19 @@
           </div>
         </div>
 
-        <div class="param-group">
+        <div class="param-group annual-buy-group">
           <label for="annualIncrease">Annual Buy Increase %</label>
-          <input id="annualIncrease" type="number" step="0.1" min="0" max="100"
-                 [(ngModel)]="projectionSettings.annualBuyIncreasePercent" />
+          <div class="annual-buy-input-row">
+            <input id="annualIncrease" type="number" step="0.1" min="0" max="100"
+                   [(ngModel)]="projectionSettings.annualBuyIncreasePercent" />
+            <button class="btn-edit-yearly-buy"
+                    (click)="openYearlyBuyEditor()"
+                    [class.btn-edit-yearly-buy--active]="hasYearlyBuyOverrides"
+                    title="Edit monthly buy amount per year">
+              📅 Per year
+            </button>
+          </div>
+          <span class="param-hint override-hint" *ngIf="hasYearlyBuyOverrides">✏️ Custom per-year amounts active</span>
         </div>
 
         <div class="param-group">
@@ -1097,6 +1106,53 @@
   </div>
 
   <!-- Modals -->
+
+  <!-- Yearly Buy Editor Modal -->
+  <div *ngIf="showYearlyBuyEditor" class="yearly-buy-overlay" (click)="closeYearlyBuyEditor()">
+    <div class="yearly-buy-modal" (click)="$event.stopPropagation()">
+      <div class="yearly-buy-modal__header">
+        <h3>📅 Per-Year Monthly Buy</h3>
+        <button class="yearly-buy-modal__close" (click)="closeYearlyBuyEditor()" title="Close">✕</button>
+      </div>
+      <p class="yearly-buy-modal__hint">
+        Edit the monthly buy amount for each projected year. Total Annual Buy updates automatically.<br>
+        Changes will be applied when you click <strong>Apply</strong> and will be used in calculations, versions, and goals.
+      </p>
+      <div class="yearly-buy-modal__table-wrap">
+        <table class="yearly-buy-table">
+          <thead>
+            <tr>
+              <th>Year</th>
+              <th>Monthly Buy ($)</th>
+              <th>Total Annual Buy ($)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of yearlyBuyEditorRows" [class.partial-year-row]="row.isPartialYear">
+              <td class="year-cell">
+                {{ row.year }}
+                <span *ngIf="row.isPartialYear" class="partial-badge">partial</span>
+              </td>
+              <td class="input-cell">
+                <input type="number" step="10" min="0"
+                       [(ngModel)]="row.monthlyBuy"
+                       (ngModelChange)="onEditorMonthlyBuyChange(row)" />
+              </td>
+              <td class="total-cell">{{ row.totalAnnualBuy | number:'1.0-0' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="yearly-buy-modal__actions">
+        <button class="btn btn-secondary" (click)="resetYearlyBuyOverrides()" title="Reset all rows to formula defaults">
+          🔄 Reset to defaults
+        </button>
+        <button class="btn btn-secondary" (click)="closeYearlyBuyEditor()">Cancel</button>
+        <button class="btn btn-primary" (click)="applyYearlyBuyOverrides()">Apply</button>
+      </div>
+    </div>
+  </div>
+
   <div *ngIf="showLogoutConfirmModal" class="logout-confirm-overlay" (click)="cancelLogoutConfirm()">
     <div class="logout-confirm-modal" (click)="$event.stopPropagation()">
       <h3>Sign out?</h3>

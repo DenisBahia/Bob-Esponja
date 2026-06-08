@@ -1083,6 +1083,56 @@ th.sortable {
           }
         }
 
+        // ── Annual Buy group with inline "Per year" button ──────────────────
+        .annual-buy-group {
+          .annual-buy-input-row {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+
+            input[type='number'] {
+              width: 100px;
+            }
+          }
+
+          .btn-edit-yearly-buy {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.45rem 0.7rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-light);
+            border-radius: 7px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.18s;
+            color: var(--text-secondary);
+            white-space: nowrap;
+
+            &:hover {
+              background: rgba(16, 185, 129, 0.12);
+              border-color: var(--accent);
+              color: var(--accent);
+            }
+
+            &--active {
+              background: rgba(16, 185, 129, 0.15);
+              border-color: var(--accent);
+              color: var(--accent);
+            }
+          }
+
+          .override-hint {
+            font-size: 0.65rem;
+            color: var(--accent);
+            font-style: italic;
+            margin-top: 0.15rem;
+            display: block;
+          }
+        }
+
         .btn {
           align-self: flex-end;
           padding: 0.55rem 1.35rem;
@@ -2463,6 +2513,197 @@ th.sortable {
     &:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
   }
 }
+
+// ── YEARLY BUY EDITOR MODAL ───────────────────────────────────────────────────
+
+.yearly-buy-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  z-index: 2200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.yearly-buy-modal {
+  width: 100%;
+  max-width: 520px;
+  max-height: 85vh;
+  background: #111d35;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 14px;
+  box-shadow: 0 24px 56px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem 0.75rem;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+
+    h3 {
+      margin: 0;
+      color: #fff;
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+  }
+
+  &__close {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0.2rem 0.4rem;
+    border-radius: 6px;
+    transition: color 0.15s, background 0.15s;
+
+    &:hover {
+      color: #fff;
+      background: rgba(255,255,255,0.08);
+    }
+  }
+
+  &__hint {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.55;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    margin: 0;
+  }
+
+  &__table-wrap {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem 1.25rem;
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.85rem 1.25rem;
+    border-top: 1px solid rgba(255,255,255,0.07);
+    flex-wrap: wrap;
+
+    .btn {
+      padding: 0.48rem 1.1rem;
+      border: none;
+      border-radius: 7px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s;
+
+      &.btn-primary {
+        background: var(--accent);
+        color: #fff;
+
+        &:hover { filter: brightness(1.1); }
+      }
+
+      &.btn-secondary {
+        background: rgba(255,255,255,0.07);
+        color: var(--text-secondary);
+        border: 1px solid var(--border-light);
+
+        &:hover {
+          background: rgba(255,255,255,0.12);
+          color: #fff;
+        }
+      }
+    }
+  }
+}
+
+.yearly-buy-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+
+  thead tr th {
+    padding: 0.55rem 0.6rem;
+    text-align: left;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    white-space: nowrap;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    transition: background 0.12s;
+
+    &:hover { background: rgba(255,255,255,0.03); }
+
+    &.partial-year-row {
+      background: rgba(248, 155, 41, 0.04);
+
+      .year-cell { color: var(--text-muted); }
+    }
+  }
+
+  .year-cell {
+    padding: 0.45rem 0.6rem;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+
+    .partial-badge {
+      margin-left: 0.4rem;
+      font-size: 0.6rem;
+      font-weight: 700;
+      color: #f89b29;
+      background: rgba(248, 155, 41, 0.15);
+      border-radius: 4px;
+      padding: 0.1rem 0.35rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+  }
+
+  .input-cell {
+    padding: 0.3rem 0.6rem;
+
+    input[type='number'] {
+      width: 110px;
+      padding: 0.38rem 0.55rem;
+      background: var(--bg-input);
+      border: 1px solid var(--border-light);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 0.87rem;
+      font-variant-numeric: tabular-nums;
+      transition: border-color 0.18s, box-shadow 0.18s;
+
+      &:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-glow);
+      }
+    }
+  }
+
+  .total-cell {
+    padding: 0.45rem 0.6rem;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+}
+
+// ── END YEARLY BUY EDITOR ─────────────────────────────────────────────────────
 
 .logout-confirm-overlay {
   position: fixed;

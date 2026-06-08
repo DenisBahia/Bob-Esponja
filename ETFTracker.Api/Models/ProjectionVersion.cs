@@ -21,6 +21,12 @@ public class ProjectionVersion
     /// <summary>Snapshot of the DD rate used when this version was saved.</summary>
     public decimal DeemedDisposalPercent { get; set; }
 
+    /// <summary>
+    /// Snapshot of per-year monthly-buy overrides at the time this version was saved.
+    /// JSON-encoded Dictionary&lt;int,decimal&gt;. Null = no overrides.
+    /// </summary>
+    public string? YearlyBuyOverridesJson { get; set; }
+
     // Computed data points serialised as JSON at save time (captures portfolio state)
     public string DataPointsJson { get; set; } = "[]";
 
