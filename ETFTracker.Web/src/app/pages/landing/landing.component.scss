@@ -1317,6 +1317,122 @@
 }
 
 /* ═══════════════════════════════════════════
+   FIRE DEMO COMPONENT
+══════════════════════════════════════════════ */
+.fire-demo {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+
+  &__header {
+    background: linear-gradient(135deg, rgba(248, 155, 41, 0.12) 0%, rgba(248, 155, 41, 0.04) 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 1.75rem;
+    text-align: center;
+  }
+
+  &__badge {
+    display: inline-block;
+    padding: 0.4rem 1rem;
+    background: rgba(248, 155, 41, 0.15);
+    border: 1px solid rgba(248, 155, 41, 0.35);
+    border-radius: 20px;
+    color: #f89b29;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 0.9rem;
+  }
+
+  &__header h3 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  &__body {
+    padding: 2rem;
+  }
+
+  &__cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  &__card {
+    background: rgba(16, 185, 129, 0.05);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    border-radius: 10px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+
+    &--primary {
+      background: rgba(248, 155, 41, 0.08);
+      border-color: rgba(248, 155, 41, 0.3);
+
+      .fire-demo__card-value {
+        color: #f89b29;
+      }
+    }
+  }
+
+  &__card-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  &__card-value {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--accent);
+
+    &--green {
+      color: var(--accent);
+    }
+  }
+
+  &__card-sub {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+  }
+
+  &__chart {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  &__summary {
+    p {
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: var(--text-secondary);
+      margin: 0 0 0.8rem;
+
+      strong {
+        color: var(--text-primary);
+        font-weight: 700;
+      }
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+}
+
+/* ═══════════════════════════════════════════
    RESPONSIVE
 ══════════════════════════════════════════════ */
 @media (max-width: 900px) {

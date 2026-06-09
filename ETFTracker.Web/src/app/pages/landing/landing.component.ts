@@ -26,6 +26,7 @@ export class LandingComponent implements OnInit, OnDestroy {
     { label: 'Portfolio Sharing' },
     { label: '📥 CSV Import' },
     { label: '🎯 My Goal' },
+    { label: '🔥 FIRE' },
   ];
 
   private slideInterval: ReturnType<typeof setInterval> | null = null;
