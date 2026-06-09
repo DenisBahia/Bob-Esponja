@@ -25,6 +25,7 @@ public class User
     public ICollection<Holding> Holdings { get; set; } = new List<Holding>();
     public ProjectionSettings? ProjectionSettings { get; set; }
     public UserSettings? UserSettings { get; set; }
+    public FireSettings? FireSettings { get; set; }
 
     // Sharing
     public ICollection<ProfileShare> SharedByMe { get; set; } = new List<ProfileShare>();

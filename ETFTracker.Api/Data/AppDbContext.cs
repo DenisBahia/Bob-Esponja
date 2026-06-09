@@ -23,6 +23,7 @@ public class AppDbContext : DbContext
     public DbSet<TaxEvent> TaxEvents { get; set; }
     public DbSet<AssetTypeDeemedDisposalDefault> AssetTypeDeemedDisposalDefaults { get; set; }
     public DbSet<AnnualTaxSummary> AnnualTaxSummaries { get; set; }
+    public DbSet<FireSettings> FireSettings { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -288,5 +289,30 @@ public class AppDbContext : DbContext
             .HasForeignKey(a => a.HoldingId)
             .OnDelete(DeleteBehavior.Cascade)
             .IsRequired(false);
+
+        // FireSettings
+        modelBuilder.Entity<FireSettings>().ToTable("fire_settings");
+        modelBuilder.Entity<FireSettings>().HasKey(fs => fs.Id);
+        modelBuilder.Entity<FireSettings>().Property(fs => fs.Id).HasColumnName("id");
+        modelBuilder.Entity<FireSettings>().Property(fs => fs.UserId).HasColumnName("user_id");
+        modelBuilder.Entity<FireSettings>().Property(fs => fs.CurrentAge).HasColumnName("current_age").IsRequired(false);
+        modelBuilder.Entity<FireSettings>().Property(fs => fs.StartAmount).HasColumnName("start_amount").HasColumnType("decimal(15,2)").IsRequired(false);
+        modelBuilder.Entity<FireSettings>().Property(fs => fs.MonthlyInvestment).HasColumnName("monthly_investment").HasColumnType("decimal(12,2)").HasDefaultValue(500m);
+        modelBuilder.Entity<FireSettings>().Property(fs => fs.AnnualInvestmentIncreasePercent).HasColumnName("annual_investment_increase_percent").HasColumnType("decimal(5,2)").HasDefaultValue(3m);
+        modelBuilder.Entity<FireSettings>().Property(fs => fs.AccumulationReturnPercent).HasColumnName("accumulation_return_percent").HasColumnType("decimal(5,2)").HasDefaultValue(7m);
+        modelBuilder.Entity<FireSettings>().Property(fs => fs.InflationPercent).HasColumnName("inflation_percent").HasColumnType("decimal(5,2)").HasDefaultValue(2m);
+        modelBuilder.Entity<FireSettings>().Property(fs => fs.MonthlyExpenses).HasColumnName("monthly_expenses").HasColumnType("decimal(12,2)").HasDefaultValue(0m);
+        modelBuilder.Entity<FireSettings>().Property(fs => fs.OtherMonthlyIncome).HasColumnName("other_monthly_income").HasColumnType("decimal(12,2)").HasDefaultValue(0m);
+        modelBuilder.Entity<FireSettings>().Property(fs => fs.SafeWithdrawalRate).HasColumnName("safe_withdrawal_rate").HasColumnType("decimal(5,2)").HasDefaultValue(4m);
+        modelBuilder.Entity<FireSettings>().Property(fs => fs.WithdrawalReturnPercent).HasColumnName("withdrawal_return_percent").HasColumnType("decimal(5,2)").HasDefaultValue(7m);
+        modelBuilder.Entity<FireSettings>().Property(fs => fs.WithdrawalYears).HasColumnName("withdrawal_years").HasDefaultValue(30);
+        modelBuilder.Entity<FireSettings>().Property(fs => fs.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+        modelBuilder.Entity<FireSettings>().Property(fs => fs.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
+        modelBuilder.Entity<FireSettings>().HasIndex(fs => fs.UserId).IsUnique();
+        modelBuilder.Entity<FireSettings>()
+            .HasOne(fs => fs.User)
+            .WithOne(u => u.FireSettings)
+            .HasForeignKey<FireSettings>(fs => fs.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

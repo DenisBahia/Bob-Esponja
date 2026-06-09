@@ -111,6 +111,12 @@
               (click)="setMainSection('projections')">
         📈 Projections
       </button>
+      <button class="main-menu-btn"
+              *ngIf="canViewProjections"
+              [class.active]="activeMainSection === 'fire'"
+              (click)="setMainSection('fire')">
+        🔥 FIRE
+      </button>
     </div>
 
     <div class="dashboard-contact-hint">
@@ -1112,6 +1118,255 @@
       </div>
     </div>
   </div>
+
+  <!-- ── FIRE Section ──────────────────────────────────────────────────────── -->
+  <div *ngIf="canViewProjections && activeMainSection === 'fire'" class="fire-section">
+    <h2>🔥 FIRE Calculator</h2>
+    <p class="fire-intro">Financial Independence, Retire Early. Fill in the fields below to find out when you can retire and how much you need.</p>
+
+    <div class="fire-layout">
+
+      <!-- ── Left Column: Parameters ───────────────────────────────────────── -->
+      <div class="fire-params">
+
+        <!-- Section 1: Your Situation Today -->
+        <div class="fire-param-section">
+          <div class="fire-param-section-title">📍 Your Situation Today</div>
+          <div class="fire-fields-grid">
+
+            <div class="fire-field">
+              <label for="fireCurrentAge">Current Age</label>
+              <input id="fireCurrentAge" type="number" step="1" min="1" max="99"
+                     [(ngModel)]="fireSettings.currentAge"
+                     placeholder="e.g. 35" />
+            </div>
+
+            <div class="fire-field">
+              <label for="fireStartAmount">Starting Portfolio</label>
+              <div class="fire-field-row">
+                <input id="fireStartAmount" type="number" step="1" min="0"
+                       [placeholder]="dashboard ? (dashboard.header.totalHoldingsAmount | number:'1.0-0') : '0'"
+                       [(ngModel)]="fireSettings.startAmount" />
+                <button class="btn-copy-portfolio"
+                        (click)="copyPortfolioTotalToFire()"
+                        title="Copy live portfolio value ({{ dashboard ? formatCurrency(dashboard.header.totalHoldingsAmount) : '—' }})">
+                  📋
+                </button>
+              </div>
+              <span class="fire-field-hint" *ngIf="fireSettings.startAmount == null">uses live portfolio value</span>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Section 2: Accumulation -->
+        <div class="fire-param-section">
+          <div class="fire-param-section-title">📈 Accumulation</div>
+
+          <button class="btn-copy-from-proj btn-copy-from-proj--strip"
+                  (click)="copyProjectionSettingsToFire()"
+                  title="Copies Monthly Investment, Annual Increase %, Return % and Inflation % from your saved Projections settings">
+            ⚡ Copy from Projections
+          </button>
+
+          <div class="fire-fields-grid">
+
+            <div class="fire-field">
+              <label for="fireMonthlyInvestment">Monthly Investment</label>
+              <input id="fireMonthlyInvestment" type="number" step="10" min="0"
+                     [(ngModel)]="fireSettings.monthlyInvestment" />
+            </div>
+
+            <div class="fire-field">
+              <label for="fireAnnualIncrease">Annual Increase %</label>
+              <input id="fireAnnualIncrease" type="number" step="0.1" min="0" max="100"
+                     [(ngModel)]="fireSettings.annualInvestmentIncreasePercent" />
+              <span class="fire-field-hint">Salary rise / savings growth</span>
+            </div>
+
+            <div class="fire-field">
+              <label for="fireAccumReturn">Annual Return %</label>
+              <input id="fireAccumReturn" type="number" step="0.1" min="0" max="100"
+                     [(ngModel)]="fireSettings.accumulationReturnPercent" />
+            </div>
+
+            <div class="fire-field">
+              <label for="fireInflation">Inflation %</label>
+              <input id="fireInflation" type="number" step="0.1" min="0" max="100"
+                     [(ngModel)]="fireSettings.inflationPercent" />
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Section 3: FIRE Target -->
+        <div class="fire-param-section">
+          <div class="fire-param-section-title">🎯 FIRE Target</div>
+
+          <div class="fire-field fire-field--full">
+            <label for="fireMonthlyExpenses">Monthly Expenses in Retirement</label>
+            <input id="fireMonthlyExpenses" type="number" step="50" min="0"
+                   [(ngModel)]="fireSettings.monthlyExpenses"
+                   placeholder="e.g. 3 000" />
+            <span class="fire-field-hint">Your spending in retirement (in today's money) — the key FIRE input</span>
+          </div>
+
+          <div class="fire-fields-grid">
+
+            <div class="fire-field">
+              <label for="fireOtherIncome">Other Monthly Income</label>
+              <input id="fireOtherIncome" type="number" step="50" min="0"
+                     [(ngModel)]="fireSettings.otherMonthlyIncome"
+                     placeholder="0" />
+              <span class="fire-field-hint">Pension, rental, etc.</span>
+            </div>
+
+            <div class="fire-field">
+              <label for="fireSwr">Safe Withdrawal Rate %</label>
+              <input id="fireSwr" type="number" step="0.1" min="0.1" max="20"
+                     [(ngModel)]="fireSettings.safeWithdrawalRate" />
+              <span class="fire-field-hint">Classic "4% rule"</span>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Section 4: Withdrawal Phase -->
+        <div class="fire-param-section">
+          <div class="fire-param-section-title">🏖️ Withdrawal Phase</div>
+          <div class="fire-fields-grid">
+
+            <div class="fire-field">
+              <label for="fireWithdrawalReturn">Annual Return %</label>
+              <input id="fireWithdrawalReturn" type="number" step="0.1" min="0" max="100"
+                     [(ngModel)]="fireSettings.withdrawalReturnPercent" />
+              <span class="fire-field-hint">Post-retirement return</span>
+            </div>
+
+            <div class="fire-field">
+              <label for="fireWithdrawalYears">Simulate (years)</label>
+              <input id="fireWithdrawalYears" type="number" step="1" min="1" max="60"
+                     [(ngModel)]="fireSettings.withdrawalYears" />
+              <span class="fire-field-hint">Years to model in retirement</span>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Section 5: Tax (read-only) -->
+        <div class="fire-param-section fire-param-section--tax">
+          <div class="fire-param-section-title">🧾 Tax (informational)</div>
+          <div class="tax-rate-readonly-row">
+            <span class="tax-rate-value">{{ userTaxDefaults ? (isIrishInvestor ? userTaxDefaults.exitTaxPercent : userTaxDefaults.cgtPercent) : '—' }}%</span>
+            <span class="tax-rate-label">{{ isIrishInvestor ? 'Exit Tax' : 'CGT' }}</span>
+            <span class="tax-rate-source-badge">from user settings</span>
+          </div>
+          <p class="fire-field-hint">Results are pre-tax. After-tax value will be lower at exit.</p>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="fire-actions">
+          <button class="btn btn-fire-calculate"
+                  (click)="calculateFire()"
+                  [disabled]="!fireSettings.monthlyExpenses || fireSettings.monthlyExpenses <= 0">
+            🔥 Calculate FIRE
+          </button>
+          <button class="btn btn-secondary"
+                  (click)="saveFireSettings()"
+                  [disabled]="fireSaving"
+                  *ngIf="!sharingCtx.isReadOnly()">
+            {{ fireSaving ? 'Saving…' : '💾 Save' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- ── Right Column: Results ──────────────────────────────────────────── -->
+      <div class="fire-results" *ngIf="fireCalculated && fireResult">
+
+        <!-- Result Cards -->
+        <div class="fire-results-grid">
+          <div class="fire-result-card fire-result-card--primary">
+            <div class="fire-result-card__label">Your FIRE Number</div>
+            <div class="fire-result-card__value">{{ formatCurrency(fireResult.fireNumber) }}</div>
+            <div class="fire-result-card__sub">Portfolio needed to retire</div>
+          </div>
+
+          <div class="fire-result-card">
+            <div class="fire-result-card__label">Inflation-Adjusted FIRE Number</div>
+            <div class="fire-result-card__value">{{ formatCurrency(fireResult.inflationAdjustedFireNumber) }}</div>
+            <div class="fire-result-card__sub">In future money at time of FIRE</div>
+          </div>
+
+          <div class="fire-result-card" [class.fire-result-card--highlight]="fireResult.alreadyFi">
+            <div class="fire-result-card__label">Years to FIRE</div>
+            <div class="fire-result-card__value">
+              <ng-container *ngIf="fireResult.alreadyFi">Now! 🎉</ng-container>
+              <ng-container *ngIf="!fireResult.alreadyFi && !fireResult.cannotReach">{{ fireResult.yearsToFire }} years</ng-container>
+              <ng-container *ngIf="fireResult.cannotReach">N/A ⚠️</ng-container>
+            </div>
+            <div class="fire-result-card__sub">From today</div>
+          </div>
+
+          <div class="fire-result-card" [class.fire-result-card--highlight]="fireResult.alreadyFi">
+            <div class="fire-result-card__label">FIRE Age</div>
+            <div class="fire-result-card__value">
+              <ng-container *ngIf="fireResult.fireAge != null">Age {{ fireResult.fireAge }}</ng-container>
+              <ng-container *ngIf="fireResult.fireAge == null">—</ng-container>
+            </div>
+            <div class="fire-result-card__sub">When you can retire</div>
+          </div>
+
+          <div class="fire-result-card">
+            <div class="fire-result-card__label">Portfolio at FIRE</div>
+            <div class="fire-result-card__value">{{ formatCurrency(fireResult.portfolioAtFire) }}</div>
+            <div class="fire-result-card__sub">Projected value when FIRE is reached</div>
+          </div>
+
+          <div class="fire-result-card" [class.fire-result-card--positive]="fireResult.surplus >= 0" [class.fire-result-card--negative]="fireResult.surplus < 0">
+            <div class="fire-result-card__label">Portfolio Surplus / Shortfall</div>
+            <div class="fire-result-card__value">{{ (fireResult.surplus >= 0 ? '+' : '') + formatCurrency(fireResult.surplus) }}</div>
+            <div class="fire-result-card__sub">vs FIRE Number at retirement</div>
+          </div>
+
+          <div class="fire-result-card" [class.fire-result-card--positive]="fireResult.portfolioDuration == null">
+            <div class="fire-result-card__label">Estimated Portfolio Duration</div>
+            <div class="fire-result-card__value">
+              <ng-container *ngIf="fireResult.portfolioDuration == null">Never depletes 🎉</ng-container>
+              <ng-container *ngIf="fireResult.portfolioDuration != null">{{ fireResult.portfolioDuration }} years</ng-container>
+            </div>
+            <div class="fire-result-card__sub">
+              <ng-container *ngIf="fireResult.portfolioDuration != null && fireResult.fireAge != null">
+                Carries you to age {{ fireResult.fireAge + fireResult.portfolioDuration }}
+              </ng-container>
+              <ng-container *ngIf="fireResult.portfolioDuration == null">Portfolio grows faster than withdrawals</ng-container>
+            </div>
+          </div>
+        </div>
+
+        <!-- Friendly summary -->
+        <div class="fire-summary-text">
+          <p>{{ fireSummaryText }}</p>
+        </div>
+
+        <!-- Chart -->
+        <div class="fire-chart-header">
+          <span class="fire-chart-phase-legend fire-chart-phase-legend--accum">Accumulation</span>
+          <span class="fire-chart-phase-legend fire-chart-phase-legend--withdraw">Withdrawal</span>
+        </div>
+        <div class="fire-chart-wrapper">
+          <canvas #fireChart></canvas>
+        </div>
+      </div>
+
+      <!-- Empty state before calculation -->
+      <div class="fire-empty-state" *ngIf="!fireCalculated">
+        <div class="fire-empty-icon">🔥</div>
+        <h3>Fill in the fields and click "Calculate FIRE"</h3>
+        <p>You'll see your FIRE number, years to retirement, and a two-phase portfolio chart.</p>
+      </div>
+
+    </div><!-- /fire-layout -->
+  </div><!-- /fire-section -->
 
   <!-- Modals -->
 

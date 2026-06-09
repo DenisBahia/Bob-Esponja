@@ -346,6 +346,22 @@ export interface MarkTaxEventPaidDto {
   paidAt?: string | null;
 }
 
+// ── FIRE ──────────────────────────────────────────────────────────────────────
+
+export interface FireSettingsDto {
+  currentAge: number | null;
+  startAmount: number | null;
+  monthlyInvestment: number;
+  annualInvestmentIncreasePercent: number;
+  accumulationReturnPercent: number;
+  inflationPercent: number;
+  monthlyExpenses: number;
+  otherMonthlyIncome: number;
+  safeWithdrawalRate: number;
+  withdrawalReturnPercent: number;
+  withdrawalYears: number;
+}
+
 // ── Sharing ───────────────────────────────────────────────────────────────────
 
 export interface CreateShareDto {
@@ -565,5 +581,15 @@ export class ApiService {
 
   saveTaxDefaults(dto: UserTaxDefaultsDto): Observable<UserTaxDefaultsDto> {
     return this.http.put<UserTaxDefaultsDto>(`${this.apiUrl}/user-settings/tax-defaults`, dto);
+  }
+
+  // ── FIRE Settings ──────────────────────────────────────────────────────────
+
+  getFireSettings(): Observable<FireSettingsDto> {
+    return this.http.get<FireSettingsDto>(`${this.apiUrl}/fire-settings`);
+  }
+
+  saveFireSettings(dto: FireSettingsDto): Observable<FireSettingsDto> {
+    return this.http.put<FireSettingsDto>(`${this.apiUrl}/fire-settings`, dto);
   }
 }

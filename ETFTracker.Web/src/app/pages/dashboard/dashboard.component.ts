@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, AfterViewChecked, ChangeDetectionStrategy
 import { Observable, concat } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, DashboardDto, HoldingDto, ProjectionResultDto, ProjectionSettingsDto, PortfolioEvolutionDto, ProjectionVersionSummaryDto, ProjectionVersionDetailDto, ProjectionDataPointDto, SaveVersionRequestDto, UserGoalDto, GoalDataPointDto, UpsertGoalRequestDto, TaxSummaryDto, TaxEventDto, TaxYearAllowanceSummaryDto, UserTaxDefaultsDto, TaxYearSummaryDto, ExitTaxPotDto, RecalculateTaxYearResultDto } from '../../services/api.service';
+import { ApiService, DashboardDto, HoldingDto, ProjectionResultDto, ProjectionSettingsDto, PortfolioEvolutionDto, ProjectionVersionSummaryDto, ProjectionVersionDetailDto, ProjectionDataPointDto, SaveVersionRequestDto, UserGoalDto, GoalDataPointDto, UpsertGoalRequestDto, TaxSummaryDto, TaxEventDto, TaxYearAllowanceSummaryDto, UserTaxDefaultsDto, TaxYearSummaryDto, ExitTaxPotDto, RecalculateTaxYearResultDto, FireSettingsDto } from '../../services/api.service';
 import { AuthService, CurrentUser } from '../../services/auth.service';
 import { SeoService } from '../../services/seo.service';
 import { AddTransactionModalComponent } from '../../components/add-transaction-modal/add-transaction-modal.component';
@@ -46,7 +46,7 @@ const DARK_SCALE_DEFAULTS = {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
-  activeMainSection: 'portfolio' | 'tax' | 'goal' | 'projections' = 'portfolio';
+  activeMainSection: 'portfolio' | 'tax' | 'goal' | 'projections' | 'fire' = 'portfolio';
   dashboard: DashboardDto | null = null;
   loading = true;
   error: string | null = null;
@@ -112,6 +112,40 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   @ViewChild('projectionChart') projectionChartRef!: ElementRef<HTMLCanvasElement>;
   private lineChart: Chart | null = null;
   private projectionChartRendered = false;
+
+  // ── FIRE (Financial Independence, Retire Early) ──────────────────────────────
+  fireSettings: FireSettingsDto = {
+    currentAge: null,
+    startAmount: null,
+    monthlyInvestment: 500,
+    annualInvestmentIncreasePercent: 3,
+    accumulationReturnPercent: 7,
+    inflationPercent: 2,
+    monthlyExpenses: 0,
+    otherMonthlyIncome: 0,
+    safeWithdrawalRate: 4,
+    withdrawalReturnPercent: 7,
+    withdrawalYears: 30,
+  };
+  fireResult: {
+    fireNumber: number;
+    inflationAdjustedFireNumber: number;
+    yearsToFire: number | null;
+    fireAge: number | null;
+    portfolioAtFire: number;
+    surplus: number;
+    portfolioDuration: number | null; // null = never depletes
+    alreadyFi: boolean;
+    cannotReach: boolean;
+    accumulationPoints: { year: number; age: number | null; value: number; inflationAdjValue: number }[];
+    withdrawalPoints: { year: number; age: number | null; value: number; inflationAdjValue: number }[];
+  } | null = null;
+  fireSaving = false;
+  fireCalculated = false;
+
+  @ViewChild('fireChart') fireChartRef!: ElementRef<HTMLCanvasElement>;
+  private fireChart: Chart | null = null;
+  private fireChartRendered = false;
 
   // Projection versions
   projectionVersions: ProjectionVersionSummaryDto[] = [];
@@ -485,7 +519,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   private enforceReadOnlyNavigation(): void {
-    if (!this.canViewProjections && this.activeMainSection === 'projections') {
+    if (!this.canViewProjections && (this.activeMainSection === 'projections' || this.activeMainSection === 'fire')) {
       this.activeMainSection = 'portfolio';
     }
   }
@@ -499,6 +533,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.loadPortfolioEvolution();
     this.loadTaxSummary();
     this.loadTaxDefaults();
+    this.loadFireSettings();
   }
 
   onShareModalClosed(): void {
@@ -555,6 +590,322 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
         this.cdr.markForCheck();
       },
       error: () => { /* non-fatal — fall back to localStorage value */ }
+    });
+  }
+
+  // ── FIRE Methods ──────────────────────────────────────────────────────────────
+
+  private loadFireSettings(): void {
+    if (!this.canViewProjections) return;
+    this.apiService.getFireSettings().subscribe({
+      next: (s) => { this.fireSettings = s; this.cdr.markForCheck(); },
+      error: () => { /* non-fatal — use defaults */ }
+    });
+  }
+
+  saveFireSettings(): void {
+    if (this.sharingCtx.isReadOnly()) return;
+    this.fireSaving = true;
+    this.apiService.saveFireSettings(this.fireSettings).subscribe({
+      next: (s) => { this.fireSettings = s; this.fireSaving = false; this.cdr.markForCheck(); },
+      error: () => { this.fireSaving = false; this.cdr.markForCheck(); }
+    });
+  }
+
+  copyProjectionSettingsToFire(): void {
+    this.fireSettings.monthlyInvestment = this.projectionSettings.monthlyBuyAmount;
+    this.fireSettings.annualInvestmentIncreasePercent = this.projectionSettings.annualBuyIncreasePercent;
+    this.fireSettings.accumulationReturnPercent = this.projectionSettings.yearlyReturnPercent;
+    this.fireSettings.inflationPercent = this.projectionSettings.inflationPercent;
+    this.fireSettings.withdrawalReturnPercent = this.projectionSettings.yearlyReturnPercent;
+    if (this.projectionSettings.startAmount != null && this.projectionSettings.startAmount > 0) {
+      this.fireSettings.startAmount = this.projectionSettings.startAmount;
+    }
+    this.cdr.markForCheck();
+  }
+
+  copyPortfolioTotalToFire(): void {
+    const total = this.dashboard?.header.totalHoldingsAmount;
+    if (total != null) {
+      this.fireSettings.startAmount = total;
+      this.cdr.markForCheck();
+    }
+  }
+
+  calculateFire(): void {
+    const fs = this.fireSettings;
+    const startPortfolio = fs.startAmount ?? this.dashboard?.header.totalHoldingsAmount ?? 0;
+    const monthlyContrib = fs.monthlyInvestment;
+    const annualContribIncrease = fs.annualInvestmentIncreasePercent / 100;
+    const accR = fs.accumulationReturnPercent / 100;
+    const inflation = fs.inflationPercent / 100;
+    const monthlyExpenses = fs.monthlyExpenses;
+    const otherIncome = fs.otherMonthlyIncome;
+    const swr = fs.safeWithdrawalRate / 100;
+    const withdrawR = fs.withdrawalReturnPercent / 100;
+    const withdrawYears = fs.withdrawalYears;
+    const currentAge = fs.currentAge;
+
+    const annualNetExpenses = Math.max(0, (monthlyExpenses - otherIncome) * 12);
+    const fireNumber = swr > 0 ? annualNetExpenses / swr : 0;
+
+    // ── Accumulation simulation (year-by-year) ───────────────────────────────
+    const accumulationPoints: typeof this.fireResult extends null ? never : NonNullable<typeof this.fireResult>['accumulationPoints'] = [];
+    let portfolio = startPortfolio;
+    let yearsToFire: number | null = null;
+    let portfolioAtFire = 0;
+    const maxAccumYears = 100;
+    // Cap the chart to 50 years when FIRE is never reached, to avoid an enormous x-axis
+    const maxChartYears = 50;
+
+    // Check if already FI
+    const alreadyFi = portfolio >= fireNumber && fireNumber > 0;
+    if (alreadyFi) {
+      yearsToFire = 0;
+      portfolioAtFire = portfolio;
+    }
+
+    if (!alreadyFi) {
+      for (let y = 1; y <= maxAccumYears; y++) {
+        const monthlyThisYear = monthlyContrib * Math.pow(1 + annualContribIncrease, y - 1);
+        const monthlyRate = Math.pow(1 + accR, 1 / 12) - 1;
+        for (let m = 0; m < 12; m++) {
+          portfolio += monthlyThisYear;
+          portfolio *= (1 + monthlyRate);
+        }
+        const inflationFactor = Math.pow(1 + inflation, y);
+        const inflationAdjustedFireNumber = fireNumber * inflationFactor;
+        accumulationPoints.push({
+          year: new Date().getFullYear() + y,
+          age: currentAge != null ? currentAge + y : null,
+          value: Math.round(portfolio),
+          inflationAdjValue: Math.round(portfolio / inflationFactor),
+        });
+        if (yearsToFire === null && portfolio >= inflationAdjustedFireNumber && fireNumber > 0) {
+          yearsToFire = y;
+          portfolioAtFire = Math.round(portfolio);
+          break; // ← stop accumulation at FIRE year — no overlap with withdrawal phase
+        }
+        // When FIRE is unreachable, stop chart data at maxChartYears to avoid a huge x-axis
+        if (y >= maxChartYears) break;
+      }
+    }
+
+    // Inflation-adjusted FIRE number (in future money at time of FIRE)
+    const inflationAdjFireNumber = yearsToFire != null
+      ? Math.round(fireNumber * Math.pow(1 + inflation, yearsToFire))
+      : fireNumber;
+
+    const surplus = portfolioAtFire - inflationAdjFireNumber;
+    const fireAge = (currentAge != null && yearsToFire != null) ? currentAge + yearsToFire : null;
+
+    // ── Withdrawal simulation ─────────────────────────────────────────────────
+    const withdrawalPoints: typeof this.fireResult extends null ? never : NonNullable<typeof this.fireResult>['withdrawalPoints'] = [];
+    let wPortfolio = portfolioAtFire > 0 ? portfolioAtFire : portfolio;
+    let portfolioDuration: number | null = null;
+    const annualWithdrawal = annualNetExpenses * (yearsToFire != null ? Math.pow(1 + inflation, yearsToFire) : 1);
+    const monthlyWithdrawal = annualWithdrawal / 12;
+    const wMonthlyRate = Math.pow(1 + withdrawR, 1 / 12) - 1;
+    const fireYear = yearsToFire ?? 0;
+
+    for (let y = 1; y <= withdrawYears; y++) {
+      const inflationFactor = Math.pow(1 + inflation, fireYear + y);
+      for (let m = 0; m < 12; m++) {
+        wPortfolio -= monthlyWithdrawal;
+        if (wPortfolio <= 0) { wPortfolio = 0; }
+        wPortfolio *= (1 + wMonthlyRate);
+      }
+      withdrawalPoints.push({
+        year: new Date().getFullYear() + fireYear + y,
+        age: currentAge != null ? currentAge + fireYear + y : null,
+        value: Math.round(Math.max(0, wPortfolio)),
+        inflationAdjValue: Math.round(Math.max(0, wPortfolio) / inflationFactor),
+      });
+      if (portfolioDuration === null && wPortfolio <= 0) {
+        portfolioDuration = y;
+      }
+    }
+
+    this.fireResult = {
+      fireNumber: Math.round(fireNumber),
+      inflationAdjustedFireNumber: inflationAdjFireNumber,
+      yearsToFire,
+      fireAge,
+      portfolioAtFire,
+      surplus: Math.round(surplus),
+      portfolioDuration,
+      alreadyFi,
+      cannotReach: !alreadyFi && yearsToFire === null,
+      accumulationPoints,
+      withdrawalPoints,
+    };
+
+    this.fireChartRendered = false;
+    this.fireChart?.destroy();
+    this.fireChart = null;
+    this.fireCalculated = true;
+    this.cdr.markForCheck();
+  }
+
+  get fireSummaryText(): string {
+    if (!this.fireResult) return '';
+    const r = this.fireResult;
+    const fs = this.fireSettings;
+    const fmt = (n: number) => this.formatCurrency(n);
+
+    if (r.alreadyFi) {
+      return `🎉 Congratulations! Based on your current portfolio of ${fmt(this.fireSettings.startAmount ?? this.dashboard?.header.totalHoldingsAmount ?? 0)}, you are already Financially Independent. Your portfolio exceeds your FIRE number of ${fmt(r.fireNumber)}.`;
+    }
+    if (r.cannotReach) {
+      return `⚠️ Based on your inputs, your portfolio does not reach the FIRE number of ${fmt(r.fireNumber)} within 100 years. Consider increasing your monthly investment, reducing expenses, or adjusting your safe withdrawal rate.`;
+    }
+
+    const durationText = r.portfolioDuration != null
+      ? `estimated to last ${r.portfolioDuration} years, carrying you to age ${r.fireAge != null ? r.fireAge + r.portfolioDuration : 'unknown'}`
+      : 'projected to never deplete (portfolio grows faster than withdrawals 🎉)';
+
+    const surplusText = r.surplus >= 0
+      ? `a surplus of ${fmt(r.surplus)} over your FIRE number`
+      : `a shortfall of ${fmt(Math.abs(r.surplus))} vs your FIRE number`;
+
+    return `Based on your inputs, you could reach Financial Independence at age ${r.fireAge ?? '?'} in ${r.yearsToFire} year${r.yearsToFire === 1 ? '' : 's'}. ` +
+      `You need a portfolio of ${fmt(r.fireNumber)} (${fmt(r.inflationAdjustedFireNumber)} in future money at ${fs.inflationPercent}% inflation) ` +
+      `to cover ${this.formatCurrency(fs.monthlyExpenses)}/month in expenses` +
+      (fs.otherMonthlyIncome > 0 ? ` after ${fmt(fs.otherMonthlyIncome)}/month from other income` : '') +
+      `, using a ${fs.safeWithdrawalRate}% safe withdrawal rate. ` +
+      `Your projected portfolio at FIRE would be ${fmt(r.portfolioAtFire)} — ${surplusText}. ` +
+      `In withdrawal at ${fs.withdrawalReturnPercent}% return, your portfolio is ${durationText}.`;
+  }
+
+  private renderFireChart(): void {
+    this.fireChart?.destroy();
+    if (!this.fireResult || !this.fireChartRef?.nativeElement) return;
+
+    const ctx = this.fireChartRef.nativeElement.getContext('2d');
+    if (!ctx) return;
+
+    const r = this.fireResult;
+    const fireYear = r.yearsToFire ?? r.accumulationPoints.length;
+    const allAccum = r.accumulationPoints;
+    const allWithdraw = r.withdrawalPoints;
+
+    const allYears = [
+      ...allAccum.map(p => p.age != null ? `${p.year} (Age ${p.age})` : `${p.year}`),
+      ...allWithdraw.map(p => p.age != null ? `${p.year} (Age ${p.age})` : `${p.year}`),
+    ];
+    const allValues = [...allAccum.map(p => p.value), ...allWithdraw.map(p => p.value)];
+    const allInflAdj = [...allAccum.map(p => p.inflationAdjValue), ...allWithdraw.map(p => p.inflationAdjValue)];
+    const fireNumberLine = allYears.map(() => r.fireNumber);
+    const inflAdjFireLine = allYears.map((_, i) => {
+      const yrs = i + 1;
+      const infl = this.fireSettings.inflationPercent / 100;
+      return Math.round(r.fireNumber * Math.pow(1 + infl, yrs));
+    });
+
+    // Vertical annotation for FIRE year
+    const fireXIndex = fireYear > 0 ? fireYear - 1 : null;
+
+    this.fireChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: allYears,
+        datasets: [
+          {
+            label: 'Portfolio Value',
+            data: allValues,
+            borderColor: '#10B981',
+            backgroundColor: 'rgba(16,185,129,0.08)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: allYears.length > 40 ? 0 : 3,
+            borderWidth: 2,
+          },
+          {
+            label: 'Portfolio (Inflation-Adjusted)',
+            data: allInflAdj,
+            borderColor: '#06d6d0',
+            backgroundColor: 'transparent',
+            fill: false,
+            tension: 0.3,
+            borderDash: [5, 4],
+            pointRadius: 0,
+            borderWidth: 1.5,
+          },
+          {
+            label: 'FIRE Number',
+            data: fireNumberLine,
+            borderColor: '#f89b29',
+            backgroundColor: 'transparent',
+            fill: false,
+            borderDash: [8, 4],
+            pointRadius: 0,
+            borderWidth: 2,
+          },
+          {
+            label: 'FIRE Number (Inflation-Adjusted)',
+            data: inflAdjFireLine,
+            borderColor: 'rgba(248,155,41,0.45)',
+            backgroundColor: 'transparent',
+            fill: false,
+            borderDash: [3, 4],
+            pointRadius: 0,
+            borderWidth: 1.5,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            labels: { color: '#8da0bf', boxWidth: 14, padding: 14 },
+          },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => ` ${ctx.dataset.label}: ${this.formatCurrency(ctx.parsed.y ?? 0)}`,
+            },
+          },
+        },
+        scales: {
+          x: {
+            ...DARK_SCALE_DEFAULTS,
+            ticks: {
+              ...DARK_SCALE_DEFAULTS.ticks,
+              maxTicksLimit: 12,
+              maxRotation: 35,
+            },
+          },
+          y: {
+            ...DARK_SCALE_DEFAULTS,
+            ticks: {
+              ...DARK_SCALE_DEFAULTS.ticks,
+              callback: (v) => this.formatCurrency(Number(v)),
+            },
+          },
+        },
+      },
+      plugins: fireXIndex != null ? [{
+        id: 'fireVerticalLine',
+        afterDraw(chart) {
+          const meta = chart.getDatasetMeta(0);
+          if (!meta.data[fireXIndex]) return;
+          const x = meta.data[fireXIndex].x;
+          const { ctx: c, chartArea: { top, bottom } } = chart;
+          c.save();
+          c.beginPath();
+          c.moveTo(x, top);
+          c.lineTo(x, bottom);
+          c.lineWidth = 1.5;
+          c.strokeStyle = 'rgba(248,155,41,0.7)';
+          c.setLineDash([5, 4]);
+          c.stroke();
+          c.fillStyle = '#f89b29';
+          c.font = 'bold 11px sans-serif';
+          c.fillText('🔥 FIRE', x + 4, top + 14);
+          c.restore();
+        }
+      }] : [],
     });
   }
 
@@ -663,6 +1014,16 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
       this.goalMonthlyChartRendered = true;
       this.renderMonthlyGoalChart();
     }
+    if (
+      this.activeMainSection === 'fire' &&
+      this.fireCalculated &&
+      this.fireResult &&
+      !this.fireChartRendered &&
+      this.fireChartRef?.nativeElement
+    ) {
+      this.fireChartRendered = true;
+      this.renderFireChart();
+    }
   }
 
   ngOnDestroy(): void {
@@ -672,6 +1033,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.versionsCompareChart?.destroy();
     this.goalChart?.destroy();
     this.goalMonthlyChart?.destroy();
+    this.fireChart?.destroy();
   }
 
   private renderPieChart(): void {
@@ -935,8 +1297,8 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.cdr.markForCheck();
   }
 
-  setMainSection(section: 'portfolio' | 'tax' | 'goal' | 'projections'): void {
-    if (section === 'projections' && !this.canViewProjections) {
+  setMainSection(section: 'portfolio' | 'tax' | 'goal' | 'projections' | 'fire'): void {
+    if ((section === 'projections' || section === 'fire') && !this.canViewProjections) {
       return;
     }
     if (this.activeMainSection === section) return;
@@ -949,6 +1311,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.evolutionChartRendered = false;
     this.versionsCompareChartRendered = false;
     this.goalChartRendered = false;
+    this.fireChartRendered = false;
 
     this.pieChart?.destroy();
     this.pieChart = null;
@@ -962,6 +1325,8 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.goalChart = null;
     this.goalMonthlyChart?.destroy();
     this.goalMonthlyChart = null;
+    this.fireChart?.destroy();
+    this.fireChart = null;
 
     if (section === 'goal' && !this.userGoal && !this.goalLoading) {
       this.loadGoal();
