@@ -360,6 +360,12 @@ export interface FireSettingsDto {
   safeWithdrawalRate: number;
   withdrawalReturnPercent: number;
   withdrawalYears: number;
+  /**
+   * Optional per-year monthly-investment overrides.
+   * Key = year index (0 = partial current year, 1..N = full projected years).
+   * When a key is present, that year uses the override value instead of the auto-calculated amount.
+   */
+  yearlyInvestmentOverrides?: { [yearIndex: number]: number } | null;
 }
 
 // ── Sharing ───────────────────────────────────────────────────────────────────

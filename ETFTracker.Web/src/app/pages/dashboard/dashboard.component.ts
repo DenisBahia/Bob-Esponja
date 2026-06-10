@@ -88,6 +88,96 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   private pieChart: Chart | null = null;
   private chartRendered = false;
 
+  holdingsSortCol = '';
+  holdingsSortDir: 'asc' | 'desc' = 'asc';
+
+  get sortedHoldings(): HoldingDto[] {
+    if (!this.dashboard?.holdings) return [];
+    if (!this.holdingsSortCol) return this.dashboard.holdings;
+    const list = [...this.dashboard.holdings];
+    const dir = this.holdingsSortDir === 'asc' ? 1 : -1;
+    return list.sort((a, b) => {
+      let av: any, bv: any;
+      switch (this.holdingsSortCol) {
+        case 'ticker':       av = a.ticker?.toLowerCase();                   bv = b.ticker?.toLowerCase(); break;
+        case 'etfName':      av = a.etfName?.toLowerCase();                  bv = b.etfName?.toLowerCase(); break;
+        case 'quantity':     av = a.quantity;                                bv = b.quantity; break;
+        case 'averageCost':  av = a.averageCost;                             bv = b.averageCost; break;
+        case 'totalCost':    av = this.getHoldingTotalCost(a);               bv = this.getHoldingTotalCost(b); break;
+        case 'currentPrice': av = a.currentPrice;                            bv = b.currentPrice; break;
+        case 'totalValue':   av = a.totalValue;                              bv = b.totalValue; break;
+        case 'gainLoss':     av = this.getHoldingTotalGainLoss(a);           bv = this.getHoldingTotalGainLoss(b); break;
+        case 'gainLossPct':  av = this.getHoldingTotalGainLossPercent(a);    bv = this.getHoldingTotalGainLossPercent(b); break;
+        default: return 0;
+      }
+      if (av == null && bv == null) return 0;
+      if (av == null) return dir;
+      if (bv == null) return -dir;
+      return av < bv ? -dir : av > bv ? dir : 0;
+    });
+  }
+
+  sortHoldingsBy(col: string): void {
+    if (this.holdingsSortCol === col) {
+      this.holdingsSortDir = this.holdingsSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.holdingsSortCol = col;
+      this.holdingsSortDir = 'asc';
+    }
+    this.cdr.markForCheck();
+  }
+
+  get allocationSlices(): { ticker: string; etfName: string; value: number; percent: number; color: string }[] {
+    if (!this.dashboard?.holdings?.length) return [];
+    const total = this.dashboard.holdings.reduce((sum, h) => sum + h.totalValue, 0);
+    return this.dashboard.holdings.map((h, i) => ({
+      ticker: h.ticker,
+      etfName: h.etfName,
+      value: h.totalValue,
+      percent: total > 0 ? (h.totalValue / total) * 100 : 0,
+      color: PIE_COLORS[i % PIE_COLORS.length],
+    }));
+  }
+
+  get projectionTaxRateLabel(): string {
+    return this.projectionSettings.applyDeemedDisposal ? 'Exit Tax %' : 'CGT %';
+  }
+
+  onDeemedDisposalToggled(): void {
+    // Tax rate is always resolved from UserSettings by the backend.
+    // No need to manually sync it here.
+    this.cdr.markForCheck();
+  }
+
+  get projectionTotals(): { totalBuys: number; yearProfit: number; totalTaxDue: number } {
+    const points = this.projection?.dataPoints ?? [];
+    return {
+      totalBuys:   points.reduce((sum, p) => sum + p.totalBuys, 0),
+      yearProfit:  points.reduce((sum, p) => sum + p.yearProfit, 0),
+      totalTaxDue: points.reduce((sum, p) => sum + this.getTaxDueForPoint(p), 0),
+    };
+  }
+
+  get projectionSiaTotals(): { totalSiaTax: number } {
+    const points = this.projection?.dataPoints ?? [];
+    return {
+      totalSiaTax: points.reduce((sum, p) => sum + (p.siaTaxDue ?? 0), 0),
+    };
+  }
+
+  /** Returns the total tax amount to show in the Tax Due column for a data point. */
+  getTaxDueForPoint(dp: ProjectionDataPointDto): number {
+    return (dp.deemedDisposalPaid ?? 0) + dp.taxPaid;
+  }
+
+  /** Badge label for the Tax Due column: 'DD', 'Exit Tax', or null. */
+  getTaxBadgeLabel(dp: ProjectionDataPointDto, isLastYear: boolean): string | null {
+    if (!this.projectionSettings.applyDeemedDisposal) return null;
+    if (dp.taxPaid > 0) return 'Exit Tax';
+    if ((dp.deemedDisposalPaid ?? 0) > 0) return 'DD';
+    return null;
+  }
+
   // Projection
   projection: ProjectionResultDto | null = null;
   projectionSettings: ProjectionSettingsDto = {
@@ -139,62 +229,103 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     cannotReach: boolean;
     accumulationPoints: { year: number; age: number | null; value: number; inflationAdjValue: number }[];
     withdrawalPoints: { year: number; age: number | null; value: number; inflationAdjValue: number }[];
+    dieWithZeroMonthlySpend: number;
+    dieWithZeroAnnualSpend: number;
+    dieWithZeroPoints: { year: number; age: number | null; value: number; inflationAdjValue: number }[];
   } | null = null;
   fireSaving = false;
   fireCalculated = false;
+  showDieWithZero = false;
+
+  // ── FIRE Yearly Investment Editor (per-year monthly investment override popup) ──
+  showFireYearlyInvestmentEditor = false;
+  fireYearlyInvestmentEditorRows: Array<{
+    yearIndex: number;
+    year: number;
+    monthlyInvestment: number;
+    totalAnnualInvestment: number;
+    isPartialYear: boolean;
+  }> = [];
 
   @ViewChild('fireChart') fireChartRef!: ElementRef<HTMLCanvasElement>;
   private fireChart: Chart | null = null;
   private fireChartRendered = false;
 
-  // Projection versions
+  // ── Portfolio Evolution ──────────────────────────────────────────────────────
+  portfolioEvolution: PortfolioEvolutionDto | null = null;
+  evolutionLoading = false;
+  evolutionPeriod: 'all' | 'year' | 'month' | 'week' = 'all';
+
+  @ViewChild('evolutionChart') evolutionChartRef!: ElementRef<HTMLCanvasElement>;
+  private evolutionChart: Chart | null = null;
+  private evolutionChartRendered = false;
+
+  get filteredEvolutionPoints() {
+    if (!this.portfolioEvolution) return [];
+    const all = this.portfolioEvolution.dataPoints;
+    const now = new Date();
+
+    switch (this.evolutionPeriod) {
+      case 'week':
+        const weekAgo = new Date(now);
+        weekAgo.setDate(now.getDate() - 7);
+        return all.filter(p => new Date(p.date) >= weekAgo);
+      case 'month':
+        const monthAgo = new Date(now);
+        monthAgo.setMonth(now.getMonth() - 1);
+        return all.filter(p => new Date(p.date) >= monthAgo);
+      case 'year':
+        const yearAgo = new Date(now);
+        yearAgo.setFullYear(now.getFullYear() - 1);
+        return all.filter(p => new Date(p.date) >= yearAgo);
+      default:
+        return all;
+    }
+  }
+
+  // ── Projection Versions ──────────────────────────────────────────────────────
   projectionVersions: ProjectionVersionSummaryDto[] = [];
   versionsLoading = false;
-  versionSaving = false;
   newVersionName = '';
-  versionDeleting: Set<number> = new Set();
-  versionSettingDefault: Set<number> = new Set();
+  versionSaving = false;
   confirmDeleteId: number | null = null;
-  selectedVersionIds: Set<number> = new Set();
-  versionCompareData: Map<number, ProjectionDataPointDto[]> = new Map();
-  versionsCompareChartRendered = false;
-  /** Name of the default version currently driving the params/graph/table (null = saved settings). */
+  versionDeleting = new Set<number>();
+  versionSettingDefault = new Set<number>();
   defaultVersionName: string | null = null;
 
-  // Versions table sort
-  versionsSortCol = 'savedAt';
-  versionsSortDir: 'asc' | 'desc' = 'desc';
-
-  // ── Version overrides read-only preview ─────────────────────────────────────
   versionOverridesPreview: {
     versionName: string;
-    rows: Array<{ yearIndex: number; year: number; monthlyBuy: number; totalAnnualBuy: number; isPartialYear: boolean; isOverride: boolean }>;
+    rows: { yearIndex: number; year: number; monthlyBuy: number; totalAnnualBuy: number; isPartialYear: boolean; isOverride: boolean }[];
   } | null = null;
+  previewVersionId: number | null = null;
 
   openVersionOverridesPreview(v: ProjectionVersionSummaryDto): void {
-    const overrides = v.settings.yearlyBuyOverrides ?? {};
-    const base = v.settings.monthlyBuyAmount ?? 0;
-    const inc = v.settings.annualBuyIncreasePercent ?? 0;
-    const N = v.settings.projectionYears ?? 0;
-    const currentYear = new Date().getFullYear();
-
-    const rows = Array.from({ length: N + 1 }, (_, i) => {
-      const defaultMonthly = i === 0 ? base : base * Math.pow(1 + inc / 100, i);
-      const rounded = Math.round(defaultMonthly * 100) / 100;
-      const isOverride = overrides[i] !== undefined;
-      const monthly = isOverride ? overrides[i] : rounded;
+    const ov = v.settings.yearlyBuyOverrides ?? {};
+    const now = new Date().getFullYear();
+    const years = v.settings.projectionYears ?? 0;
+    const rows = Array.from({ length: years + 1 }, (_, i) => {
+      const monthlyBuy = ov[i] ?? this.defaultMonthlyBuyForVersion(v.settings, i);
+      const isPartialYear = i === 0;
+      const monthsInYear = isPartialYear ? (12 - new Date().getMonth()) : 12;
       return {
         yearIndex: i,
-        year: currentYear + i,
-        monthlyBuy: Math.round(monthly * 100) / 100,
-        totalAnnualBuy: Math.round(monthly * 12 * 100) / 100,
-        isPartialYear: i === 0,
-        isOverride,
+        year: now + i,
+        monthlyBuy,
+        totalAnnualBuy: monthlyBuy * monthsInYear,
+        isPartialYear,
+        isOverride: ov[i] !== undefined,
       };
     });
-
     this.versionOverridesPreview = { versionName: v.versionName, rows };
+    this.previewVersionId = v.id;
     this.cdr.markForCheck();
+  }
+
+  private defaultMonthlyBuyForVersion(settings: ProjectionSettingsDto, yearIndex: number): number {
+    const base = settings.monthlyBuyAmount;
+    const increase = settings.annualBuyIncreasePercent / 100;
+    if (yearIndex === 0) return base;
+    return base * Math.pow(1 + increase, yearIndex);
   }
 
   closeVersionOverridesPreview(): void {
@@ -222,45 +353,47 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     const dir = this.versionsSortDir === 'asc' ? 1 : -1;
     return list.sort((a, b) => {
       let av: any, bv: any;
-      switch (this.versionsSortCol) {
-        case 'name':        av = a.versionName?.toLowerCase();              bv = b.versionName?.toLowerCase(); break;
-        case 'savedAt':     av = a.savedAt;                                 bv = b.savedAt; break;
-        case 'startAmount': av = a.settings.startAmount ?? 0;               bv = b.settings.startAmount ?? 0; break;
-        case 'return':      av = a.settings.yearlyReturnPercent;             bv = b.settings.yearlyReturnPercent; break;
-        case 'monthly':     av = a.settings.monthlyBuyAmount;               bv = b.settings.monthlyBuyAmount; break;
-        case 'buyInc':      av = a.settings.annualBuyIncreasePercent;        bv = b.settings.annualBuyIncreasePercent; break;
-        case 'years':       av = a.settings.projectionYears;                bv = b.settings.projectionYears; break;
-        case 'inflation':   av = a.settings.inflationPercent;               bv = b.settings.inflationPercent; break;
-        case 'cgt':         av = a.settings.cgtPercent;                     bv = b.settings.cgtPercent; break;
-        default: return 0;
+      switch (this.versionsSortColumn) {
+        case 'name':        av = a.versionName.toLowerCase(); bv = b.versionName.toLowerCase(); break;
+        case 'savedAt':     av = new Date(a.savedAt).getTime(); bv = new Date(b.savedAt).getTime(); break;
+        case 'startAmount': av = a.settings.startAmount ?? 0; bv = b.settings.startAmount ?? 0; break;
+        case 'return':      av = a.settings.yearlyReturnPercent; bv = b.settings.yearlyReturnPercent; break;
+        case 'monthly':     av = a.settings.monthlyBuyAmount; bv = b.settings.monthlyBuyAmount; break;
+        case 'buyInc':      av = a.settings.annualBuyIncreasePercent; bv = b.settings.annualBuyIncreasePercent; break;
+        case 'years':       av = a.settings.projectionYears; bv = b.settings.projectionYears; break;
+        case 'inflation':   av = a.settings.inflationPercent; bv = b.settings.inflationPercent; break;
+        case 'cgt':         av = a.settings.cgtPercent; bv = b.settings.cgtPercent; break;
+        default:            return 0;
       }
-      if (av < bv) return -dir;
-      if (av > bv) return dir;
-      return 0;
+      return av < bv ? -dir : av > bv ? dir : 0;
     });
   }
 
-  sortVersionsBy(col: string): void {
-    if (this.versionsSortCol === col) {
+  versionsSortColumn: 'name' | 'savedAt' | 'startAmount' | 'return' | 'monthly' | 'buyInc' | 'years' | 'inflation' | 'cgt' = 'savedAt';
+  versionsSortDir: 'asc' | 'desc' = 'desc';
+
+  sortVersionsBy(column: 'name' | 'savedAt' | 'startAmount' | 'return' | 'monthly' | 'buyInc' | 'years' | 'inflation' | 'cgt'): void {
+    if (this.versionsSortColumn === column) {
       this.versionsSortDir = this.versionsSortDir === 'asc' ? 'desc' : 'asc';
     } else {
-      this.versionsSortCol = col;
+      this.versionsSortColumn = column;
       this.versionsSortDir = 'asc';
     }
     this.cdr.markForCheck();
   }
 
-  // ── Yearly Buy Editor ────────────────────────────────────────────────────────
+  // Version comparison
+  selectedVersionIds = new Set<number>();
+  versionCompareData = new Map<number, ProjectionDataPointDto[]>();
 
-  /** Computes the default (formula-based) monthly buy for a given year index. */
+  /** Computes the default monthly buy amount for a given year index (0 = partial current year). */
   private defaultMonthlyBuyForYear(yearIndex: number): number {
-    const base = this.projectionSettings.monthlyBuyAmount ?? 0;
+    const base = this.projectionSettings.monthlyBuyAmount;
+    const increase = this.projectionSettings.annualBuyIncreasePercent / 100;
     if (yearIndex === 0) return base;
-    const inc = this.projectionSettings.annualBuyIncreasePercent ?? 0;
-    return base * Math.pow(1 + inc / 100, yearIndex);
+    return base * Math.pow(1 + increase, yearIndex);
   }
 
-  /** Opens the per-year monthly buy editor popup. Validates required fields first. */
   openYearlyBuyEditor(): void {
     const monthly = this.projectionSettings.monthlyBuyAmount;
     const years = this.projectionSettings.projectionYears;
@@ -357,7 +490,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   goalSaving = false;
   goalSavingAsId: number | null = null;   // version id currently being saved as goal
   goalSubTab: 'yearly' | 'monthly' = 'yearly';
-  goalVersionSettings: ProjectionSettingsDto | null = null;
+  goalVersionSettings: ProjectionSettingsDto | null = null; // settings of the source version
 
   @ViewChild('goalChart') goalChartRef!: ElementRef<HTMLCanvasElement>;
   private goalChart: Chart | null = null;
@@ -367,149 +500,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
   private goalMonthlyChart: Chart | null = null;
   private goalMonthlyChartRendered = false;
 
-  portfolioEvolution: PortfolioEvolutionDto | null = null;
-  evolutionLoading = false;
-  evolutionPeriod: 'all' | 'year' | 'month' | 'week' = 'all';
-
-  // Holdings table sort
-  holdingsSortCol = '';
-  holdingsSortDir: 'asc' | 'desc' = 'asc';
-
-  get sortedHoldings(): HoldingDto[] {
-    if (!this.dashboard?.holdings) return [];
-    if (!this.holdingsSortCol) return this.dashboard.holdings;
-    const list = [...this.dashboard.holdings];
-    const dir = this.holdingsSortDir === 'asc' ? 1 : -1;
-    return list.sort((a, b) => {
-      let av: any, bv: any;
-      switch (this.holdingsSortCol) {
-        case 'ticker':       av = a.ticker?.toLowerCase();                   bv = b.ticker?.toLowerCase(); break;
-        case 'etfName':      av = a.etfName?.toLowerCase();                  bv = b.etfName?.toLowerCase(); break;
-        case 'quantity':     av = a.quantity;                                bv = b.quantity; break;
-        case 'avgCost':      av = a.averageCost;                             bv = b.averageCost; break;
-        case 'currentPrice': av = a.currentPrice;                            bv = b.currentPrice; break;
-        case 'totalValue':   av = a.totalValue;                              bv = b.totalValue; break;
-        case 'totalGainLoss': av = this.getHoldingTotalGainLoss(a);          bv = this.getHoldingTotalGainLoss(b); break;
-        case 'daily':        av = a.dailyMetrics.gainLossEur;                bv = b.dailyMetrics.gainLossEur; break;
-        case 'weekly':       av = a.weeklyMetrics.gainLossEur;               bv = b.weeklyMetrics.gainLossEur; break;
-        case 'monthly':      av = a.monthlyMetrics.gainLossEur;              bv = b.monthlyMetrics.gainLossEur; break;
-        case 'ytd':          av = a.ytdMetrics.gainLossEur;                  bv = b.ytdMetrics.gainLossEur; break;
-        case 'taxPaid':      av = a.totalTaxPaid;                            bv = b.totalTaxPaid; break;
-        default: return 0;
-      }
-      if (av < bv) return -dir;
-      if (av > bv) return dir;
-      return 0;
-    });
-  }
-
-  sortHoldingsBy(col: string): void {
-    if (this.holdingsSortCol === col) {
-      this.holdingsSortDir = this.holdingsSortDir === 'asc' ? 'desc' : 'asc';
-    } else {
-      this.holdingsSortCol = col;
-      this.holdingsSortDir = 'asc';
-    }
-    this.cdr.markForCheck();
-  }
-
-  @ViewChild('evolutionChart') evolutionChartRef!: ElementRef<HTMLCanvasElement>;
-  private evolutionChart: Chart | null = null;
-  private evolutionChartRendered = false;
-
-  get filteredEvolutionPoints() {
-    const points = this.portfolioEvolution?.dataPoints;
-    if (!points?.length) return [];
-    if (this.evolutionPeriod === 'all') return points;
-
-    const now = new Date();
-    let cutoff: Date;
-
-    if (this.evolutionPeriod === 'year') {
-      cutoff = new Date(now.getFullYear(), 0, 1);
-    } else if (this.evolutionPeriod === 'month') {
-      cutoff = new Date(now.getFullYear(), now.getMonth(), 1);
-    } else {
-      // week: last 7 days (Mon–Sun of current week)
-      const day = now.getDay(); // 0=Sun
-      const diff = (day === 0 ? -6 : 1 - day);
-      cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diff);
-    }
-
-    const cutoffStr = cutoff.toISOString().slice(0, 10);
-    return points.filter(p => p.date >= cutoffStr);
-  }
-
-  get allocationSlices(): { ticker: string; etfName: string; value: number; percent: number; color: string }[] {
-    if (!this.dashboard?.holdings?.length) return [];
-    const total = this.dashboard.holdings.reduce((sum, h) => sum + h.totalValue, 0);
-    return this.dashboard.holdings.map((h, i) => ({
-      ticker: h.ticker,
-      etfName: h.etfName,
-      value: h.totalValue,
-      percent: total > 0 ? (h.totalValue / total) * 100 : 0,
-      color: PIE_COLORS[i % PIE_COLORS.length],
-    }));
-  }
-
-  // ── Irish Investor toggle ────────────────────────────────────────────────────
-
-  get effectiveProjectionSettings(): ProjectionSettingsDto {
-    return this.projectionSettings;
-  }
-
-  /** Derived from userTaxDefaults — used by the tax section of the UI. */
-  get isIrishInvestor(): boolean {
-    return this.userTaxDefaults?.isIrishInvestor ?? false;
-  }
-
-  /** Label for the tax-rate field; changes when DD is active. */
-  get projectionTaxRateLabel(): string {
-    return this.projectionSettings.applyDeemedDisposal ? 'Exit Tax %' : 'CGT %';
-  }
-
-  /** Called when the "Apply Deemed Disposal" toggle is flipped. */
-  onDeemedDisposalToggled(): void {
-    // Tax rate is always resolved from UserSettings by the backend.
-    // Update the local display value so the hint shows the correct DD %.
-    if (this.projectionSettings.applyDeemedDisposal && this.userTaxDefaults) {
-      this.projectionSettings.deemedDisposalPercent = this.userTaxDefaults.deemedDisposalPercent;
-    }
-  }
-
-  get projectionTotals(): { totalBuys: number; yearProfit: number; totalTaxDue: number } {
-    const points = this.projection?.dataPoints ?? [];
-    return {
-      totalBuys:   points.reduce((sum, p) => sum + p.totalBuys, 0),
-      yearProfit:  points.reduce((sum, p) => sum + p.yearProfit, 0),
-      totalTaxDue: points.reduce((sum, p) => sum + this.getTaxDueForPoint(p), 0),
-    };
-  }
-
-  get projectionSiaTotals(): { totalSiaTax: number } {
-    const points = this.projection?.dataPoints ?? [];
-    return {
-      totalSiaTax: points.reduce((sum, p) => sum + (p.siaTaxDue ?? 0), 0),
-    };
-  }
-
-  /** Whether the SIA group columns should be visible (Irish investors only, and only when SIA % > 0 in user settings). */
-  get showSiaColumns(): boolean {
-    return this.isIrishInvestor && (this.userTaxDefaults?.siaAnnualPercent ?? 0) > 0;
-  }
-
-  /** Returns the total tax amount to show in the Tax Due column for a data point. */
-  getTaxDueForPoint(dp: ProjectionDataPointDto): number {
-    return (dp.deemedDisposalPaid ?? 0) + dp.taxPaid;
-  }
-
-  /** Badge label for the Tax Due column: 'DD', 'Exit Tax', or null. */
-  getTaxBadgeLabel(dp: ProjectionDataPointDto, isLastYear: boolean): string | null {
-    if (!this.projectionSettings.applyDeemedDisposal) return null;
-    if (dp.taxPaid > 0) return 'Exit Tax';
-    if ((dp.deemedDisposalPaid ?? 0) > 0) return 'DD';
-    return null;
-  }
+  versionsCompareChartRendered = false;
 
   constructor(private apiService: ApiService, private cdr: ChangeDetectorRef, public auth: AuthService, public sharingCtx: SharingContextService, private seo: SeoService) {
   }
@@ -560,9 +551,6 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.settingsIsFirstTime = false;
     if (saved) {
       this.userTaxDefaults = saved;
-      // Tax rate is now always resolved from UserSettings by the backend —
-      // just recalculate so the projection refreshes with the new rates.
-      // Recalculate projection and refresh tax summary with the updated defaults
       this.projectionChartRendered = false;
       this.lineChart?.destroy();
       this.lineChart = null;
@@ -573,7 +561,6 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
       });
       this.loadTaxSummary();
 
-      // Resume the action that was blocked until settings were configured
       if (pending === 'buy') {
         this.showAddTransactionModal = true;
       } else if (pending === 'import') {
@@ -591,6 +578,22 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
       },
       error: () => { /* non-fatal — fall back to localStorage value */ }
     });
+  }
+
+  get isIrishInvestor(): boolean {
+    return this.userTaxDefaults?.isIrishInvestor ?? false;
+  }
+
+  get showSiaColumns(): boolean {
+    return this.isIrishInvestor && this.projectionSettings.applyDeemedDisposal;
+  }
+
+  get effectiveProjectionSettings(): ProjectionSettingsDto {
+    return {
+      ...this.projectionSettings,
+      applyDeemedDisposal: this.isIrishInvestor ? this.projectionSettings.applyDeemedDisposal : false,
+      deemedDisposalPercent: this.isIrishInvestor ? this.projectionSettings.deemedDisposalPercent : 0,
+    };
   }
 
   // ── FIRE Methods ──────────────────────────────────────────────────────────────
@@ -621,6 +624,13 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     if (this.projectionSettings.startAmount != null && this.projectionSettings.startAmount > 0) {
       this.fireSettings.startAmount = this.projectionSettings.startAmount;
     }
+    // Copy per-year monthly buy overrides if they exist
+    const overrides = this.projectionSettings.yearlyBuyOverrides;
+    if (overrides && Object.keys(overrides).length > 0) {
+      this.fireSettings.yearlyInvestmentOverrides = { ...overrides };
+    } else {
+      this.fireSettings.yearlyInvestmentOverrides = null;
+    }
     this.cdr.markForCheck();
   }
 
@@ -630,6 +640,99 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
       this.fireSettings.startAmount = total;
       this.cdr.markForCheck();
     }
+  }
+
+  // ── FIRE Yearly Investment Editor ────────────────────────────────────────────
+
+  openFireYearlyInvestmentEditor(): void {
+    const monthly = this.fireSettings.monthlyInvestment;
+
+    if (!monthly || monthly <= 0) {
+      alert('Please enter a Monthly Investment amount before editing per-year overrides.');
+      return;
+    }
+
+    // Determine how many years to show (estimate max 100 years for FIRE)
+    const maxYears = 100;
+    const overrides = this.fireSettings.yearlyInvestmentOverrides ?? {};
+    const currentYear = new Date().getFullYear();
+
+    this.fireYearlyInvestmentEditorRows = Array.from({ length: maxYears + 1 }, (_, i) => {
+      const defaultMonthly = this.defaultFireMonthlyInvestmentForYear(i);
+      const monthly = overrides[i] !== undefined ? overrides[i] : defaultMonthly;
+      const rounded = Math.round(monthly * 100) / 100;
+      return {
+        yearIndex: i,
+        year: currentYear + i,
+        monthlyInvestment: rounded,
+        totalAnnualInvestment: Math.round(rounded * 12 * 100) / 100,
+        isPartialYear: i === 0,
+      };
+    });
+
+    this.showFireYearlyInvestmentEditor = true;
+    this.cdr.markForCheck();
+  }
+
+  /** Called when user edits the Monthly Investment cell for a row. */
+  onFireEditorMonthlyInvestmentChange(row: { monthlyInvestment: number; totalAnnualInvestment: number; isPartialYear: boolean }): void {
+    const val = row.monthlyInvestment ?? 0;
+    row.totalAnnualInvestment = Math.round(val * 12 * 100) / 100;
+    this.cdr.markForCheck();
+  }
+
+  /** Applies the editor values as overrides (only stores entries that differ from defaults). */
+  applyFireYearlyInvestmentOverrides(): void {
+    const overrides: { [key: number]: number } = {};
+    for (const row of this.fireYearlyInvestmentEditorRows) {
+      const def = this.defaultFireMonthlyInvestmentForYear(row.yearIndex);
+      if (Math.abs(row.monthlyInvestment - Math.round(def * 100) / 100) > 0.005) {
+        overrides[row.yearIndex] = row.monthlyInvestment;
+      }
+    }
+    this.fireSettings = {
+      ...this.fireSettings,
+      yearlyInvestmentOverrides: Object.keys(overrides).length > 0 ? overrides : null,
+    };
+    this.showFireYearlyInvestmentEditor = false;
+    this.cdr.markForCheck();
+  }
+
+  /** Resets all overrides to formula defaults. */
+  resetFireYearlyInvestmentOverrides(): void {
+    const currentYear = new Date().getFullYear();
+    const maxYears = 100;
+    this.fireYearlyInvestmentEditorRows = Array.from({ length: maxYears + 1 }, (_, i) => {
+      const def = this.defaultFireMonthlyInvestmentForYear(i);
+      const rounded = Math.round(def * 100) / 100;
+      return {
+        yearIndex: i,
+        year: currentYear + i,
+        monthlyInvestment: rounded,
+        totalAnnualInvestment: Math.round(rounded * 12 * 100) / 100,
+        isPartialYear: i === 0,
+      };
+    });
+    this.cdr.markForCheck();
+  }
+
+  closeFireYearlyInvestmentEditor(): void {
+    this.showFireYearlyInvestmentEditor = false;
+    this.cdr.markForCheck();
+  }
+
+  /** True when the user has active per-year investment overrides for FIRE. */
+  get hasFireYearlyInvestmentOverrides(): boolean {
+    const ov = this.fireSettings.yearlyInvestmentOverrides;
+    return !!ov && Object.keys(ov).length > 0;
+  }
+
+  /** Computes the default monthly investment for a given FIRE year index (0 = partial current year). */
+  private defaultFireMonthlyInvestmentForYear(yearIndex: number): number {
+    const base = this.fireSettings.monthlyInvestment;
+    const increase = this.fireSettings.annualInvestmentIncreasePercent / 100;
+    if (yearIndex === 0) return base;
+    return base * Math.pow(1 + increase, yearIndex);
   }
 
   calculateFire(): void {
@@ -649,6 +752,15 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     const annualNetExpenses = Math.max(0, (monthlyExpenses - otherIncome) * 12);
     const fireNumber = swr > 0 ? annualNetExpenses / swr : 0;
 
+    // ── Helper: Get monthly investment for a given year (with override support) ──
+    const monthlyInvestmentForYear = (yearIndex: number): number => {
+      if (fs.yearlyInvestmentOverrides && fs.yearlyInvestmentOverrides[yearIndex] !== undefined) {
+        return fs.yearlyInvestmentOverrides[yearIndex];
+      }
+      // Default formula: apply annual increase
+      return monthlyContrib * Math.pow(1 + annualContribIncrease, yearIndex);
+    };
+
     // ── Accumulation simulation (year-by-year) ───────────────────────────────
     const accumulationPoints: typeof this.fireResult extends null ? never : NonNullable<typeof this.fireResult>['accumulationPoints'] = [];
     let portfolio = startPortfolio;
@@ -667,7 +779,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
 
     if (!alreadyFi) {
       for (let y = 1; y <= maxAccumYears; y++) {
-        const monthlyThisYear = monthlyContrib * Math.pow(1 + annualContribIncrease, y - 1);
+        const monthlyThisYear = monthlyInvestmentForYear(y);
         const monthlyRate = Math.pow(1 + accR, 1 / 12) - 1;
         for (let m = 0; m < 12; m++) {
           portfolio += monthlyThisYear;
@@ -726,6 +838,34 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
       }
     }
 
+    // ── Die With Zero simulation ──────────────────────────────────────────────
+    // Calculate the monthly spend that exactly depletes the portfolio in withdrawalYears
+    const dwzStartPortfolio = portfolioAtFire > 0 ? portfolioAtFire : portfolio;
+    const nMonths = withdrawYears * 12;
+    let dieWithZeroMonthlySpend = 0;
+    if (wMonthlyRate > 0) {
+      dieWithZeroMonthlySpend = (dwzStartPortfolio * wMonthlyRate) / (1 - Math.pow(1 + wMonthlyRate, -nMonths));
+    } else if (nMonths > 0) {
+      dieWithZeroMonthlySpend = dwzStartPortfolio / nMonths;
+    }
+
+    const dieWithZeroPoints: typeof withdrawalPoints = [];
+    let dwzPortfolio = dwzStartPortfolio;
+    for (let y = 1; y <= withdrawYears; y++) {
+      const inflationFactor = Math.pow(1 + inflation, fireYear + y);
+      for (let m = 0; m < 12; m++) {
+        dwzPortfolio -= dieWithZeroMonthlySpend;
+        if (dwzPortfolio < 0) dwzPortfolio = 0;
+        dwzPortfolio *= (1 + wMonthlyRate);
+      }
+      dieWithZeroPoints.push({
+        year: new Date().getFullYear() + fireYear + y,
+        age: currentAge != null ? currentAge + fireYear + y : null,
+        value: Math.round(Math.max(0, dwzPortfolio)),
+        inflationAdjValue: Math.round(Math.max(0, dwzPortfolio) / inflationFactor),
+      });
+    }
+
     this.fireResult = {
       fireNumber: Math.round(fireNumber),
       inflationAdjustedFireNumber: inflationAdjFireNumber,
@@ -738,6 +878,9 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
       cannotReach: !alreadyFi && yearsToFire === null,
       accumulationPoints,
       withdrawalPoints,
+      dieWithZeroMonthlySpend: Math.round(dieWithZeroMonthlySpend),
+      dieWithZeroAnnualSpend: Math.round(dieWithZeroMonthlySpend * 12),
+      dieWithZeroPoints,
     };
 
     this.fireChartRendered = false;
@@ -745,6 +888,16 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.fireChart = null;
     this.fireCalculated = true;
     this.cdr.markForCheck();
+  }
+
+  toggleDieWithZero(): void {
+    this.showDieWithZero = !this.showDieWithZero;
+    if (this.fireCalculated && this.fireResult) {
+      this.fireChartRendered = false;
+      this.fireChart?.destroy();
+      this.fireChart = null;
+      this.cdr.markForCheck();
+    }
   }
 
   get fireSummaryText(): string {
@@ -774,7 +927,8 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
       (fs.otherMonthlyIncome > 0 ? ` after ${fmt(fs.otherMonthlyIncome)}/month from other income` : '') +
       `, using a ${fs.safeWithdrawalRate}% safe withdrawal rate. ` +
       `Your projected portfolio at FIRE would be ${fmt(r.portfolioAtFire)} — ${surplusText}. ` +
-      `In withdrawal at ${fs.withdrawalReturnPercent}% return, your portfolio is ${durationText}.`;
+      `In withdrawal at ${fs.withdrawalReturnPercent}% return, your portfolio is ${durationText}.` +
+      (this.showDieWithZero ? ` 💀 Die With Zero: spending ${fmt(r.dieWithZeroMonthlySpend)}/month (${fmt(r.dieWithZeroAnnualSpend)}/year) would exhaust the portfolio in exactly ${fs.withdrawalYears} years.` : '');
   }
 
   private renderFireChart(): void {
@@ -801,6 +955,12 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
       const infl = this.fireSettings.inflationPercent / 100;
       return Math.round(r.fireNumber * Math.pow(1 + infl, yrs));
     });
+
+    // Die With Zero line: null for accumulation phase, then dwz values for withdrawal phase
+    const dwzLineData: (number | null)[] = [
+      ...allAccum.map(() => null as number | null),
+      ...r.dieWithZeroPoints.map(p => p.value),
+    ];
 
     // Vertical annotation for FIRE year
     const fireXIndex = fireYear > 0 ? fireYear - 1 : null;
@@ -851,6 +1011,18 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
             pointRadius: 0,
             borderWidth: 1.5,
           },
+          ...(this.showDieWithZero ? [{
+            label: 'Die With Zero',
+            data: dwzLineData,
+            borderColor: '#e040fb',
+            backgroundColor: 'rgba(224,64,251,0.07)',
+            fill: false,
+            tension: 0.3,
+            borderDash: [6, 3],
+            pointRadius: 0,
+            borderWidth: 2,
+            spanGaps: false,
+          }] : []),
         ],
       },
       options: {
@@ -1176,7 +1348,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
             titleColor: '#e4eaf5',
             bodyColor: '#8da0bf',
             callbacks: {
-              label: (tooltipCtx) => ` ${tooltipCtx.dataset.label}: ${this.formatCurrency(tooltipCtx.parsed.y as number)}`
+              label: (tooltipCtx) => ` ${tooltipCtx.dataset.label}: ${this.formatCurrency(tooltipCtx.parsed.y as number)}`,
             }
           }
         }
@@ -1711,7 +1883,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
             bodyColor: '#8da0bf',
             callbacks: {
               label: (tooltipCtx) =>
-                ` ${tooltipCtx.dataset.label}: ${this.formatCurrency(tooltipCtx.parsed.y as number)}`
+                ` ${tooltipCtx.dataset.label}: ${this.formatCurrency(tooltipCtx.parsed.y as number)}`,
             }
           }
         }
@@ -2154,7 +2326,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
             bodyColor: '#8da0bf',
             callbacks: {
               label: (tooltipCtx) =>
-                ` ${tooltipCtx.dataset.label}: ${this.formatCurrency(tooltipCtx.parsed.y as number)}`
+                ` ${tooltipCtx.dataset.label}: ${this.formatCurrency(tooltipCtx.parsed.y as number)}`,
             }
           }
         }
@@ -2243,7 +2415,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
                 return pt.hasBuy ? `${pt.date}  🛒 Buy recorded` : pt.date;
               },
               label: (tooltipCtx) =>
-                ` Portfolio: ${this.formatCurrency(tooltipCtx.parsed.y as number)}`
+                ` Portfolio: ${this.formatCurrency(tooltipCtx.parsed.y as number)}`,
             }
           }
         }

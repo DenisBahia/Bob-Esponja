@@ -26,6 +26,13 @@ public class FireSettings
     public decimal WithdrawalReturnPercent { get; set; }
     public int WithdrawalYears { get; set; }
 
+    /// <summary>
+    /// JSON-encoded Dictionary&lt;int,decimal&gt; of per-year monthly-investment overrides.
+    /// Key = year index (0 = partial current year, 1..N = full projected years).
+    /// Null = use standard formula for all years.
+    /// </summary>
+    public string? YearlyInvestmentOverridesJson { get; set; }
+
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 

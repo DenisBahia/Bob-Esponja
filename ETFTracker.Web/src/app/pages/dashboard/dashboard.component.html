@@ -1026,15 +1026,15 @@
               <thead>
                 <tr>
                   <th title="Select to compare">Compare</th>
-                  <th class="sortable" [ngClass]="{'sort-asc': versionsSortCol==='name'&&versionsSortDir==='asc','sort-desc': versionsSortCol==='name'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('name')">Name</th>
-                  <th class="sortable" [ngClass]="{'sort-asc': versionsSortCol==='savedAt'&&versionsSortDir==='asc','sort-desc': versionsSortCol==='savedAt'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('savedAt')">Saved At</th>
-                  <th class="sortable" title="Start amount override" [ngClass]="{'sort-asc': versionsSortCol==='startAmount'&&versionsSortDir==='asc','sort-desc': versionsSortCol==='startAmount'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('startAmount')">Start Amount</th>
-                  <th class="sortable" title="Yearly return %" [ngClass]="{'sort-asc': versionsSortCol==='return'&&versionsSortDir==='asc','sort-desc': versionsSortCol==='return'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('return')">Return %</th>
-                  <th class="sortable" title="Monthly buy amount" [ngClass]="{'sort-asc': versionsSortCol==='monthly'&&versionsSortDir==='asc','sort-desc': versionsSortCol==='monthly'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('monthly')">Monthly Buy</th>
-                  <th class="sortable" title="Annual buy increase %" [ngClass]="{'sort-asc': versionsSortCol==='buyInc'&&versionsSortDir==='asc','sort-desc': versionsSortCol==='buyInc'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('buyInc')">Buy Inc. %</th>
-                  <th class="sortable" title="Projection years" [ngClass]="{'sort-asc': versionsSortCol==='years'&&versionsSortDir==='asc','sort-desc': versionsSortCol==='years'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('years')">Years</th>
-                  <th class="sortable" title="Inflation %" [ngClass]="{'sort-asc': versionsSortCol==='inflation'&&versionsSortDir==='asc','sort-desc': versionsSortCol==='inflation'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('inflation')">Inflation %</th>
-                  <th class="sortable" title="Capital Gains Tax %" [ngClass]="{'sort-asc': versionsSortCol==='cgt'&&versionsSortDir==='asc','sort-desc': versionsSortCol==='cgt'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('cgt')">CGT %</th>
+                  <th class="sortable" [ngClass]="{'sort-asc': versionsSortColumn==='name'&&versionsSortDir==='asc','sort-desc': versionsSortColumn==='name'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('name')">Name</th>
+                  <th class="sortable" [ngClass]="{'sort-asc': versionsSortColumn==='savedAt'&&versionsSortDir==='asc','sort-desc': versionsSortColumn==='savedAt'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('savedAt')">Saved At</th>
+                  <th class="sortable" title="Start amount override" [ngClass]="{'sort-asc': versionsSortColumn==='startAmount'&&versionsSortDir==='asc','sort-desc': versionsSortColumn==='startAmount'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('startAmount')">Start Amount</th>
+                  <th class="sortable" title="Yearly return %" [ngClass]="{'sort-asc': versionsSortColumn==='return'&&versionsSortDir==='asc','sort-desc': versionsSortColumn==='return'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('return')">Return %</th>
+                  <th class="sortable" title="Monthly buy amount" [ngClass]="{'sort-asc': versionsSortColumn==='monthly'&&versionsSortDir==='asc','sort-desc': versionsSortColumn==='monthly'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('monthly')">Monthly Buy</th>
+                  <th class="sortable" title="Annual buy increase %" [ngClass]="{'sort-asc': versionsSortColumn==='buyInc'&&versionsSortDir==='asc','sort-desc': versionsSortColumn==='buyInc'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('buyInc')">Buy Inc. %</th>
+                  <th class="sortable" title="Projection years" [ngClass]="{'sort-asc': versionsSortColumn==='years'&&versionsSortDir==='asc','sort-desc': versionsSortColumn==='years'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('years')">Years</th>
+                  <th class="sortable" title="Inflation %" [ngClass]="{'sort-asc': versionsSortColumn==='inflation'&&versionsSortDir==='asc','sort-desc': versionsSortColumn==='inflation'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('inflation')">Inflation %</th>
+                  <th class="sortable" title="Capital Gains Tax %" [ngClass]="{'sort-asc': versionsSortColumn==='cgt'&&versionsSortDir==='asc','sort-desc': versionsSortColumn==='cgt'&&versionsSortDir==='desc'}" (click)="sortVersionsBy('cgt')">CGT %</th>
                   <th></th>
                 </tr>
               </thead>
@@ -1179,9 +1179,18 @@
 
             <div class="fire-field">
               <label for="fireAnnualIncrease">Annual Increase %</label>
-              <input id="fireAnnualIncrease" type="number" step="0.1" min="0" max="100"
-                     [(ngModel)]="fireSettings.annualInvestmentIncreasePercent" />
+              <div class="fire-field-row">
+                <input id="fireAnnualIncrease" type="number" step="0.1" min="0" max="100"
+                       [(ngModel)]="fireSettings.annualInvestmentIncreasePercent" />
+                <button class="btn-edit-yearly-buy"
+                        (click)="openFireYearlyInvestmentEditor()"
+                        [class.btn-edit-yearly-buy--active]="hasFireYearlyInvestmentOverrides"
+                        title="Edit monthly investment amount per year">
+                  📅 Per year
+                </button>
+              </div>
               <span class="fire-field-hint">Salary rise / savings growth</span>
+              <span class="fire-field-hint override-hint" *ngIf="hasFireYearlyInvestmentOverrides">✏️ Custom per-year amounts active</span>
             </div>
 
             <div class="fire-field">
@@ -1229,6 +1238,18 @@
             </div>
 
           </div>
+        </div>
+
+        <!-- Section 3b: Die With Zero toggle -->
+        <div class="fire-param-section fire-param-section--dwz">
+          <div class="fire-param-section-title">💀 Die With Zero</div>
+          <label class="fire-toggle-label">
+            <input type="checkbox" [checked]="showDieWithZero" (change)="toggleDieWithZero()" />
+            <span class="fire-toggle-text">Show Die With Zero info</span>
+          </label>
+          <p class="fire-field-hint" *ngIf="showDieWithZero">
+            Calculates the annual amount you can spend from FIRE onwards so that the portfolio reaches exactly €0 after the simulated period.
+          </p>
         </div>
 
         <!-- Section 4: Withdrawal Phase -->
@@ -1341,6 +1362,13 @@
               <ng-container *ngIf="fireResult.portfolioDuration == null">Portfolio grows faster than withdrawals</ng-container>
             </div>
           </div>
+
+          <!-- Die With Zero card -->
+          <div class="fire-result-card fire-result-card--dwz" *ngIf="showDieWithZero">
+            <div class="fire-result-card__label">💀 Die With Zero — Monthly Spend</div>
+            <div class="fire-result-card__value">{{ formatCurrency(fireResult.dieWithZeroMonthlySpend) }}<span class="fire-result-card__unit">/mo</span></div>
+            <div class="fire-result-card__sub">{{ formatCurrency(fireResult.dieWithZeroAnnualSpend) }}/year — exhausts portfolio in exactly {{ fireSettings.withdrawalYears }} yrs</div>
+          </div>
         </div>
 
         <!-- Friendly summary -->
@@ -1352,6 +1380,7 @@
         <div class="fire-chart-header">
           <span class="fire-chart-phase-legend fire-chart-phase-legend--accum">Accumulation</span>
           <span class="fire-chart-phase-legend fire-chart-phase-legend--withdraw">Withdrawal</span>
+          <span class="fire-chart-phase-legend fire-chart-phase-legend--dwz" *ngIf="showDieWithZero">Die With Zero</span>
         </div>
         <div class="fire-chart-wrapper">
           <canvas #fireChart></canvas>
@@ -1452,6 +1481,54 @@
         </button>
         <button class="btn btn-secondary" (click)="closeYearlyBuyEditor()">Cancel</button>
         <button class="btn btn-primary" (click)="applyYearlyBuyOverrides()">Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       FIRE YEARLY INVESTMENT EDITOR (Modal Popup)
+  ════════════════════════════════════════════════════════════════════════ -->
+  <div *ngIf="showFireYearlyInvestmentEditor" class="yearly-buy-overlay" (click)="closeFireYearlyInvestmentEditor()">
+    <div class="yearly-buy-modal" (click)="$event.stopPropagation()">
+      <div class="yearly-buy-modal__header">
+        <h3>📅 FIRE Per-Year Monthly Investment</h3>
+        <button class="yearly-buy-modal__close" (click)="closeFireYearlyInvestmentEditor()" title="Close">✕</button>
+      </div>
+      <p class="yearly-buy-modal__hint">
+        Edit the monthly investment amount for each year in your FIRE journey. Total Annual Investment updates automatically.<br>
+        Changes will be applied when you click <strong>Apply</strong> and will be used in FIRE calculations.
+      </p>
+      <div class="yearly-buy-modal__table-wrap">
+        <table class="yearly-buy-table">
+          <thead>
+            <tr>
+              <th>Year</th>
+              <th>Monthly Investment ($)</th>
+              <th>Total Annual Investment ($)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of fireYearlyInvestmentEditorRows" [class.partial-year-row]="row.isPartialYear">
+              <td class="year-cell">
+                {{ row.year }}
+                <span *ngIf="row.isPartialYear" class="partial-badge">partial</span>
+              </td>
+              <td class="input-cell">
+                <input type="number" step="10" min="0"
+                       [(ngModel)]="row.monthlyInvestment"
+                       (ngModelChange)="onFireEditorMonthlyInvestmentChange(row)" />
+              </td>
+              <td class="total-cell">{{ row.totalAnnualInvestment | number:'1.0-0' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="yearly-buy-modal__actions">
+        <button class="btn btn-secondary" (click)="resetFireYearlyInvestmentOverrides()" title="Reset all rows to formula defaults">
+          🔄 Reset to defaults
+        </button>
+        <button class="btn btn-secondary" (click)="closeFireYearlyInvestmentEditor()">Cancel</button>
+        <button class="btn btn-primary" (click)="applyFireYearlyInvestmentOverrides()">Apply</button>
       </div>
     </div>
   </div>

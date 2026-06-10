@@ -5,6 +5,7 @@ using ETFTracker.Api.Data;
 using ETFTracker.Api.Dtos;
 using ETFTracker.Api.Models;
 using ETFTracker.Api.Services;
+using System.Text.Json;
 
 namespace ETFTracker.Api.Controllers;
 
@@ -29,6 +30,26 @@ public class FireSettingsController : ControllerBase
     }
 
     private int UserId => _sharingContext.GetEffectiveUserId();
+
+    // ── Helpers for per-year investment overrides ────────────────────────────────
+    private static Dictionary<int, decimal>? DeserializeOverrides(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return null;
+        try
+        {
+            return JsonSerializer.Deserialize<Dictionary<int, decimal>>(json);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static string? SerializeOverrides(Dictionary<int, decimal>? overrides)
+    {
+        if (overrides == null || overrides.Count == 0) return null;
+        return JsonSerializer.Serialize(overrides);
+    }
 
     /// <summary>Returns the user's saved FIRE settings, or sensible defaults if not yet saved.</summary>
     [HttpGet]
@@ -98,6 +119,7 @@ public class FireSettingsController : ControllerBase
             settings.SafeWithdrawalRate = dto.SafeWithdrawalRate;
             settings.WithdrawalReturnPercent = dto.WithdrawalReturnPercent;
             settings.WithdrawalYears = dto.WithdrawalYears;
+            settings.YearlyInvestmentOverridesJson = SerializeOverrides(dto.YearlyInvestmentOverrides);
             settings.UpdatedAt = DateTime.UtcNow;
 
             await _db.SaveChangesAsync(ct);
@@ -123,6 +145,7 @@ public class FireSettingsController : ControllerBase
         SafeWithdrawalRate = s.SafeWithdrawalRate,
         WithdrawalReturnPercent = s.WithdrawalReturnPercent,
         WithdrawalYears = s.WithdrawalYears,
+        YearlyInvestmentOverrides = DeserializeOverrides(s.YearlyInvestmentOverridesJson),
     };
 }
 

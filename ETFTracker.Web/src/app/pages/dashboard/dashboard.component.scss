@@ -1095,34 +1095,6 @@ th.sortable {
             }
           }
 
-          .btn-edit-yearly-buy {
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-            padding: 0.45rem 0.7rem;
-            background: var(--bg-elevated);
-            border: 1px solid var(--border-light);
-            border-radius: 7px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.18s;
-            color: var(--text-secondary);
-            white-space: nowrap;
-
-            &:hover {
-              background: rgba(16, 185, 129, 0.12);
-              border-color: var(--accent);
-              color: var(--accent);
-            }
-
-            &--active {
-              background: rgba(16, 185, 129, 0.15);
-              border-color: var(--accent);
-              color: var(--accent);
-            }
-          }
 
           .override-hint {
             font-size: 0.65rem;
@@ -1130,6 +1102,35 @@ th.sortable {
             font-style: italic;
             margin-top: 0.15rem;
             display: block;
+          }
+        }
+
+        .btn-edit-yearly-buy {
+          flex-shrink: 0;
+          display: flex;
+          align-items: center;
+          gap: 0.3rem;
+          padding: 0.45rem 0.7rem;
+          background: var(--bg-elevated);
+          border: 1px solid var(--border-light);
+          border-radius: 7px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.18s;
+          color: var(--text-secondary);
+          white-space: nowrap;
+
+          &:hover {
+            background: rgba(16, 185, 129, 0.12);
+            border-color: var(--accent);
+            color: var(--accent);
+          }
+
+          &--active {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: var(--accent);
+            color: var(--accent);
           }
         }
 
@@ -3772,6 +3773,39 @@ th.sortable {
 
     .fire-param-section-title { margin-bottom: 0.25rem; }
   }
+
+  &.fire-param-section--dwz {
+    background: rgba(224, 64, 251, 0.04);
+    border-radius: 8px;
+    border: 1px solid rgba(224, 64, 251, 0.2);
+    margin: 0.5rem 0;
+    padding: 0.7rem 0.8rem;
+
+    .fire-param-section-title {
+      color: #e040fb;
+      margin-bottom: 0.25rem;
+    }
+  }
+}
+
+.fire-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  cursor: pointer;
+
+  input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #e040fb;
+    cursor: pointer;
+  }
+}
+
+.fire-toggle-text {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text-primary);
 }
 
 .fire-param-section-title {
@@ -3860,6 +3894,35 @@ th.sortable {
       border-color: rgba(16, 185, 129, 0.45);
     }
   }
+
+  .btn-edit-yearly-buy {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.45rem 0.7rem;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-light);
+    border-radius: 7px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s;
+    color: var(--text-secondary);
+    white-space: nowrap;
+
+    &:hover {
+      background: rgba(16, 185, 129, 0.12);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    &--active {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+  }
 }
 
 .fire-field-hint {
@@ -3868,6 +3931,7 @@ th.sortable {
   line-height: 1.4;
   margin-top: 0.05rem;
 }
+
 
 // ── Copy from Projections strip ───────────────────────────────────────────────
 
@@ -3996,6 +4060,20 @@ th.sortable {
     border-color: rgba(240, 82, 82, 0.35);
     .fire-result-card__value { color: #f05252; }
   }
+
+  &--dwz {
+    border-color: rgba(224, 64, 251, 0.45);
+    background: rgba(224, 64, 251, 0.06);
+
+    .fire-result-card__label { color: #e040fb; }
+    .fire-result-card__value { color: #e040fb; }
+    .fire-result-card__unit {
+      font-size: 0.85rem;
+      font-weight: 500;
+      margin-left: 2px;
+      color: rgba(224, 64, 251, 0.7);
+    }
+  }
 }
 
 // ── Summary text ──────────────────────────────────────────────────────────────
@@ -4040,6 +4118,12 @@ th.sortable {
     background: rgba(248, 155, 41, 0.12);
     color: #f89b29;
     border: 1px solid rgba(248, 155, 41, 0.35);
+  }
+
+  &--dwz {
+    background: rgba(224, 64, 251, 0.1);
+    color: #e040fb;
+    border: 1px solid rgba(224, 64, 251, 0.35);
   }
 }
 

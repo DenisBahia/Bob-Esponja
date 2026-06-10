@@ -306,6 +306,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<FireSettings>().Property(fs => fs.SafeWithdrawalRate).HasColumnName("safe_withdrawal_rate").HasColumnType("decimal(5,2)").HasDefaultValue(4m);
         modelBuilder.Entity<FireSettings>().Property(fs => fs.WithdrawalReturnPercent).HasColumnName("withdrawal_return_percent").HasColumnType("decimal(5,2)").HasDefaultValue(7m);
         modelBuilder.Entity<FireSettings>().Property(fs => fs.WithdrawalYears).HasColumnName("withdrawal_years").HasDefaultValue(30);
+        modelBuilder.Entity<FireSettings>().Property(fs => fs.YearlyInvestmentOverridesJson).HasColumnName("yearly_investment_overrides_json").IsRequired(false);
         modelBuilder.Entity<FireSettings>().Property(fs => fs.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
         modelBuilder.Entity<FireSettings>().Property(fs => fs.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
         modelBuilder.Entity<FireSettings>().HasIndex(fs => fs.UserId).IsUnique();
