@@ -9,6 +9,7 @@
         <div class="app-brand">
           <img src="logo_light.png" alt="Portify logo" class="app-brand__logo" />
         </div>
+
       </div>
       <button class="btn-logout btn-logout-mobile" (click)="openLogoutConfirm()" title="Sign out">
         <span class="logout-icon">🚪</span>
@@ -1367,7 +1368,12 @@
           <div class="fire-result-card fire-result-card--dwz" *ngIf="showDieWithZero">
             <div class="fire-result-card__label">💀 Die With Zero — Monthly Spend</div>
             <div class="fire-result-card__value">{{ formatCurrency(fireResult.dieWithZeroMonthlySpend) }}<span class="fire-result-card__unit">/mo</span></div>
-            <div class="fire-result-card__sub">{{ formatCurrency(fireResult.dieWithZeroAnnualSpend) }}/year — exhausts portfolio in exactly {{ fireSettings.withdrawalYears }} yrs</div>
+            <div class="fire-result-card__sub">{{ formatCurrency(fireResult.dieWithZeroAnnualSpend) }}/year</div>
+            <div class="fire-result-card__inflation-note">
+              <span class="fire-result-card__inflation-label">In today's money:</span>
+              <span class="fire-result-card__inflation-value">{{ formatCurrency(fireResult.dieWithZeroMonthlySpendTodaysMoney) }}/mo</span>
+            </div>
+            <div class="fire-result-card__duration">Exhausts portfolio in exactly {{ fireSettings.withdrawalYears }} years</div>
           </div>
         </div>
 
@@ -1381,6 +1387,7 @@
           <span class="fire-chart-phase-legend fire-chart-phase-legend--accum">Accumulation</span>
           <span class="fire-chart-phase-legend fire-chart-phase-legend--withdraw">Withdrawal</span>
           <span class="fire-chart-phase-legend fire-chart-phase-legend--dwz" *ngIf="showDieWithZero">Die With Zero</span>
+          <span class="fire-chart-phase-legend fire-chart-phase-legend--dwz-inflation" *ngIf="showDieWithZero">Die With Zero (Today's Money)</span>
         </div>
         <div class="fire-chart-wrapper">
           <canvas #fireChart></canvas>
@@ -1598,4 +1605,3 @@
     (cancelled)="onImportCancelled()">
   </app-import-history-modal>
 </div>
-
