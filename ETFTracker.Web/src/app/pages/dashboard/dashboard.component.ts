@@ -231,6 +231,8 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     withdrawalPoints: { year: number; age: number | null; value: number; inflationAdjValue: number }[];
     dieWithZeroMonthlySpend: number;
     dieWithZeroAnnualSpend: number;
+    dieWithZeroMonthlySpendTodaysMoney: number;
+    dieWithZeroAnnualSpendTodaysMoney: number;
     dieWithZeroPoints: { year: number; age: number | null; value: number; inflationAdjValue: number }[];
   } | null = null;
   fireSaving = false;
@@ -848,6 +850,10 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
     } else if (nMonths > 0) {
       dieWithZeroMonthlySpend = dwzStartPortfolio / nMonths;
     }
+    const inflationFactorToFireYear = Math.pow(1 + inflation, fireYear);
+    const dieWithZeroMonthlySpendTodaysMoney = inflationFactorToFireYear > 0
+      ? dieWithZeroMonthlySpend / inflationFactorToFireYear
+      : dieWithZeroMonthlySpend;
 
     const dieWithZeroPoints: typeof withdrawalPoints = [];
     let dwzPortfolio = dwzStartPortfolio;
@@ -880,6 +886,8 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
       withdrawalPoints,
       dieWithZeroMonthlySpend: Math.round(dieWithZeroMonthlySpend),
       dieWithZeroAnnualSpend: Math.round(dieWithZeroMonthlySpend * 12),
+      dieWithZeroMonthlySpendTodaysMoney: Math.round(dieWithZeroMonthlySpendTodaysMoney),
+      dieWithZeroAnnualSpendTodaysMoney: Math.round(dieWithZeroMonthlySpendTodaysMoney * 12),
       dieWithZeroPoints,
     };
 
@@ -961,6 +969,10 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
       ...allAccum.map(() => null as number | null),
       ...r.dieWithZeroPoints.map(p => p.value),
     ];
+    const dwzLineDataTodaysMoney: (number | null)[] = [
+      ...allAccum.map(() => null as number | null),
+      ...r.dieWithZeroPoints.map(p => p.inflationAdjValue),
+    ];
 
     // Vertical annotation for FIRE year
     const fireXIndex = fireYear > 0 ? fireYear - 1 : null;
@@ -1016,6 +1028,17 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
             data: dwzLineData,
             borderColor: '#e040fb',
             backgroundColor: 'rgba(224,64,251,0.07)',
+            fill: false,
+            tension: 0.3,
+            borderDash: [6, 3],
+            pointRadius: 0,
+            borderWidth: 2,
+            spanGaps: false,
+          }, {
+            label: "Die With Zero (Today's Money)",
+            data: dwzLineDataTodaysMoney,
+            borderColor: '#c9a3e8',
+            backgroundColor: 'transparent',
             fill: false,
             tension: 0.3,
             borderDash: [6, 3],

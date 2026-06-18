@@ -4034,6 +4034,33 @@ th.sortable {
     color: var(--text-secondary);
   }
 
+  &__inflation-note {
+    margin-top: 0.35rem;
+    padding-top: 0.45rem;
+    border-top: 1px solid rgba(224, 64, 251, 0.25);
+    display: flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+  }
+
+  &__inflation-label {
+    font-size: 0.74rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  &__inflation-value {
+    font-size: 0.92rem;
+    color: #e040fb;
+    font-weight: 700;
+  }
+
+  &__duration {
+    font-size: 0.74rem;
+    color: #8da0bf;
+  }
+
   &--primary {
     border-color: rgba(248, 155, 41, 0.45);
     background: rgba(248, 155, 41, 0.07);
@@ -4124,6 +4151,12 @@ th.sortable {
     background: rgba(224, 64, 251, 0.1);
     color: #e040fb;
     border: 1px solid rgba(224, 64, 251, 0.35);
+  }
+
+  &--dwz-inflation {
+    background: rgba(201, 163, 232, 0.12);
+    color: #c9a3e8;
+    border: 1px solid rgba(201, 163, 232, 0.35);
   }
 }
 
