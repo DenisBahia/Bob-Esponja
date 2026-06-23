@@ -925,6 +925,8 @@ namespace ETFTracker.Api.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("SourceVersionId");
+
                     b.HasIndex("UserId")
                         .IsUnique();
 
@@ -1096,6 +1098,10 @@ namespace ETFTracker.Api.Migrations
 
             modelBuilder.Entity("ETFTracker.Api.Models.UserGoal", b =>
                 {
+                    b.HasOne("ETFTracker.Api.Models.ProjectionVersion", null)
+                        .WithMany()
+                        .HasForeignKey("SourceVersionId");
+
                     b.HasOne("ETFTracker.Api.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
